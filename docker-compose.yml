@@ -1,0 +1,45 @@
+# Full stack: API on 8000, UI on 5173.
+#
+#   docker compose up --build
+#
+# The API trains a model on first start when backend/model is empty, which
+# takes a few minutes; watch the logs. Set INSTALL_ML=true to build the image
+# with torch and transformers for the DistilBERT bundle.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        INSTALL_ML: "${INSTALL_ML:-false}"
+    environment:
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      AUTO_TRAIN: "${AUTO_TRAIN:-true}"
+      HAZARDS_ENABLED: "${HAZARDS_ENABLED:-true}"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/data:/app/backend/data
+      - model-artifacts:/app/backend/model
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 300s
+      retries: 10
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: "${VITE_API_URL:-http://localhost:8000}"
+    ports:
+      - "5173:80"
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  model-artifacts:

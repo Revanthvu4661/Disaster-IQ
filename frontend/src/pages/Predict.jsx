@@ -204,7 +204,14 @@ export default function Predict() {
       {result && (
         <div className="stack" style={{ opacity: pending ? 0.6 : 1 }} aria-busy={pending}>
           <section className="card fade-in" aria-label="Classification result">
-            <div className="grid" style={{ gridTemplateColumns: 'auto 1fr', alignItems: 'start' }}>
+            <div
+              className="grid"
+              style={{
+                // Side by side when there is room, stacked on a phone.
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                alignItems: 'start',
+              }}
+            >
               <SeverityGauge score={result.severity.score} level={result.severity.level} />
               <div className="stack" style={{ gap: 'var(--space-3)', minWidth: 240 }}>
                 <div className="row" style={{ gap: 8 }}>
