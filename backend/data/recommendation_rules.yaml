@@ -1,0 +1,393 @@
+# DisasterIQ recommendation rules
+#
+# Every recommendation the API returns comes from this file, so the action plan
+# is auditable and editable without touching code.
+#
+# rules[]:
+#   id            stable identifier
+#   category      predicted category that triggers the rule
+#   min_probability  probability floor; the rule also fires when the category is
+#                 triggered by its tuned threshold and `trigger_on_label` is true
+#   weight        importance multiplier used for ranking (0-1)
+#   action        what to do, imperative
+#   agency        responsible team type
+#   resources[]   concrete resources to move
+#   urgency       immediate | within_6h | within_24h
+#   rationale     one line explaining why this action follows
+#   events[]      optional: only applies to these inferred events
+#   severity_min  optional: only applies at this severity level or above
+#
+# escalations[]: extra actions driven by severity level alone.
+# event_overlays[]: event-specific additions appended when the event matches.
+
+version: 2
+
+agencies:
+  medical: Medical response
+  wash: Water, sanitation and hygiene
+  logistics: Food and water logistics
+  sar: Search and rescue
+  shelter: Shelter and camp management
+  infrastructure: Infrastructure, power and transport
+  security: Security and public order
+  reunification: Family reunification and tracing
+  coordination: Incident coordination
+  information: Public information
+
+urgency_order:
+  immediate: 0
+  within_6h: 1
+  within_24h: 2
+
+rules:
+  - id: sar_primary
+    category: search_and_rescue
+    min_probability: 0.35
+    weight: 1.0
+    action: Dispatch a search and rescue team to the reported location
+    agency: sar
+    resources: [USAR team, lifting and cutting equipment, canine unit, stretchers]
+    urgency: immediate
+    rationale: People are reported trapped or missing at the scene.
+
+  - id: medical_triage
+    category: medical_help
+    min_probability: 0.35
+    weight: 0.95
+    action: Send a mobile medical team and open a triage point
+    agency: medical
+    resources: [Ambulance, trauma kit, paramedics, triage tags]
+    urgency: immediate
+    rationale: Injuries are reported and need clinical assessment on site.
+
+  - id: medical_supply
+    category: medical_products
+    min_probability: 0.35
+    weight: 0.75
+    action: Resupply medicines and consumables to the nearest facility
+    agency: medical
+    resources: [Essential medicines kit, IV fluids, dressings, cold chain box]
+    urgency: within_6h
+    rationale: A shortage of medical supplies was reported.
+
+  - id: casualty_management
+    category: death
+    min_probability: 0.35
+    weight: 0.9
+    action: Activate casualty management and mortuary support
+    agency: medical
+    resources: [Body bags, mortuary capacity, forensic identification team]
+    urgency: within_6h
+    rationale: Fatalities are reported, which requires dignified handling and identification.
+
+  - id: missing_persons
+    category: missing_people
+    min_probability: 0.3
+    weight: 0.8
+    action: Open a missing persons case and cross-check reunification registries
+    agency: reunification
+    resources: [Tracing desk, registry access, photo intake]
+    urgency: immediate
+    rationale: Someone is reported missing and the first hours matter most.
+
+  - id: fire_response
+    category: fire
+    min_probability: 0.3
+    weight: 0.85
+    action: Dispatch fire suppression and establish a safety perimeter
+    agency: sar
+    resources: [Fire engine, breathing apparatus, water tanker]
+    urgency: immediate
+    rationale: An active fire threatens life and nearby structures.
+
+  - id: water_supply
+    category: water
+    min_probability: 0.3
+    weight: 0.8
+    action: Deliver drinking water and set up a distribution point
+    agency: wash
+    resources: [Water tanker, 10L jerrycans, purification tablets, testing kit]
+    urgency: within_6h
+    rationale: Safe drinking water was requested; waterborne illness follows shortages quickly.
+
+  - id: food_supply
+    category: food
+    min_probability: 0.3
+    weight: 0.7
+    action: Schedule a food distribution for the affected households
+    agency: logistics
+    resources: [Dry ration kits, ready-to-eat meals, cooking fuel]
+    urgency: within_6h
+    rationale: Food was requested by people in the affected area.
+
+  - id: shelter_support
+    category: shelter
+    min_probability: 0.3
+    weight: 0.7
+    action: Allocate emergency shelter and register displaced households
+    agency: shelter
+    resources: [Family tents, tarpaulins, blankets, sleeping mats]
+    urgency: within_6h
+    rationale: People report being displaced or without safe shelter.
+
+  - id: clothing_support
+    category: clothing
+    min_probability: 0.35
+    weight: 0.4
+    action: Include clothing in the next relief distribution
+    agency: logistics
+    resources: [Clothing kits, footwear, hygiene kits]
+    urgency: within_24h
+    rationale: Clothing was requested alongside other relief needs.
+
+  - id: refugee_support
+    category: refugees
+    min_probability: 0.35
+    weight: 0.6
+    action: Coordinate a reception point for displaced people
+    agency: shelter
+    resources: [Registration desk, transit shelter, protection officer]
+    urgency: within_6h
+    rationale: Population movement is reported and needs reception capacity.
+
+  - id: medical_facility
+    category: hospitals
+    min_probability: 0.35
+    weight: 0.7
+    action: Verify hospital capacity and arrange patient referral routes
+    agency: medical
+    resources: [Bed capacity report, referral ambulances, generator fuel]
+    urgency: within_6h
+    rationale: A hospital or clinic is referenced as affected or overwhelmed.
+
+  - id: power_restoration
+    category: electricity
+    min_probability: 0.35
+    weight: 0.6
+    action: Task the utility team with power restoration and provide interim generators
+    agency: infrastructure
+    resources: [Line crew, generators, fuel, lighting towers]
+    urgency: within_24h
+    rationale: A power outage is reported, which blocks medical and communication services.
+
+  - id: transport_access
+    category: transport
+    min_probability: 0.35
+    weight: 0.6
+    action: Assess route access and clear or bypass blocked roads
+    agency: infrastructure
+    resources: [Route assessment team, heavy plant, recovery vehicles]
+    urgency: within_24h
+    rationale: Transport access is affected, which constrains every other response.
+
+  - id: building_assessment
+    category: buildings
+    min_probability: 0.35
+    weight: 0.6
+    action: Carry out a rapid structural safety assessment before re-entry
+    agency: infrastructure
+    resources: [Structural engineers, cordon tape, placarding kit]
+    urgency: within_24h
+    rationale: Damaged buildings are reported and re-entry risks secondary casualties.
+
+  - id: infrastructure_general
+    category: infrastructure_related
+    min_probability: 0.45
+    weight: 0.4
+    action: Add the location to the infrastructure damage assessment list
+    agency: infrastructure
+    resources: [Assessment team, damage reporting form]
+    urgency: within_24h
+    rationale: Infrastructure damage is implied but not specific.
+
+  - id: security_response
+    category: security
+    min_probability: 0.35
+    weight: 0.7
+    action: Request a security escort for responders and distribution sites
+    agency: security
+    resources: [Police liaison, escort vehicle, crowd control plan]
+    urgency: within_6h
+    rationale: Insecurity is reported, which puts both responders and distributions at risk.
+
+  - id: military_liaison
+    category: military
+    min_probability: 0.45
+    weight: 0.35
+    action: Coordinate with the military liaison cell for logistics support
+    agency: coordination
+    resources: [Liaison officer, airlift request form]
+    urgency: within_24h
+    rationale: Military assets are mentioned and may already be operating in the area.
+
+  - id: aid_centre
+    category: aid_centers
+    min_probability: 0.35
+    weight: 0.5
+    action: Publish the nearest open aid centre and its opening hours
+    agency: information
+    resources: [Aid centre list, SMS broadcast, community radio slot]
+    urgency: within_24h
+    rationale: People are asking where to find assistance.
+
+  - id: cash_support
+    category: money
+    min_probability: 0.4
+    weight: 0.4
+    action: Screen the household for cash or voucher assistance
+    agency: logistics
+    resources: [Cash transfer desk, eligibility checklist]
+    urgency: within_24h
+    rationale: Financial assistance was requested rather than in-kind goods.
+
+  - id: tools_support
+    category: tools
+    min_probability: 0.4
+    weight: 0.35
+    action: Include hand tools in the recovery distribution
+    agency: logistics
+    resources: [Shovels, hand tools, tarpaulin fixing kits]
+    urgency: within_24h
+    rationale: Tools were requested for self-recovery work.
+
+  - id: shops_supply
+    category: shops
+    min_probability: 0.4
+    weight: 0.35
+    action: Assess market functionality before choosing in-kind versus cash aid
+    agency: logistics
+    resources: [Market assessment form, trader contact list]
+    urgency: within_24h
+    rationale: Shops are referenced, so local markets may still be able to supply goods.
+
+  - id: flood_response
+    category: floods
+    min_probability: 0.3
+    weight: 0.7
+    action: Activate flood response and evacuate low-lying areas
+    agency: coordination
+    resources: [Rescue boats, life jackets, sandbags, evacuation transport]
+    urgency: immediate
+    rationale: Flooding is reported, which puts people at risk of drowning and isolation.
+
+  - id: storm_response
+    category: storm
+    min_probability: 0.3
+    weight: 0.55
+    action: Issue a storm warning and pre-position response teams
+    agency: information
+    resources: [Warning broadcast, shelter list, pre-positioned stock]
+    urgency: within_6h
+    rationale: Storm conditions are reported and people need warning and safe shelter.
+
+  - id: earthquake_response
+    category: earthquake
+    min_probability: 0.3
+    weight: 0.7
+    action: Deploy heavy rescue and begin structural triage of the affected blocks
+    agency: sar
+    resources: [Heavy rescue module, concrete cutting tools, structural engineers]
+    urgency: immediate
+    rationale: Earthquake damage implies collapsed structures and trapped people.
+
+  - id: cold_response
+    category: cold
+    min_probability: 0.35
+    weight: 0.5
+    action: Distribute cold-weather items and open a warming space
+    agency: shelter
+    resources: [Blankets, winter clothing, heaters, fuel]
+    urgency: within_6h
+    rationale: Cold exposure is reported, which is life-threatening for vulnerable groups.
+
+  - id: weather_watch
+    category: weather_related
+    min_probability: 0.55
+    weight: 0.3
+    action: Keep the meteorological watch active and update the public forecast
+    agency: information
+    resources: [Weather feed, broadcast slot]
+    urgency: within_24h
+    rationale: The message concerns weather conditions without a specific need.
+
+  - id: other_aid
+    category: other_aid
+    min_probability: 0.5
+    weight: 0.25
+    action: Route to the general assistance desk for clarification
+    agency: coordination
+    resources: [Case worker, callback list]
+    urgency: within_24h
+    rationale: Assistance is requested but the need is not specific enough to task a team.
+
+  - id: offer_intake
+    category: offer
+    min_probability: 0.4
+    weight: 0.3
+    action: Log the offer of help in the resource registry
+    agency: coordination
+    resources: [Volunteer registry, donation intake form]
+    urgency: within_24h
+    rationale: The message offers help rather than requesting it.
+
+escalations:
+  - id: escalate_critical
+    severity_min: critical
+    action: Escalate to the incident commander and open a live incident record
+    agency: coordination
+    resources: [Incident commander, situation report template, on-call roster]
+    urgency: immediate
+    rationale: The severity score indicates a life-threatening situation.
+  - id: escalate_high
+    severity_min: high
+    action: Assign a case owner and set a two-hour follow-up
+    agency: coordination
+    resources: [Case owner, follow-up timer]
+    urgency: within_6h
+    rationale: High severity needs a named owner so the case is not lost in the queue.
+  - id: verify_low
+    severity_max: low
+    action: Queue for batch review with other low-severity reports
+    agency: coordination
+    resources: [Review queue]
+    urgency: within_24h
+    rationale: No urgent need was detected, so this can be handled in a batch.
+
+event_overlays:
+  - event: Pakistan floods
+    when_categories: [floods, water, shelter]
+    action: Deploy shallow-water boats and water purification for flood-isolated villages
+    agency: wash
+    resources: [Flat-bottom boats, purification tablets, raised platform shelter kits]
+    urgency: immediate
+    rationale: Riverine flooding isolates villages, so access and safe water fail together.
+  - event: Haiti earthquake
+    when_categories: [earthquake, buildings, search_and_rescue]
+    action: Request heavy rescue equipment and aftershock safety briefings
+    agency: sar
+    resources: [Hydraulic spreaders, concrete saws, aftershock guidance sheet]
+    urgency: immediate
+    rationale: Collapsed masonry and aftershocks dominate the risk picture in this event.
+  - event: Chile earthquake
+    when_categories: [earthquake, buildings]
+    action: Check tsunami advisories for the coastal strip before deploying teams
+    agency: coordination
+    resources: [Tsunami advisory feed, coastal evacuation map]
+    urgency: immediate
+    rationale: Offshore megathrust quakes in this region carry a tsunami risk.
+  - event: Superstorm Sandy
+    when_categories: [storm, electricity, floods]
+    action: Prioritise power restoration and pumping for flooded urban basements
+    agency: infrastructure
+    resources: [Generators, pumps, fuel convoy, high-rise welfare checks]
+    urgency: within_6h
+    rationale: Urban storm surge leaves people without power in high-rise buildings.
+
+resource_units:
+  Water tanker: tanker
+  10L jerrycans: unit
+  Dry ration kits: kit
+  Family tents: tent
+  Ambulance: vehicle
+  Rescue boats: boat
+  Generators: unit

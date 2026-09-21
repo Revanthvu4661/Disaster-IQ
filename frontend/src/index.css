@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #0a0a0f;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: #0a0a0f; }
+  ::-webkit-scrollbar-thumb { background: #1e2030; border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: #2d3050; }
+}
+
+/* ── card surface ─────────────────────────────────── */
+.card {
+  background: #12131a;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card:hover {
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+/* ── fade-in page animation ───────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fadeUp 0.4s ease both;
+}
+.fade-up-1 { animation-delay: 0.05s; }
+.fade-up-2 { animation-delay: 0.10s; }
+.fade-up-3 { animation-delay: 0.15s; }
+.fade-up-4 { animation-delay: 0.20s; }
+.fade-up-5 { animation-delay: 0.25s; }
+.fade-up-6 { animation-delay: 0.30s; }
+
+/* ── count-up number animation ────────────────────── */
+@keyframes countReveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.count-reveal {
+  animation: countReveal 0.5s ease both;
+}
+
+/* ── pulsing red border for critical cards ────────── */
+@keyframes pulseRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.0); }
+  50%       { box-shadow: 0 0 0 4px rgba(239,68,68,0.2); }
+}
+.pulse-danger {
+  animation: pulseRed 2s ease-in-out infinite;
+}
+
+/* ── segmented control ────────────────────────────── */
+.seg-pill {
+  display: inline-flex;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 99px;
+  padding: 3px;
+  gap: 2px;
+}
+.seg-btn {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 99px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  color: #64748b;
+  background: transparent;
+  line-height: 1.4;
+}
+.seg-btn.active {
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 1px 6px rgba(239,68,68,0.35);
+}
+.seg-btn:not(.active):hover {
+  color: #cbd5e1;
+  background: rgba(255,255,255,0.06);
+}
+
+/* ── confidence bar ───────────────────────────────── */
+.conf-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+.conf-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s cubic-bezier(0.34,1.2,0.64,1);
+}
+
+/* ── nav active underline ─────────────────────────── */
+.nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+.nav-link:hover { color: #e2e8f0; background: rgba(255,255,255,0.04); }
+.nav-link.active {
+  color: #f1f5f9;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.2);
+}
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  border-radius: 99px;
+  background: #ef4444;
+}
+
+/* ── severity pulse for critical ─────────────────── */
+.severity-critical-card {
+  animation: pulseRed 2.2s ease-in-out infinite;
+}
+
+/* ── example chip hover ───────────────────────────── */
+.example-chip {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+  color: #64748b;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s, transform 0.1s;
+  line-height: 1.5;
+}
+.example-chip:hover {
+  color: #e2e8f0;
+  background: rgba(239,68,68,0.07);
+  border-color: rgba(239,68,68,0.25);
+  transform: translateX(2px);
+}
