@@ -13,6 +13,7 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 from backend import schemas
 from backend.config import get_settings
+from backend.etl import META_CATEGORIES
 from backend.rate_limit import limiter
 from backend.services.incident import build_incident_summary
 from backend.services.language import prepare_for_classification
@@ -120,7 +121,10 @@ def _triage(messages: Sequence[str], explain: bool, want_plan: bool) -> dict[str
         if plan:
             plans.append(plan)
         predictions.append({"triggered_categories": result.triggered_names})
-        top = result.categories[0] if result.categories else None
+        # The most useful "top label" is a need, not a meta label such as
+        # `related` or `request`, which fire on almost every message.
+        needs = [c for c in result.categories if c["category"] not in META_CATEGORIES]
+        top = (needs or result.categories)[0] if result.categories else None
         items.append(
             {
                 "index": index,

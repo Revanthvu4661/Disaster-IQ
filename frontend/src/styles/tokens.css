@@ -1,0 +1,145 @@
+/* DisasterIQ design tokens.
+   One source of truth for colour, spacing, radius, type scale and elevation.
+   Dark is the default; `[data-theme="light"]` and the `prefers-color-scheme`
+   media query below switch the surface and text ramps. Severity hues keep the
+   same meaning in both themes. */
+
+:root {
+  /* type scale (1.25 minor third, 14px base) */
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.8125rem;   /* 13px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-md: 1rem;        /* 16px */
+  --text-lg: 1.25rem;     /* 20px */
+  --text-xl: 1.5rem;      /* 24px */
+  --text-2xl: 1.875rem;   /* 30px */
+  --text-3xl: 2.25rem;    /* 36px */
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  /* spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* motion */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration: 220ms;
+
+  /* layout */
+  --shell-max: 1280px;
+  --topbar-height: 56px;
+  --sidebar-width: 216px;
+  --tap-target: 44px;
+
+  /* severity language: identical meaning in both themes */
+  --severity-low: #16a34a;
+  --severity-medium: #d97706;
+  --severity-high: #ea580c;
+  --severity-critical: #dc2626;
+  --severity-low-soft: color-mix(in srgb, var(--severity-low) 16%, transparent);
+  --severity-medium-soft: color-mix(in srgb, var(--severity-medium) 16%, transparent);
+  --severity-high-soft: color-mix(in srgb, var(--severity-high) 16%, transparent);
+  --severity-critical-soft: color-mix(in srgb, var(--severity-critical) 16%, transparent);
+
+  /* categorical series for charts (colour-blind safe ordering) */
+  --series-1: #3b82f6;
+  --series-2: #f97316;
+  --series-3: #14b8a6;
+  --series-4: #a855f7;
+  --series-5: #eab308;
+  --series-6: #ec4899;
+  --series-7: #64748b;
+}
+
+/* ── dark theme (default) ─────────────────────────────────────────────── */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0a0f;
+  --bg-elevated: #121219;
+  --surface: #15151d;
+  --surface-2: #1c1c26;
+  --surface-hover: #22222e;
+  --border: #272733;
+  --border-strong: #3a3a49;
+  --text: #f1f5f9;
+  --text-secondary: #a8b0bd;
+  --text-muted: #79818f;
+  --accent: #ef4444;
+  --accent-hover: #f87171;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(239, 68, 68, 0.14);
+  --focus: #93c5fd;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --grid-line: #262633;
+}
+
+/* ── light theme ──────────────────────────────────────────────────────── */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --surface-hover: #e8ebf0;
+  --border: #dfe3ea;
+  --border-strong: #c3cad6;
+  --text: #11151c;
+  --text-secondary: #4a5563;
+  --text-muted: #667085;
+  --accent: #b91c1c;
+  --accent-hover: #991b1b;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(185, 28, 28, 0.1);
+  --focus: #1d4ed8;
+  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-2: 0 10px 30px rgba(16, 24, 40, 0.1);
+  --grid-line: #e6e9ef;
+  --severity-low: #15803d;
+  --severity-medium: #b45309;
+  --severity-high: #c2410c;
+  --severity-critical: #b91c1c;
+}
+
+/* Respect the OS preference when the user has not chosen a theme. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f6f7f9;
+    --bg-elevated: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f1f3f6;
+    --surface-hover: #e8ebf0;
+    --border: #dfe3ea;
+    --border-strong: #c3cad6;
+    --text: #11151c;
+    --text-secondary: #4a5563;
+    --text-muted: #667085;
+    --accent: #b91c1c;
+    --accent-hover: #991b1b;
+    --accent-soft: rgba(185, 28, 28, 0.1);
+    --focus: #1d4ed8;
+    --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06);
+    --shadow-2: 0 10px 30px rgba(16, 24, 40, 0.1);
+    --grid-line: #e6e9ef;
+    --severity-low: #15803d;
+    --severity-medium: #b45309;
+    --severity-high: #c2410c;
+    --severity-critical: #b91c1c;
+  }
+}

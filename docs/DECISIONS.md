@@ -63,3 +63,19 @@ Browsers would hit CORS limits and expose the client to feed outages. The
 backend fetches USGS / EONET / GDACS with a 10-minute TTL cache and returns a
 normalised shape plus a per-source `status`, so the UI can show a partial or
 offline state without breaking.
+
+## D8 — Offers of help are damped in the severity score
+
+A message such as "we have blankets to donate" is not a report of need, but the
+classifier still fires `shelter` and `food` on it, which the noisy-OR then reads
+as a severe incident. When `offer` outscores `request`, the score is multiplied
+by `1 - 0.6 * (p_offer - p_request)`. The base formula is unchanged; this is a
+single, testable correction rather than a new scoring model. The residual error
+(the corpus contains few offers, so the classifier handles them poorly) is
+documented in `MODEL_CARD.md` instead of being hidden by more tuning.
+
+## D9 — The batch "top label" excludes meta categories
+
+`related`, `request`, `aid_related` and `direct_report` fire on nearly every
+message, so showing them as the headline label of a triaged row tells an
+operator nothing. The queue shows the highest-scoring *need* instead.

@@ -92,3 +92,19 @@ def test_probabilities_are_clipped() -> None:
 def test_length_mismatch_raises() -> None:
     with pytest.raises(ValueError):
         compute_severity(np.zeros(3), CATEGORIES)
+
+
+def test_offer_outweighing_request_is_damped() -> None:
+    """An offer of help must not score like a report of the same need."""
+    need = proba(shelter=0.9, food=0.8)
+    offer = proba(shelter=0.9, food=0.8)
+    offer[CATEGORIES.index("offer")] = 0.9
+    offer[CATEGORIES.index("request")] = 0.1
+    assert compute_severity(offer, CATEGORIES)["score"] < compute_severity(need, CATEGORIES)["score"]
+
+
+def test_request_outweighing_offer_is_not_damped() -> None:
+    row = proba(shelter=0.9, request=0.9)
+    row[CATEGORIES.index("offer")] = 0.1
+    plain = proba(shelter=0.9)
+    assert compute_severity(row, CATEGORIES)["score"] == compute_severity(plain, CATEGORIES)["score"]

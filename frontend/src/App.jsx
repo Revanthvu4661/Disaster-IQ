@@ -1,129 +1,192 @@
-import { Routes, Route, NavLink } from 'react-router-dom'
-import { LayoutDashboard, BrainCircuit, Radio } from 'lucide-react'
-import Dashboard from './pages/Dashboard'
-import Predict from './pages/Predict'
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
+import { NavLink, Route, Routes } from 'react-router-dom'
+import { Command, Moon, Radio, Sun } from 'lucide-react'
+import { NAV_ITEMS } from './navigation'
+import { useTheme } from './context/ThemeContext'
+import { api } from './api/client'
+import CommandPalette from './components/CommandPalette'
+import { SkeletonCard } from './components/ui'
+
+// Route-level code splitting keeps the initial bundle small.
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Insights = lazy(() => import('./pages/Insights'))
+const Predict = lazy(() => import('./pages/Predict'))
+const Triage = lazy(() => import('./pages/Triage'))
+const Hazards = lazy(() => import('./pages/Hazards'))
+const ModelPage = lazy(() => import('./pages/Model'))
+const About = lazy(() => import('./pages/About'))
+const NotFound = lazy(() => import('./pages/NotFound'))
+
+function ApiStatus() {
+  const [status, setStatus] = useState('checking')
+
+  useEffect(() => {
+    let cancelled = false
+    const check = () =>
+      api
+        .health()
+        .then((body) => {
+          if (!cancelled) setStatus(body.model_loaded ? 'ok' : 'degraded')
+        })
+        .catch(() => {
+          if (!cancelled) setStatus('offline')
+        })
+    check()
+    const timer = window.setInterval(check, 60_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [])
+
+  const colors = {
+    ok: 'var(--severity-low)',
+    degraded: 'var(--severity-medium)',
+    offline: 'var(--severity-critical)',
+    checking: 'var(--text-muted)',
+  }
+  const labels = {
+    ok: 'API online',
+    degraded: 'Model unavailable',
+    offline: 'API offline',
+    checking: 'Checking API',
+  }
+
+  return (
+    <span className="row text-xs muted" style={{ gap: 6 }} role="status">
+      <span
+        aria-hidden="true"
+        style={{
+          width: 7,
+          height: 7,
+          borderRadius: '50%',
+          background: colors[status],
+          flexShrink: 0,
+        }}
+      />
+      <span className="hide-sm">{labels[status]}</span>
+    </span>
+  )
+}
+
+function NavLinks({ variant }) {
+  return NAV_ITEMS.map((item) => {
+    const Icon = item.icon
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        end={item.end}
+        className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+      >
+        <Icon size={variant === 'bottom' ? 17 : 15} aria-hidden="true" />
+        <span>{item.label}</span>
+      </NavLink>
+    )
+  })
+}
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme()
+  const [paletteOpen, setPaletteOpen] = useState(false)
+
+  const onKeyDown = useCallback((event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault()
+      setPaletteOpen((open) => !open)
+    }
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onKeyDown])
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#0a0a0f' }}>
+    <div className="app-shell">
+      <a className="skip-link" href="#main">
+        Skip to main content
+      </a>
 
-      {/* ── top nav ─────────────────────────────────── */}
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          background: 'rgba(10,10,15,0.85)',
-          backdropFilter: 'blur(16px)',
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: '0 auto',
-            padding: '0 24px',
-            height: 60,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          {/* brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 9,
-                background: 'linear-gradient(135deg,#b91c1c,#ef4444)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                boxShadow: '0 2px 12px rgba(239,68,68,0.35)',
-              }}
-            >
-              <Radio size={15} color="#fff" strokeWidth={2.5} />
-            </div>
-            <span style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 15, letterSpacing: '-0.3px' }}>
-              DisasterIQ
-            </span>
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                padding: '2px 8px',
-                borderRadius: 99,
-                background: 'rgba(239,68,68,0.12)',
-                color: '#f87171',
-                border: '1px solid rgba(239,68,68,0.2)',
-                marginLeft: 2,
-              }}
-            >
-              Live
-            </span>
-          </div>
-
-          {/* nav */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <NavLink
-              to="/"
-              end
-              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-            >
-              <LayoutDashboard size={14} />
-              Dashboard
-            </NavLink>
-            <NavLink
-              to="/predict"
-              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-            >
-              <BrainCircuit size={14} />
-              Predict
-            </NavLink>
-          </nav>
-
-          {/* api status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#475569' }}>
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: '#22c55e',
-                display: 'inline-block',
-                boxShadow: '0 0 6px #22c55e',
-                animation: 'pulse 2s infinite',
-              }}
-            />
-            API live
-          </div>
+      <header className="topbar">
+        <div className="row" style={{ gap: 8, flex: 1, minWidth: 0 }}>
+          <span
+            aria-hidden="true"
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              background: 'var(--accent)',
+              display: 'grid',
+              placeItems: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Radio size={15} color="var(--accent-contrast)" strokeWidth={2.5} />
+          </span>
+          <span style={{ fontWeight: 700, letterSpacing: '-0.02em' }}>DisasterIQ</span>
+          <span className="chip hide-sm" style={{ fontWeight: 600 }}>
+            Analyse · Predict · Recommend
+          </span>
         </div>
+
+        <ApiStatus />
+
+        <button
+          type="button"
+          className="btn btn-sm hide-sm"
+          onClick={() => setPaletteOpen(true)}
+          aria-keyshortcuts="Control+K"
+        >
+          <Command size={13} aria-hidden="true" />
+          Ctrl K
+        </button>
+
+        <button
+          type="button"
+          className="icon-btn"
+          onClick={toggleTheme}
+          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+        >
+          {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+        </button>
       </header>
 
-      {/* ── page content ────────────────────────────── */}
-      <main style={{ flex: 1, maxWidth: 1200, width: '100%', margin: '0 auto', padding: '32px 24px' }}>
-        <Routes>
-          <Route path="/"        element={<Dashboard />} />
-          <Route path="/predict" element={<Predict />} />
-        </Routes>
-      </main>
+      <div className="shell-body">
+        <nav className="sidebar" aria-label="Primary">
+          <NavLinks variant="side" />
+        </nav>
 
-      {/* ── footer ──────────────────────────────────── */}
-      <footer
-        style={{
-          borderTop: '1px solid rgba(255,255,255,0.04)',
-          padding: '14px 24px',
-          textAlign: 'center',
-          fontSize: 11,
-          color: '#1e293b',
-        }}
-      >
-        DisasterIQ · Figure-Eight dataset · 26,177 messages · 35 categories
+        <main className="main-content" id="main" tabIndex={-1}>
+          <Suspense fallback={<SkeletonCard height={280} />}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/insights" element={<Insights />} />
+              <Route path="/predict" element={<Predict />} />
+              <Route path="/triage" element={<Triage />} />
+              <Route path="/hazards" element={<Hazards />} />
+              <Route path="/model" element={<ModelPage />} />
+              <Route path="/about" element={<About />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </main>
+      </div>
+
+      <nav className="bottom-nav" aria-label="Primary mobile">
+        <NavLinks variant="bottom" />
+      </nav>
+
+      <footer className="footer">
+        Figure-Eight disaster response corpus · Hazard feeds: USGS, NASA EONET, GDACS ·
+        Map tiles: OpenStreetMap contributors
       </footer>
+
+      <CommandPalette
+        key={paletteOpen ? 'palette-open' : 'palette-closed'}
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+      />
     </div>
   )
 }

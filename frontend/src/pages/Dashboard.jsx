@@ -1,268 +1,368 @@
-import { useEffect, useState } from 'react'
-import { MessageSquare, Tag, AlertTriangle, TrendingUp, BarChart2, Activity } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import {
+  AlertTriangle,
+  Filter,
+  Layers,
+  MessageSquare,
+  PackageSearch,
+  X,
+} from 'lucide-react'
 import { api } from '../api/client'
+import { useApiAll } from '../hooks/useApi'
+import ChartCard from '../components/ChartCard'
 import KpiCard from '../components/KpiCard'
-import CategoryBarChart from '../components/CategoryBarChart'
-import VolumeChart from '../components/VolumeChart'
-import Spinner from '../components/Spinner'
+import Heatmap from '../components/charts/Heatmap'
+import { CategoryBarChart, GroupedBarChart, SimpleBarChart } from '../components/charts/Charts'
+import { ErrorState, PageHeader, SkeletonCard } from '../components/ui'
+import { formatNumber, formatPercent, humanCategory, titleCase } from '../lib/format'
 
-/* ── section header ────────────────────────────────────────────────────── */
-function SectionHeader({ icon: Icon, title, sub }) {
-  return (
-    <div style={{ marginBottom: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        {Icon && <Icon size={15} color="#ef4444" strokeWidth={2} />}
-        <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#e2e8f0', letterSpacing: '-0.2px' }}>
-          {title}
-        </h2>
-      </div>
-      {sub && <p style={{ margin: 0, fontSize: 11, color: '#334155', letterSpacing: '0.01em' }}>{sub}</p>}
-    </div>
-  )
-}
+const TOP_N_OPTIONS = [10, 15, 20, 35]
 
-/* ── error banner ──────────────────────────────────────────────────────── */
-function ErrorBanner({ message }) {
+function SegControl({ label, options, value, onChange, format = (v) => v }) {
   return (
-    <div style={{
-      borderRadius: 12,
-      padding: '14px 18px',
-      fontSize: 13,
-      background: 'rgba(239,68,68,0.08)',
-      border: '1px solid rgba(239,68,68,0.2)',
-      color: '#fca5a5',
-    }}>
-      ⚠ {message}
-    </div>
-  )
-}
-
-/* ── segmented control ─────────────────────────────────────────────────── */
-function SegControl({ options, value, onChange }) {
-  return (
-    <div className="seg-pill">
-      {options.map((n) => (
-        <button key={n} className={`seg-btn${value === n ? ' active' : ''}`} onClick={() => onChange(n)}>
-          {n}
+    <div className="seg" role="group" aria-label={label}>
+      {options.map((option) => (
+        <button
+          key={option}
+          type="button"
+          className="seg-btn"
+          aria-pressed={value === option}
+          onClick={() => onChange(option)}
+        >
+          {format(option)}
         </button>
       ))}
     </div>
   )
 }
 
-/* ── page ──────────────────────────────────────────────────────────────── */
 export default function Dashboard() {
-  const [stats,   setStats]   = useState(null)
-  const [cats,    setCats]    = useState([])
-  const [volume,  setVolume]  = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
-  const [topN,    setTopN]    = useState(15)
+  const [topN, setTopN] = useState(15)
+  const [selectedCategory, setSelectedCategory] = useState(null)
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const [s, c, v] = await Promise.all([
-          api.summaryStats(),
-          api.topCategories(topN),
-          api.volumeByEvent(),
-        ])
-        setStats(s)
-        setCats(c)
-        setVolume(v)
-      } catch (e) {
-        setError(e.message)
-      } finally {
-        setLoading(false)
-      }
+  const { data, error, loading, reload } = useApiAll(
+    {
+      stats: () => api.summaryStats(),
+      categories: () => api.categoryDistribution(),
+      events: () => api.volumeByEvent(),
+      genres: () => api.volumeByGenre(),
+      mix: () => api.eventCategoryMix(),
+      genreEvent: () => api.genreEventMatrix(),
+      cooccurrence: () => api.cooccurrence(),
+    },
+    [],
+  )
+
+  const topCategories = useMemo(
+    () => (data?.categories ?? []).slice(0, topN),
+    [data, topN],
+  )
+
+  // The co-occurrence payload is in dataset order; the heatmap is far more
+  // informative when it shows the most frequent labels instead of the first N.
+  const cooccurrenceView = useMemo(() => {
+    if (!data) return null
+    const { categories, counts, totals } = data.cooccurrence
+    const order = totals
+      .map((total, index) => ({ total, index }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 14)
+      .map((entry) => entry.index)
+    return {
+      categories: order.map((index) => categories[index]),
+      values: order.map((row) => order.map((column) => counts[row][column])),
     }
-    load()
-  }, [topN])
+  }, [data])
 
-  if (loading) return <Spinner size="lg" label="Loading analytics…" />
-  if (error)   return <ErrorBanner message={`Failed to load data: ${error}. Is the backend running on port 8000?`} />
+  const drilldown = useMemo(() => {
+    if (!selectedCategory || !data) return null
+    const row = data.categories.find((entry) => entry.category === selectedCategory)
+    const pairs = data.cooccurrence.top_pairs
+      .filter((pair) => pair.cat_a === selectedCategory || pair.cat_b === selectedCategory)
+      .slice(0, 6)
+      .map((pair) => ({
+        partner: pair.cat_a === selectedCategory ? pair.cat_b : pair.cat_a,
+        count: pair.count,
+        jaccard: pair.jaccard,
+      }))
+    const mixRows = data.mix.rows
+      .filter((entry) => entry[selectedCategory] !== undefined)
+      .map((entry) => ({ event: entry.event, share: entry[selectedCategory] }))
+      .sort((a, b) => b.share - a.share)
+    return { row, pairs, mixRows }
+  }, [selectedCategory, data])
 
-  const genreTotal = Object.values(stats.genre_breakdown).reduce((a, b) => a + b, 0)
-  const urgentPct  = ((stats.urgent_messages / stats.total_messages) * 100).toFixed(1)
+  if (loading) {
+    return (
+      <div className="stack">
+        <PageHeader title="Analytics Dashboard" description="Loading corpus analytics" />
+        <div className="grid grid-kpi">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <SkeletonCard key={index} height={40} lines={1} />
+          ))}
+        </div>
+        <SkeletonCard height={320} />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="stack">
+        <PageHeader title="Analytics Dashboard" />
+        <ErrorState message={error} onRetry={reload} />
+      </div>
+    )
+  }
+
+  const { stats, events, genres, mix, genreEvent, cooccurrence } = data
+  const biggestEvent = [...events].sort((a, b) => b.count - a.count)[0]
+  const urgentPct = formatPercent(stats.urgent_share)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+    <div className="stack">
+      <PageHeader
+        title="Analytics Dashboard"
+        description={`${formatNumber(stats.total_messages)} labelled disaster messages from four events: Haiti earthquake, Chile earthquake, Pakistan floods and Superstorm Sandy. ${urgentPct} carry a life-threatening need.`}
+        actions={
+          selectedCategory && (
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={() => setSelectedCategory(null)}
+            >
+              <X size={13} aria-hidden="true" />
+              Clear filter: {humanCategory(selectedCategory)}
+            </button>
+          )
+        }
+      />
 
-      {/* ── page title ──────────────────────────────── */}
-      <div className="fade-up">
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: '#f8fafc', letterSpacing: '-0.6px' }}>
-          Analytics Dashboard
-        </h1>
-        <p style={{ margin: '6px 0 0', fontSize: 13, color: '#334155', lineHeight: 1.6 }}>
-          Real Figure-Eight disaster response data — Haiti earthquake, Chile earthquake, Pakistan floods, Superstorm Sandy
-        </p>
+      <div className="grid grid-kpi">
+        <KpiCard
+          title="Total messages"
+          value={formatNumber(stats.total_messages)}
+          sub={`${formatNumber(stats.analysed_messages)} analysed after noise removal`}
+          icon={<MessageSquare size={16} aria-hidden="true" />}
+          accent="var(--series-1)"
+        />
+        <KpiCard
+          title="Urgent messages"
+          value={urgentPct}
+          sub={`${formatNumber(stats.urgent_messages)} with a severity-weighted need`}
+          icon={<AlertTriangle size={16} aria-hidden="true" />}
+          accent="var(--severity-high)"
+          sparkline={stats.sparklines.urgent_share}
+          delta={stats.deltas.urgent_share}
+          footer={<span>across corpus order</span>}
+        />
+        <KpiCard
+          title="Most requested need"
+          value={titleCase(stats.most_requested_need ?? '—')}
+          sub={`${formatNumber(stats.most_requested_need_count)} messages`}
+          icon={<PackageSearch size={16} aria-hidden="true" />}
+          accent="var(--series-3)"
+        />
+        <KpiCard
+          title="Irrelevant messages"
+          value={formatPercent(stats.irrelevant_share, 2)}
+          sub={`${formatNumber(stats.irrelevant_messages)} rows labelled related=2`}
+          icon={<Filter size={16} aria-hidden="true" />}
+          accent="var(--series-7)"
+        />
+        <KpiCard
+          title="Categories per message"
+          value={stats.avg_categories_per_message.toFixed(2)}
+          sub="Average across labelled messages"
+          icon={<Layers size={16} aria-hidden="true" />}
+          accent="var(--series-4)"
+          sparkline={stats.sparklines.avg_categories}
+          delta={stats.deltas.avg_categories}
+        />
       </div>
 
-      {/* ── KPI row ─────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}
-           className="fade-up fade-up-1">
-        <KpiCard
-          title="Total Messages"
-          value={stats.total_messages.toLocaleString()}
-          sub="After deduplication"
-          icon={<MessageSquare size={16} />}
-          variant="accent"
+      <ChartCard
+        title="Category distribution"
+        insight={`${titleCase(stats.top_categories[0])} leads, and every bar in orange is a severity-weighted need. Select a bar to filter the dashboard.`}
+        controls={
+          <SegControl
+            label="Number of categories"
+            options={TOP_N_OPTIONS}
+            value={topN}
+            onChange={setTopN}
+            format={(value) => `Top ${value}`}
+          />
+        }
+        csvRows={topCategories}
+        csvName="category-distribution.csv"
+        tableColumns={[
+          { key: 'category', label: 'Category', render: (row) => humanCategory(row.category) },
+          { key: 'count', label: 'Messages' },
+          { key: 'share', label: 'Share', render: (row) => formatPercent(row.share) },
+        ]}
+        tableRows={topCategories}
+      >
+        <CategoryBarChart
+          data={topCategories}
+          onSelect={(category) =>
+            setSelectedCategory((current) => (current === category ? null : category))
+          }
+          selected={selectedCategory}
+          height={Math.max(240, topN * 22)}
         />
-        <KpiCard
-          title="Categories"
-          value={stats.total_categories}
-          sub="Multi-label classification"
-          icon={<Tag size={16} />}
-        />
-        <KpiCard
-          title="Urgent Messages"
-          value={stats.urgent_messages.toLocaleString()}
-          sub={`${urgentPct}% of total messages`}
-          icon={<AlertTriangle size={16} />}
-          variant="danger"
-        />
-        <KpiCard
-          title="Top Categories"
-          value=""
-          sub="Most frequent labels"
-          icon={<TrendingUp size={16} />}
-          highlight={stats.top_categories.map(c => c.replace(/_/g, ' '))}
-        />
-      </div>
+      </ChartCard>
 
-      {/* ── source breakdown ────────────────────────── */}
-      <div className="card fade-up fade-up-2" style={{ padding: '20px 24px' }}>
-        <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 600, letterSpacing: '0.09em', textTransform: 'uppercase', color: '#334155' }}>
-          Message Source Breakdown
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginBottom: 14 }}>
-          {Object.entries(stats.genre_breakdown).map(([genre, count]) => {
-            const pct = ((count / genreTotal) * 100).toFixed(1)
-            const COLS = { direct: '#ef4444', news: '#3b82f6', social: '#8b5cf6' }
-            const color = COLS[genre] ?? '#64748b'
-            return (
-              <div key={genre} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: '#94a3b8', textTransform: 'capitalize' }}>{genre}</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color }}>{count.toLocaleString()}</span>
-                <span style={{ fontSize: 11, color: '#334155' }}>({pct}%)</span>
-              </div>
-            )
-          })}
-        </div>
-        {/* proportional bar */}
-        <div style={{ height: 6, borderRadius: 99, overflow: 'hidden', display: 'flex', gap: 2, background: 'rgba(255,255,255,0.04)' }}>
-          {Object.entries(stats.genre_breakdown).map(([genre, count]) => {
-            const pct = (count / genreTotal) * 100
-            const COLS = { direct: '#ef4444', news: '#3b82f6', social: '#8b5cf6' }
-            return (
-              <div
-                key={genre}
-                style={{ width: `${pct}%`, background: COLS[genre] ?? '#64748b', borderRadius: 99, transition: 'width 0.6s ease' }}
-                title={`${genre}: ${pct.toFixed(1)}%`}
-              />
-            )
-          })}
-        </div>
-      </div>
-
-      {/* ── charts row ──────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}
-           className="fade-up fade-up-3">
-
-        {/* category bar chart */}
-        <div className="card" style={{ padding: '24px 24px 16px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
-            <SectionHeader
-              icon={BarChart2}
-              title="Category Distribution"
-              sub="Message count per label — red bars = urgent categories"
-            />
-            <div style={{ flexShrink: 0 }}>
-              <SegControl options={[10, 15, 20, 35]} value={topN} onChange={setTopN} />
+      {drilldown && (
+        <section className="card fade-in" aria-label={`Details for ${selectedCategory}`}>
+          <div className="card-header">
+            <div>
+              <h2 className="card-title">Drill-down: {titleCase(selectedCategory)}</h2>
+              <p className="card-insight">
+                {formatNumber(drilldown.row.count)} messages ({formatPercent(drilldown.row.share)}
+                ), most often reported alongside{' '}
+                {drilldown.pairs[0] ? humanCategory(drilldown.pairs[0].partner) : 'no other label'}.
+              </p>
             </div>
           </div>
-          <CategoryBarChart data={cats} />
-        </div>
-
-        {/* volume chart */}
-        <div className="card" style={{ padding: '24px 24px 20px' }}>
-          <SectionHeader
-            icon={Activity}
-            title="Volume by Source"
-            sub="Direct, news, and social media"
-          />
-          <VolumeChart data={volume} />
-
-          {/* avg stat */}
-          <div style={{
-            marginTop: 16,
-            borderRadius: 10,
-            padding: '14px 16px',
-            textAlign: 'center',
-            background: 'rgba(239,68,68,0.06)',
-            border: '1px solid rgba(239,68,68,0.14)',
-          }}>
-            <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: '#ef4444', letterSpacing: '-0.5px', lineHeight: 1 }}>
-              {stats.avg_categories_per_message}
-            </p>
-            <p style={{ margin: '5px 0 0', fontSize: 11, color: '#475569' }}>avg categories per message</p>
+          <div className="grid grid-2">
+            <div>
+              <h3 className="field-label">Appears together with</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }} className="stack">
+                {drilldown.pairs.map((pair) => (
+                  <li key={pair.partner} className="row" style={{ justifyContent: 'space-between' }}>
+                    <span className="text-sm">{titleCase(pair.partner)}</span>
+                    <span className="text-xs muted mono">
+                      {formatNumber(pair.count)} · J={pair.jaccard.toFixed(2)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 className="field-label">Share of each event&apos;s messages</h3>
+              <SimpleBarChart
+                data={drilldown.mixRows}
+                xKey="event"
+                yKey="share"
+                height={200}
+                color="var(--accent)"
+              />
+            </div>
           </div>
-        </div>
+        </section>
+      )}
 
+      <div className="grid grid-2">
+        <ChartCard
+          title="Volume by disaster event"
+          insight={`${biggestEvent.event} dominates the corpus with ${formatNumber(biggestEvent.count)} messages; events are inferred, not labelled in the source data.`}
+          csvRows={events}
+          csvName="volume-by-event.csv"
+          tableColumns={[
+            { key: 'event', label: 'Event' },
+            { key: 'count', label: 'Messages' },
+            { key: 'keyword_inferred', label: 'By keyword' },
+            { key: 'range_inferred', label: 'By id range' },
+          ]}
+          tableRows={events}
+        >
+          <SimpleBarChart
+            data={events}
+            xKey="event"
+            height={260}
+            colorBy={(row, index) => `var(--series-${(index % 7) + 1})`}
+          />
+        </ChartCard>
+
+        <ChartCard
+          title="Volume by source"
+          insight={`${titleCase(genres[0].genre)} messages make up ${formatPercent(genres[0].share)} of the corpus.`}
+          csvRows={genres}
+          csvName="volume-by-genre.csv"
+          tableColumns={[
+            { key: 'genre', label: 'Source', render: (row) => titleCase(row.genre) },
+            { key: 'count', label: 'Messages' },
+            { key: 'share', label: 'Share', render: (row) => formatPercent(row.share) },
+          ]}
+          tableRows={genres}
+        >
+          <SimpleBarChart
+            data={genres.map((row) => ({ ...row, genre: titleCase(row.genre) }))}
+            xKey="genre"
+            height={260}
+            colorBy={(_, index) => `var(--series-${index + 1})`}
+          />
+        </ChartCard>
       </div>
 
-      {/* ── model info strip ────────────────────────── */}
-      <div
-        className="fade-up fade-up-4"
-        style={{
-          borderRadius: 12,
-          padding: '14px 20px',
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: 20,
-          fontSize: 11,
-          color: '#334155',
-          background: 'rgba(255,255,255,0.02)',
-          border: '1px solid rgba(255,255,255,0.04)',
-        }}
+      <ChartCard
+        title="What each disaster needed most"
+        insight="Shares, not counts, so a small event is comparable with a large one."
+        csvRows={mix.rows}
+        csvName="event-category-mix.csv"
+        tableColumns={[
+          { key: 'event', label: 'Event' },
+          { key: 'total', label: 'Messages' },
+          {
+            key: 'top_need',
+            label: 'Top need',
+            render: (row) => titleCase(row.top_need ?? '—'),
+          },
+        ]}
+        tableRows={mix.rows}
       >
-        <InfoDot color="#22c55e" label="Model: TF-IDF + SGD + ComplementNB ensemble" />
-        <InfoDot color="#3b82f6" label="35 active categories · macro F1 ≈ 0.405" />
-        <InfoDot color="#ef4444" label="Dataset: Figure-Eight — 4 disaster events" />
-        <div style={{ marginLeft: 'auto' }}>
-          <a
-            href="/predict"
-            style={{
-              display: 'inline-block',
-              padding: '7px 14px',
-              borderRadius: 8,
-              fontSize: 11,
-              fontWeight: 600,
-              background: 'rgba(239,68,68,0.12)',
-              color: '#f87171',
-              border: '1px solid rgba(239,68,68,0.22)',
-              textDecoration: 'none',
-              transition: 'background 0.15s',
-            }}
-          >
-            Try Prediction →
-          </a>
-        </div>
+        <GroupedBarChart rows={mix.rows} categories={mix.categories.slice(0, 6)} />
+      </ChartCard>
+
+      <div className="grid grid-2">
+        <ChartCard
+          title="Source by event"
+          insight="Direct SMS dominates the Haiti response; social media carries the Chile and Sandy traffic."
+          csvRows={genreEvent.genres.map((genre, index) =>
+            Object.fromEntries([
+              ['genre', genre],
+              ...genreEvent.events.map((event, column) => [
+                event,
+                genreEvent.values[index][column],
+              ]),
+            ]),
+          )}
+          csvName="genre-event-matrix.csv"
+        >
+          <Heatmap
+            rows={genreEvent.genres}
+            columns={genreEvent.events}
+            values={genreEvent.values}
+            rowLabel="source"
+            columnLabel="event"
+            labelWidth={70}
+            cellSize={34}
+          />
+        </ChartCard>
+
+        <ChartCard
+          title="Category co-occurrence"
+          insight={`${titleCase(cooccurrence.top_pairs[0].cat_a)} and ${humanCategory(cooccurrence.top_pairs[0].cat_b)} appear together most often (${formatNumber(cooccurrence.top_pairs[0].count)} messages).`}
+          csvRows={cooccurrence.top_pairs}
+          csvName="cooccurrence-pairs.csv"
+          tableColumns={[
+            { key: 'cat_a', label: 'Category A', render: (row) => humanCategory(row.cat_a) },
+            { key: 'cat_b', label: 'Category B', render: (row) => humanCategory(row.cat_b) },
+            { key: 'count', label: 'Together' },
+            { key: 'jaccard', label: 'Jaccard' },
+          ]}
+          tableRows={cooccurrence.top_pairs.slice(0, 20)}
+        >
+          <Heatmap
+            rows={cooccurrenceView.categories}
+            columns={cooccurrenceView.categories}
+            values={cooccurrenceView.values}
+            rowLabel="category"
+            columnLabel="category"
+            cellSize={24}
+          />
+        </ChartCard>
       </div>
-
-    </div>
-  )
-}
-
-function InfoDot({ color, label }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
-      <span>{label}</span>
     </div>
   )
 }

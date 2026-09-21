@@ -32,6 +32,11 @@ SEVERITY_WEIGHTS: dict[str, float] = {
     "storm": 0.5,
 }
 
+#: A message that offers help is not a report of need. When ``offer`` clearly
+#: outweighs ``request`` the score is damped, so "we have blankets to donate"
+#: does not page the incident commander.
+OFFER_DAMPING = 0.6
+
 # Ordered high -> low; the first matching bound wins.
 SEVERITY_LEVELS: tuple[tuple[float, str], ...] = (
     (70.0, "critical"),
@@ -96,6 +101,13 @@ def compute_severity(
             )
 
     score = (1.0 - complement) * 100.0
+
+    index = {name: i for i, name in enumerate(category_names)}
+    if "offer" in index and "request" in index:
+        offer_margin = float(proba[index["offer"]]) - float(proba[index["request"]])
+        if offer_margin > 0:
+            score *= 1.0 - OFFER_DAMPING * min(offer_margin, 1.0)
+
     contributors.sort(key=lambda c: c["contribution"], reverse=True)
     return {
         "score": round(float(score), 1),

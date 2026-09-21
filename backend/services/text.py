@@ -32,8 +32,17 @@ def tokens(text: str) -> list[str]:
 
 
 def is_informative(term: str) -> bool:
-    """True when at least one word of a term carries meaning."""
+    """True when a term reads as an explanation on its own.
+
+    A single word must carry meaning; a phrase must also start and end with a
+    meaningful word, so "injured and" and "are trapped" are rejected while
+    "trapped under rubble" is kept.
+    """
     words = [w for w in re.split(r"\s+", term.lower().strip()) if w]
     if not words:
         return False
-    return any(w not in STOPWORDS and len(w) > 2 for w in words)
+    if not any(w not in STOPWORDS and len(w) > 2 for w in words):
+        return False
+    if len(words) > 1 and (words[0] in STOPWORDS or words[-1] in STOPWORDS):
+        return False
+    return True
