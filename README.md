@@ -14,8 +14,8 @@ teams.
 | Test macro F1 | **0.4763** (previous model: 0.405) |
 | Serving model | fine-tuned multilingual DistilBERT, chosen by a six-candidate benchmark |
 | Decision rule | one tuned threshold per label, fitted on a validation split only |
-| API | FastAPI, 24 endpoints, every response typed with pydantic |
-| Tests | 147 backend tests (93% coverage on services), 33 frontend tests |
+| API | FastAPI, 27 endpoints, every response typed with pydantic |
+| Tests | 157 backend tests (94% coverage on services), 33 frontend tests |
 
 Full metrics and limitations: [MODEL_CARD.md](MODEL_CARD.md). Design decisions:
 [docs/DECISIONS.md](docs/DECISIONS.md).
@@ -318,7 +318,7 @@ docs/                  PLAN.md, DECISIONS.md, metrics.json, screenshots/
 ## Testing
 
 ```bash
-python -m pytest                    # 147 tests
+python -m pytest                    # 157 tests
 python -m pytest --cov=backend/services --cov-report=term
 cd frontend && npm run test         # 33 tests
 cd frontend && npm run lint

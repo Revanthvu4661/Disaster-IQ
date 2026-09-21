@@ -238,7 +238,11 @@ a:hover { text-decoration: underline; }
   gap: var(--space-4);
 }
 .grid-kpi { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
-.grid-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+.grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  /* Cards size to their content instead of stretching to the tallest sibling. */
+  align-items: start;
+}
 
 /* ── controls ─────────────────────────────────────────────────────────── */
 

@@ -79,3 +79,17 @@ documented in `MODEL_CARD.md` instead of being hidden by more tuning.
 `related`, `request`, `aid_related` and `direct_report` fire on nearly every
 message, so showing them as the headline label of a triaged row tells an
 operator nothing. The queue shows the highest-scoring *need* instead.
+
+
+## D10 — Severity levels saturate, and that is documented rather than tuned away
+
+With the prescribed weights and bands (>=70 critical, >=45 high, >=20 medium),
+a well-calibrated multi-label model puts most genuine field reports above 70:
+in a six-message sample batch, six scored critical. The *score* still ranks them
+correctly (100, 100, 100, 99, 98, 97) and the queue is sorted by score, so
+triage order is unaffected, but the level chip loses discriminative power.
+
+The formula and the bands are kept as specified. The obvious next step, noted in
+the final report rather than applied silently, is to gate each category's
+contribution on its tuned threshold - `p' = max(0, (p - t) / (1 - t))` - which
+would make the score agree with the labels the UI actually shows as triggered.

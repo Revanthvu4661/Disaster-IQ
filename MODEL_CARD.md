@@ -131,6 +131,10 @@ training, which is why 35 labels are served rather than 36.
   and the data is from 2010-2012. Vocabulary, place names and needs from other
   regions and later events are under-represented. Non-English messages appear
   mainly as translations in the `original` column.
+* **Severity levels saturate.** Most real field reports score above the 70
+  "critical" band, so the level chip separates urgent from non-urgent traffic
+  but not urgent from most urgent. The underlying 0-100 score still ranks
+  correctly, and the triage queue sorts on the score rather than the band.
 * **Severity weights are an editorial judgement**, not a statistically derived
   quantity. They are defined in `backend/services/severity.py` and are meant to
   be reviewed by domain experts.
