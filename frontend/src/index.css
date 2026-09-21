@@ -124,6 +124,8 @@ a:hover { text-decoration: underline; }
 .main-content {
   flex: 1;
   min-width: 0;
+  /* Reserve height so the footer does not jump when data arrives. */
+  min-height: 78vh;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -311,7 +313,8 @@ a:hover { text-decoration: underline; }
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
-  color: var(--text-muted);
+  /* Interactive text uses the secondary ramp so it clears 4.5:1. */
+  color: var(--text-secondary);
   font-size: var(--text-xs);
   font-weight: 600;
   font-family: inherit;

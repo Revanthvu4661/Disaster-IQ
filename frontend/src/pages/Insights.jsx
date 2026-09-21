@@ -3,7 +3,7 @@ import { Search } from 'lucide-react'
 import { api } from '../api/client'
 import { useApi, useApiAll } from '../hooks/useApi'
 import ChartCard from '../components/ChartCard'
-import { SimpleBarChart } from '../components/charts/Charts'
+import { SimpleBarChart } from '../components/charts/LazyCharts'
 import {
   EmptyState,
   ErrorState,

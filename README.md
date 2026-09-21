@@ -31,7 +31,7 @@ You need **Python 3.11+** and **Node 18+**. From the project root:
 ```bash
 pip install -r backend/requirements-dev.txt
 python -m backend.etl                          # build the SQLite cache (~20 s)
-python -m backend.model.train_model --fast     # train a model (~6 min, CPU only)
+python -m backend.model.train_model --fast     # train a model (~10 min, CPU only)
 python -m uvicorn backend.main:app --port 8000
 ```
 
@@ -313,6 +313,36 @@ frontend/src/
   pages/               Dashboard, Insights, Predict, Triage, Hazards, Model, About
   scripts/             screenshot capture
 docs/                  PLAN.md, DECISIONS.md, metrics.json, screenshots/
+```
+
+## Measured quality
+
+Lighthouse 12 (mobile preset, simulated slow 4G and 4x CPU throttling) against
+the production build served with gzip on this machine, median of three runs:
+
+| Category | Score |
+|---|---|
+| Accessibility | 100 |
+| Best practices | 100 |
+| SEO | 100 |
+| Performance | 81 (runs ranged 73-85) |
+
+Performance is below the 90 target. The gap is first contentful paint (~2.3 s)
+and largest contentful paint (~3.4 s) under Lighthouse's throttling: the page
+is a client-rendered SPA whose largest element depends on an API response, and
+the measurement machine also hosts the API and the model. Cumulative layout
+shift is 0 and total blocking time is 180-380 ms. The next step, not taken
+here, is server-side rendering or a static pre-render of the dashboard shell
+with the KPI payload inlined. What has been done: route-level code splitting,
+lazy chart chunks, deferred below-the-fold heatmaps, a separate request for the
+largest analytics payload, an inline critical-path shell in `index.html`, and
+memoised chart components.
+
+Reproduce it with:
+
+```bash
+cd frontend && npm run build && node scripts/serve-dist.mjs 4174
+npx lighthouse http://localhost:4174/ --only-categories=performance,accessibility,best-practices,seo
 ```
 
 ## Testing

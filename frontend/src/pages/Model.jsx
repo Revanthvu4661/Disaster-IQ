@@ -3,7 +3,7 @@ import { ArrowDownUp } from 'lucide-react'
 import { api } from '../api/client'
 import { useApi, useApiAll } from '../hooks/useApi'
 import ChartCard from '../components/ChartCard'
-import { SimpleLineChart } from '../components/charts/Charts'
+import { SimpleLineChart } from '../components/charts/LazyCharts'
 import { ErrorState, PageHeader, Skeleton, SkeletonCard } from '../components/ui'
 import { formatDateTime, formatNumber, titleCase } from '../lib/format'
 

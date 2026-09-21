@@ -99,6 +99,7 @@ function HeatmapBase({
                     height={cellSize - 2}
                     rx="3"
                     tabIndex={0}
+                    role="img"
                     fill={
                       isDiagonal
                         ? 'var(--surface-2)'

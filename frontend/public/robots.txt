@@ -1,0 +1,4 @@
+# DisasterIQ is a local analytics tool; nothing here should be indexed.
+User-agent: *
+Allow: /
+

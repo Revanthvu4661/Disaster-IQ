@@ -54,6 +54,16 @@ async function prepare(page, slug) {
     await page.getByRole('button', { name: /triage \d+ messages/i }).click()
     await page.getByText(/severity breakdown/i).waitFor({ timeout: 60_000 })
   }
+  // Charts below the fold mount on intersection, so scroll the whole page
+  // before capturing and return to the top.
+  await page.evaluate(async () => {
+    const step = window.innerHeight * 0.8
+    for (let y = 0; y < document.body.scrollHeight; y += step) {
+      window.scrollTo(0, y)
+      await new Promise((resolve) => setTimeout(resolve, 120))
+    }
+    window.scrollTo(0, 0)
+  })
   await page.waitForTimeout(1200)
 }
 

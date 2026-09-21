@@ -3,7 +3,7 @@ import { Download, Flame, ListFilter, Upload } from 'lucide-react'
 import { api } from '../api/client'
 import { useToast } from '../context/ToastContext'
 import { downloadCsv } from '../lib/download'
-import { SimpleBarChart } from '../components/charts/Charts'
+import { SimpleBarChart } from '../components/charts/LazyCharts'
 import {
   EmptyState,
   ErrorState,

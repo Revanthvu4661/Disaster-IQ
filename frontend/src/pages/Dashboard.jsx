@@ -8,11 +8,12 @@ import {
   X,
 } from 'lucide-react'
 import { api } from '../api/client'
-import { useApiAll } from '../hooks/useApi'
+import { useApi, useApiAll } from '../hooks/useApi'
 import ChartCard from '../components/ChartCard'
+import Deferred from '../components/Deferred'
 import KpiCard from '../components/KpiCard'
 import Heatmap from '../components/charts/Heatmap'
-import { CategoryBarChart, GroupedBarChart, SimpleBarChart } from '../components/charts/Charts'
+import { CategoryBarChart, GroupedBarChart, SimpleBarChart } from '../components/charts/LazyCharts'
 import { ErrorState, PageHeader, SkeletonCard } from '../components/ui'
 import { formatNumber, formatPercent, humanCategory, titleCase } from '../lib/format'
 
@@ -48,10 +49,13 @@ export default function Dashboard() {
       genres: () => api.volumeByGenre(),
       mix: () => api.eventCategoryMix(),
       genreEvent: () => api.genreEventMatrix(),
-      cooccurrence: () => api.cooccurrence(),
     },
     [],
   )
+
+  // The co-occurrence matrix is the largest payload on this page and is only
+  // needed further down, so it loads separately instead of blocking the KPIs.
+  const cooccurrence = useApi(() => api.cooccurrence(), [])
 
   const topCategories = useMemo(
     () => (data?.categories ?? []).slice(0, topN),
@@ -61,8 +65,8 @@ export default function Dashboard() {
   // The co-occurrence payload is in dataset order; the heatmap is far more
   // informative when it shows the most frequent labels instead of the first N.
   const cooccurrenceView = useMemo(() => {
-    if (!data) return null
-    const { categories, counts, totals } = data.cooccurrence
+    if (!cooccurrence.data) return null
+    const { categories, counts, totals } = cooccurrence.data
     const order = totals
       .map((total, index) => ({ total, index }))
       .sort((a, b) => b.total - a.total)
@@ -72,12 +76,12 @@ export default function Dashboard() {
       categories: order.map((index) => categories[index]),
       values: order.map((row) => order.map((column) => counts[row][column])),
     }
-  }, [data])
+  }, [cooccurrence.data])
 
   const drilldown = useMemo(() => {
     if (!selectedCategory || !data) return null
     const row = data.categories.find((entry) => entry.category === selectedCategory)
-    const pairs = data.cooccurrence.top_pairs
+    const pairs = (cooccurrence.data?.top_pairs ?? [])
       .filter((pair) => pair.cat_a === selectedCategory || pair.cat_b === selectedCategory)
       .slice(0, 6)
       .map((pair) => ({
@@ -90,7 +94,7 @@ export default function Dashboard() {
       .map((entry) => ({ event: entry.event, share: entry[selectedCategory] }))
       .sort((a, b) => b.share - a.share)
     return { row, pairs, mixRows }
-  }, [selectedCategory, data])
+  }, [selectedCategory, data, cooccurrence.data])
 
   if (loading) {
     return (
@@ -115,7 +119,7 @@ export default function Dashboard() {
     )
   }
 
-  const { stats, events, genres, mix, genreEvent, cooccurrence } = data
+  const { stats, events, genres, mix, genreEvent } = data
   const biggestEvent = [...events].sort((a, b) => b.count - a.count)[0]
   const urgentPct = formatPercent(stats.urgent_share)
 
@@ -219,14 +223,19 @@ export default function Dashboard() {
               <h2 className="card-title">Drill-down: {titleCase(selectedCategory)}</h2>
               <p className="card-insight">
                 {formatNumber(drilldown.row.count)} messages ({formatPercent(drilldown.row.share)}
-                ), most often reported alongside{' '}
-                {drilldown.pairs[0] ? humanCategory(drilldown.pairs[0].partner) : 'no other label'}.
+                ){drilldown.pairs[0]
+                  ? `, most often reported alongside ${humanCategory(drilldown.pairs[0].partner)}`
+                  : ''}
+                .
               </p>
             </div>
           </div>
           <div className="grid grid-2">
             <div>
               <h3 className="field-label">Appears together with</h3>
+              {drilldown.pairs.length === 0 && (
+                <p className="text-sm muted">Loading co-occurrence data.</p>
+              )}
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }} className="stack">
                 {drilldown.pairs.map((pair) => (
                   <li key={pair.partner} className="row" style={{ justifyContent: 'space-between' }}>
@@ -311,7 +320,9 @@ export default function Dashboard() {
         ]}
         tableRows={mix.rows}
       >
-        <GroupedBarChart rows={mix.rows} categories={mix.categories.slice(0, 6)} />
+        <Deferred height={320}>
+          <GroupedBarChart rows={mix.rows} categories={mix.categories.slice(0, 6)} />
+        </Deferred>
       </ChartCard>
 
       <div className="grid grid-2">
@@ -329,6 +340,7 @@ export default function Dashboard() {
           )}
           csvName="genre-event-matrix.csv"
         >
+          <Deferred height={220}>
           <Heatmap
             rows={genreEvent.genres}
             columns={genreEvent.events}
@@ -338,12 +350,20 @@ export default function Dashboard() {
             labelWidth={70}
             cellSize={34}
           />
+          </Deferred>
         </ChartCard>
 
         <ChartCard
           title="Category co-occurrence"
-          insight={`${titleCase(cooccurrence.top_pairs[0].cat_a)} and ${humanCategory(cooccurrence.top_pairs[0].cat_b)} appear together most often (${formatNumber(cooccurrence.top_pairs[0].count)} messages).`}
-          csvRows={cooccurrence.top_pairs}
+          loading={cooccurrence.loading}
+          error={cooccurrence.error}
+          onRetry={cooccurrence.reload}
+          insight={
+            cooccurrence.data
+              ? `${titleCase(cooccurrence.data.top_pairs[0].cat_a)} and ${humanCategory(cooccurrence.data.top_pairs[0].cat_b)} appear together most often (${formatNumber(cooccurrence.data.top_pairs[0].count)} messages).`
+              : ''
+          }
+          csvRows={cooccurrence.data?.top_pairs ?? []}
           csvName="cooccurrence-pairs.csv"
           tableColumns={[
             { key: 'cat_a', label: 'Category A', render: (row) => humanCategory(row.cat_a) },
@@ -351,16 +371,20 @@ export default function Dashboard() {
             { key: 'count', label: 'Together' },
             { key: 'jaccard', label: 'Jaccard' },
           ]}
-          tableRows={cooccurrence.top_pairs.slice(0, 20)}
+          tableRows={(cooccurrence.data?.top_pairs ?? []).slice(0, 20)}
+          empty={!cooccurrenceView}
+          emptyMessage="Co-occurrence data is still loading"
         >
+          <Deferred height={420}>
           <Heatmap
-            rows={cooccurrenceView.categories}
-            columns={cooccurrenceView.categories}
-            values={cooccurrenceView.values}
+            rows={cooccurrenceView?.categories ?? []}
+            columns={cooccurrenceView?.categories ?? []}
+            values={cooccurrenceView?.values ?? []}
             rowLabel="category"
             columnLabel="category"
             cellSize={24}
           />
+          </Deferred>
         </ChartCard>
       </div>
     </div>

@@ -3,11 +3,145 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DisasterIQ — Analytics & Prediction</title>
+    <title>DisasterIQ - Analyse, Predict, Recommend</title>
+    <meta
+      name="description"
+      content="Disaster response analytics: classify incoming messages across 35 need categories, score severity, and generate a prioritised action plan."
+    />
+    <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      Critical-path shell. Painted while the JS bundle downloads, so the first
+      screen is the real page frame instead of a blank document. React replaces
+      #root on mount, and the stored theme is applied here to avoid a flash of
+      the wrong background.
+    -->
+    <style>
+      :root {
+        color-scheme: dark;
+        --boot-bg: #0a0a0f;
+        --boot-surface: #15151d;
+        --boot-surface-2: #1c1c26;
+        --boot-border: #272733;
+        --boot-text: #f1f5f9;
+        --boot-muted: #9aa2b1;
+        --boot-accent: #ef4444;
+      }
+      :root[data-theme='light'] {
+        color-scheme: light;
+        --boot-bg: #f6f7f9;
+        --boot-surface: #ffffff;
+        --boot-surface-2: #f1f3f6;
+        --boot-border: #dfe3ea;
+        --boot-text: #11151c;
+        --boot-muted: #5b6575;
+        --boot-accent: #b91c1c;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--boot-bg);
+        color: var(--boot-text);
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial,
+          sans-serif;
+      }
+      .boot {
+        min-height: 100dvh;
+      }
+      .boot-bar {
+        height: 56px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--boot-border);
+      }
+      .boot-logo {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--boot-accent);
+      }
+      .boot-brand {
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        font-size: 14px;
+      }
+      .boot-main {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 24px 16px;
+      }
+      .boot-title {
+        margin: 0 0 6px;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .boot-sub {
+        margin: 0 0 24px;
+        font-size: 13px;
+        color: var(--boot-muted);
+        max-width: 60ch;
+      }
+      .boot-grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      }
+      .boot-card {
+        height: 104px;
+        border: 1px solid var(--boot-border);
+        border-radius: 14px;
+        background: var(--boot-surface);
+      }
+      .boot-wide {
+        margin-top: 16px;
+        height: 280px;
+        border: 1px solid var(--boot-border);
+        border-radius: 14px;
+        background: var(--boot-surface);
+      }
+    </style>
+    <script>
+      // Apply the saved theme before first paint.
+      try {
+        var stored = window.localStorage.getItem('disasteriq.theme')
+        if (stored === 'light' || stored === 'dark') {
+          document.documentElement.setAttribute('data-theme', stored)
+        } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
+          document.documentElement.setAttribute('data-theme', 'light')
+        }
+      } catch (error) {
+        /* private mode: fall back to the dark default */
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot">
+        <div class="boot-bar">
+          <div class="boot-logo"></div>
+          <span class="boot-brand">DisasterIQ</span>
+        </div>
+        <div class="boot-main">
+          <h1 class="boot-title">Analytics Dashboard</h1>
+          <p class="boot-sub">
+            Analyse, predict and recommend on disaster response messages. Loading the
+            corpus analytics.
+          </p>
+          <div class="boot-grid">
+            <div class="boot-card"></div>
+            <div class="boot-card"></div>
+            <div class="boot-card"></div>
+            <div class="boot-card"></div>
+          </div>
+          <div class="boot-wide"></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
