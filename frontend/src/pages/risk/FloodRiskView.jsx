@@ -654,6 +654,17 @@ export default function FloodRiskView() {
     document.getElementById('risk-map')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  // An older backend still serves the Kerala-only payload: say so instead of crashing.
+  const outdated = data && (!data.coverage || !data.current?.districts)
+  if (outdated) {
+    return (
+      <ErrorState
+        message="The flood risk API is running an older version that does not match this page. Redeploy the backend."
+        onRetry={reload}
+      />
+    )
+  }
+
   if (loading || error) {
     return (
       <>{error ? <ErrorState message={error} onRetry={reload} /> : <SkeletonCard height={420} />}</>
