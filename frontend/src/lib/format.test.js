@@ -8,9 +8,28 @@ import {
   formatINRFull,
   formatIndian,
   formatLakh,
+  formatRelative,
   formatUsdApprox,
 } from './format'
 import { toCsv } from './download'
+
+describe('formatRelative', () => {
+  const now = Date.parse('2026-09-25T12:00:00Z')
+  it('reads a time slightly ahead of the clock as just now', () => {
+    expect(formatRelative('2026-09-25T12:00:20Z', now)).toBe('just now')
+    expect(formatRelative('2026-09-25T12:05:00Z', now)).toBe('just now')
+  })
+
+  it('shows a date for a time well in the future', () => {
+    expect(formatRelative('2026-10-25T12:00:00Z', now)).not.toMatch(/ago|just now/)
+  })
+
+  it('counts minutes, hours and days in the past', () => {
+    expect(formatRelative('2026-09-25T11:30:00Z', now)).toBe('30 min ago')
+    expect(formatRelative('2026-09-25T09:00:00Z', now)).toBe('3 h ago')
+    expect(formatRelative('2026-09-20T12:00:00Z', now)).toBe('5 days ago')
+  })
+})
 
 describe('formatting helpers', () => {
   it('formats money, decades and changes', () => {

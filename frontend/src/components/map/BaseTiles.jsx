@@ -66,3 +66,42 @@ export function BaseTiles() {
 }
 
 export default BaseTiles
+
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services'
+const ESRI_IMAGERY_ATTRIBUTION =
+  'Imagery &copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics, and the GIS user community'
+
+/** World Map basemaps (keyless Esri): satellite imagery or a dark canvas. */
+export const WORLD_BASEMAPS = [
+  { id: 'satellite', label: 'Satellite' },
+  { id: 'dark', label: 'Dark map' },
+]
+
+/**
+ * Tiles for one World Map basemap: the image layer, plus a transparent
+ * reference layer of borders and place names that fills in continents, then
+ * countries, states and cities as you zoom in.
+ */
+export function worldBasemap(id) {
+  if (id === 'dark') {
+    return {
+      base: {
+        url: `${ESRI}/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
+        attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a>, HERE, Garmin, &copy; OpenStreetMap contributors',
+        maxNativeZoom: 16,
+      },
+      labels: { url: `${ESRI}/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}`, maxNativeZoom: 16 },
+    }
+  }
+  return {
+    base: {
+      url: `${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`,
+      attribution: ESRI_IMAGERY_ATTRIBUTION,
+      maxNativeZoom: 18,
+    },
+    labels: {
+      url: `${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`,
+      maxNativeZoom: 18,
+    },
+  }
+}

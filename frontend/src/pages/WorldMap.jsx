@@ -1,13 +1,20 @@
-import { Suspense, lazy, useCallback, useMemo, useState } from 'react'
-import { History, Radio, RefreshCw } from 'lucide-react'
+import { Suspense, lazy, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { History, Radio } from 'lucide-react'
 import { downSources, isIncomplete, useLiveEvents } from '../hooks/useLive'
-import { DISASTER_IDS, DISASTER_TYPES, disasterVar } from '../config/disasterTypes'
-import SourceBadge from '../components/SourceBadge'
-import LiveEventMap from '../components/live/LiveEventMap'
-import LiveEventTable from '../components/live/LiveEventTable'
-import EventDetail from '../components/live/EventDetail'
-import { EmptyState, ErrorState, PageHeader, Skeleton } from '../components/ui'
-import { formatNumber, formatRelative } from '../lib/format'
+import LiveEventMap, { DEFAULT_MAP_SETTINGS } from '../components/live/LiveEventMap'
+import LiveEventsPanel from '../components/live/LiveEventsPanel'
+import SourceStrip from '../components/live/SourceStrip'
+import { ErrorState, PageHeader, Skeleton } from '../components/ui'
+import { formatNumber } from '../lib/format'
+import {
+  DEFAULT_SEVERITY_RULE,
+  MAP_TYPE_IDS,
+  SEVERITY_FILTERS,
+  filterEvents,
+  inBounds,
+  sortEvents,
+} from '../lib/liveEvents'
+import '../styles/worldmap.css'
 
 const HistoricalLayer = lazy(() => import('../components/history/HistoricalLayer'))
 
@@ -58,208 +65,142 @@ export default function WorldMap() {
       {mode === 'live' ? (
         <LiveMap />
       ) : (
-        <Suspense fallback={<Skeleton height={520} />}>
-          <HistoricalLayer />
-        </Suspense>
+        <div className="wm-historical">
+          <Suspense fallback={<Skeleton height={520} />}>
+            <HistoricalLayer />
+          </Suspense>
+        </div>
       )}
     </div>
   )
 }
 
-/** True when the point is inside the bounds, allowing for the map wrapping at ±180°. */
-function inBounds(bounds, event) {
-  if (!bounds) return true
-  return [0, 360, -360].some((shift) => bounds.contains([event.latitude, event.longitude + shift]))
+const TYPE_SET = () => new Set(MAP_TYPE_IDS)
+const SEVERITY_SET = () => new Set(SEVERITY_FILTERS)
+
+/** Adds or removes one value from a Set held in state. */
+const toggleIn = (setter) => (value) =>
+  setter((current) => {
+    const next = new Set(current)
+    if (next.has(value)) next.delete(value)
+    else next.add(value)
+    return next
+  })
+
+/**
+ * Sizes the map row to fill the window below the page header and status
+ * strip (at least 520 px). Below 900 px the CSS takes over (map 60vh, list below).
+ */
+function useFillViewport() {
+  const ref = useRef(null)
+  useLayoutEffect(() => {
+    const element = ref.current
+    if (!element) return undefined
+    const measure = () => {
+      const top = element.getBoundingClientRect().top + window.scrollY
+      element.style.setProperty('--wm-fill', `${Math.max(520, window.innerHeight - top - 16)}px`)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+  return ref
 }
 
-const STATUS_TEXT = {
-  ok: 'ok',
-  stale: 'showing last good data',
-  unavailable: 'temporarily unavailable',
-  disabled: 'disabled',
+/** Layers-menu note per type: its count, or which feed is missing. */
+function typeNote(layer) {
+  if (!layer) return null
+  if (layer.status === 'unavailable') return 'unavailable'
+  if (isIncomplete(layer)) {
+    return layer.count === 0 ? `${downSources(layer).join(', ')} down` : `${formatNumber(layer.count)}+ · incomplete`
+  }
+  return formatNumber(layer.count)
 }
 
 function LiveMap() {
   const [nonce, setNonce] = useState(0)
   const { data, error, loading, reload } = useLiveEvents(undefined, { refreshNonce: nonce })
-  const [enabled, setEnabled] = useState(() => new Set(DISASTER_IDS))
+  const [types, setTypes] = useState(TYPE_SET)
+  const [severities, setSeverities] = useState(SEVERITY_SET)
+  const [settings, setSettings] = useState(DEFAULT_MAP_SETTINGS)
+  const [sort, setSort] = useState('recent')
   const [bounds, setBounds] = useState(null)
   const [selected, setSelected] = useState(null)
+  const [hovered, setHovered] = useState(null)
   const [focus, setFocus] = useState(null)
+  const rowRef = useFillViewport()
 
-  const visibleTypes = useMemo(
-    () => (data?.events ?? []).filter((event) => enabled.has(event.type)),
-    [data, enabled],
+  const events = data?.events
+  // One memoised list for the map, so hovering, sorting or panning never rebuilds markers.
+  const onMap = useMemo(() => filterEvents(events ?? [], { types, severities }), [events, types, severities])
+  const inView = useMemo(() => onMap.filter((event) => inBounds(bounds, event)), [onMap, bounds])
+  const rows = useMemo(() => sortEvents(inView, sort), [inView, sort])
+  const typeNotes = useMemo(
+    () => Object.fromEntries(MAP_TYPE_IDS.map((id) => [id, typeNote(data?.layers?.[id])])),
+    [data],
   )
-  const inView = useMemo(
-    () => visibleTypes.filter((event) => inBounds(bounds, event)),
-    [visibleTypes, bounds],
-  )
-  const selectedEvent = data?.events.find((event) => event.id === selected) ?? null
-
-  const toggle = (id) =>
-    setEnabled((current) => {
-      const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  const rule = data?.severity_rule ?? DEFAULT_SEVERITY_RULE
 
   const onBoundsChange = useCallback((next) => setBounds(next), [])
-  // Stable, so the memoised markers are not rebuilt on every pan.
   const onMarkerSelect = useCallback((event) => setSelected(event.id), [])
-  const selectFromTable = (event) => {
+  const selectFromList = useCallback((event) => {
     setSelected(event.id)
     setFocus({ latitude: event.latitude, longitude: event.longitude, id: event.id })
-  }
+  }, [])
 
   return (
-    <div className="stack">
-      <div className="row live-toolbar">
-        <p className="callout callout-live" role="status">
-          <span className="live-dot" aria-hidden="true" />
-          <span>
-            <strong>Live view.</strong> Current events from the feeds
-            {data ? `, updated ${formatRelative(data.fetched_at)}` : ''}.
-          </span>
-        </p>
-        <button
-          type="button"
-          className="btn btn-sm"
-          onClick={() => setNonce((value) => value + 1)}
-          disabled={loading}
-        >
-          <RefreshCw size={13} aria-hidden="true" />
-          Refresh
-        </button>
-      </div>
-
-      <section className="card" aria-labelledby="layers-title">
-        <div className="card-header" style={{ marginBottom: 'var(--space-3)' }}>
-          <div className="card-heading">
-            <h2 className="card-title" id="layers-title">
-              Layers
-            </h2>
-            <p className="card-insight">
-              Toggle a disaster type. Larger dots carry a higher alert level.
-            </p>
-          </div>
-          <div className="card-badge">
-            <SourceBadge kind="live" detail="10-minute cache" />
-          </div>
-        </div>
-        <div className="layer-toggles" role="group" aria-label="Disaster layers">
-          {DISASTER_TYPES.map((type) => {
-            const layer = data?.layers?.[type.id]
-            const Icon = type.icon
-            const on = enabled.has(type.id)
-            const down = layer?.status === 'unavailable'
-            return (
-              <button
-                key={type.id}
-                type="button"
-                className={`layer-toggle${on ? ' is-on' : ''}${down || isIncomplete(layer) ? ' is-down' : ''}`}
-                aria-pressed={on}
-                onClick={() => toggle(type.id)}
-                style={{ '--dt': disasterVar(type.id) }}
-              >
-                <span className="layer-swatch" aria-hidden="true" />
-                <Icon size={15} aria-hidden="true" />
-                <span className="layer-name">{type.shortLabel}</span>
-                <span className="layer-count">
-                  {loading
-                    ? '…'
-                    : down
-                      ? 'unavailable'
-                      : !layer
-                        ? '—'
-                        : isIncomplete(layer)
-                          ? layer.count === 0
-                            ? `${downSources(layer).join(', ')} down`
-                            : `${formatNumber(layer.count)}+ · incomplete`
-                          : formatNumber(layer.count)}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-        {data && (
-          <ul className="source-status" aria-label="Feed status">
-            {data.sources.map((source) => (
-              <li key={source.id} className={`status-${source.status}`} title={source.current_rule}>
-                <span className="status-dot" aria-hidden="true" />
-                <strong>{source.name}</strong>
-                <span className="muted">
-                  {STATUS_TEXT[source.status] ?? source.status}
-                  {source.status === 'ok' ? ` · ${formatNumber(source.count)} records` : ''}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="map-layout" aria-label="Live map and event list">
-        <div className="card map-card">
-          {loading ? (
-            <div className="map-state" style={{ height: 'var(--map-height)' }} role="status">
+    <div className="wm">
+      <SourceStrip
+        sources={data?.sources}
+        fetchedAt={data?.fetched_at}
+        loading={loading}
+        onRefresh={() => setNonce((value) => value + 1)}
+      />
+      <section className="wm-main" ref={rowRef} aria-label="Live map and event list">
+        <div className="wm-map-col">
+          {loading && !data ? (
+            <div className="wm-map-state" role="status">
               <Skeleton height="100%" />
               <span className="map-state-label">Loading live events…</span>
             </div>
           ) : error && !data ? (
-            <div className="map-state map-state-error" style={{ height: 'var(--map-height)' }}>
+            <div className="wm-map-state map-state-error">
               <ErrorState message={error} onRetry={reload} />
             </div>
           ) : (
             <LiveEventMap
-              events={visibleTypes}
+              events={onMap}
               selectedId={selected}
+              hoverId={hovered}
               onSelect={onMarkerSelect}
               onBoundsChange={onBoundsChange}
               focus={focus}
-              fit
               fitKey={data?.fetched_at ?? 'initial'}
-              height="var(--map-height)"
+              settings={settings}
+              onSettingsChange={setSettings}
+              types={types}
+              onToggleType={toggleIn(setTypes)}
+              typeNotes={typeNotes}
+              rule={rule}
             />
           )}
         </div>
-
-        <aside className="card map-panel" aria-labelledby="events-title">
-          <div className="card-header" style={{ marginBottom: 'var(--space-3)' }}>
-            <div className="card-heading">
-              <h2 className="card-title" id="events-title">
-                {data ? `${formatNumber(inView.length)} events in view` : 'Events'}
-              </h2>
-              <p className="card-insight">
-                {data
-                  ? `Of ${formatNumber(visibleTypes.length)} on the selected layers. Pan or zoom the map to filter this list.`
-                  : 'Loading live events.'}
-              </p>
-            </div>
-          </div>
-          {selectedEvent && (
-            <EventDetail event={selectedEvent} onClose={() => setSelected(null)} />
-          )}
-          {loading && <Skeleton height={300} />}
-          {data && inView.length === 0 && (
-            <EmptyState
-              message={
-                visibleTypes.length === 0
-                  ? 'No layer is switched on, or the selected feeds are unavailable.'
-                  : 'No events inside the current map view. Zoom out to see more.'
-              }
-            />
-          )}
-          {data && inView.length > 0 && (
-            <LiveEventTable
-              events={inView}
-              selectedId={selected}
-              onSelect={selectFromTable}
-              caption="Current events inside the map view"
-              maxHeight={selectedEvent ? 300 : 460}
-            />
-          )}
-        </aside>
+        <LiveEventsPanel
+          events={rows}
+          loading={loading && !data}
+          failed={Boolean(error) && !data}
+          filteredOut={Boolean(events?.length) && onMap.length === 0}
+          sort={sort}
+          onSortChange={setSort}
+          types={types}
+          onToggleType={toggleIn(setTypes)}
+          severities={severities}
+          onToggleSeverity={toggleIn(setSeverities)}
+          selectedId={selected}
+          onSelect={selectFromList}
+          onHover={setHovered}
+          rule={rule}
+        />
       </section>
     </div>
   )

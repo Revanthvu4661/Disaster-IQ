@@ -8,9 +8,12 @@ session-scoped so the store is loaded and analysed once.
 from __future__ import annotations
 
 import os
+import tempfile
 
 # Live feeds are tested offline with a mock transport; never prefetch at startup.
 os.environ.setdefault("LIVE_PREFETCH", "false")
+# Never write the live feeds' last-good cache into backend/data during tests.
+os.environ.setdefault("LIVE_CACHE_DIR", tempfile.mkdtemp(prefix="disasteriq-live-"))
 
 import pytest
 from fastapi.testclient import TestClient

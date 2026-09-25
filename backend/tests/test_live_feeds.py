@@ -6,6 +6,7 @@ small payloads shaped like the real USGS, GDACS and EONET responses.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -56,6 +57,10 @@ def _gdacs_feature(code, eventid, name, lon, lat, **props):
         "severitydata": props.pop("severitydata", {}),
         "url": {"report": f"https://www.gdacs.org/report.aspx?eventid={eventid}"},
     }
+    if code == "TC":
+        base["url"]["geometry"] = (
+            f"https://www.gdacs.org/gdacsapi/api/polygons/getgeometry?eventtype=TC&eventid={eventid}&episodeid=1"
+        )
     return {"properties": base, "geometry": {"type": "Point", "coordinates": [lon, lat]}}
 
 
@@ -75,6 +80,24 @@ GDACS = {
     ]},
     "FL": {"features": [_gdacs_feature("FL", 20, "Flood in  Italy", 15.0, 37.5, country="Italy")]},
 }
+
+def _line(index, start, end, forecast):
+    return {
+        "properties": {"Class": f"Line_Line_{index}", "forecast": forecast},
+        "geometry": {"type": "LineString", "coordinates": [start, end]},
+    }
+
+
+# GDACS track for POLO, segments listed out of time order as GDACS does:
+# observed (-100, 14) -> (-101, 15) -> (-101.8, 15.4), forecast on to (-104, 17).
+GDACS_GEOMETRY = {"features": [
+    {"properties": {"Class": "Point_Centroid"}, "geometry": {"type": "Point", "coordinates": [-101.8, 15.4]}},
+    _line(0, [-103, 16], [-104, 17], True),
+    _line(1, [-100, 14], [-101, 15], False),
+    _line(2, [-101.8, 15.4], [-103, 16], True),
+    _line(3, [-101, 15], [-101.8, 15.4], False),
+    {"properties": {"Class": "Poly_Cones"}, "geometry": {"type": "Polygon", "coordinates": [[[0, 0]]]}},
+]}
 
 EONET = {"events": [
     {
@@ -108,6 +131,10 @@ def _handler(fail: set[str] | frozenset[str] = frozenset()):
             return httpx.Response(503)
         if "summary/4.5_week" in url:
             return httpx.Response(200, json=USGS)
+        if "gdacs" in host and "getgeometry" in url:
+            if request.url.params.get("eventid") == "10":
+                return httpx.Response(200, json=GDACS_GEOMETRY)
+            return httpx.Response(404)
         if "gdacs" in host:
             return httpx.Response(200, json=GDACS[request.url.params["eventlist"]])
         if "eonet" in host:
@@ -120,9 +147,13 @@ def _handler(fail: set[str] | frozenset[str] = frozenset()):
 
 
 @pytest.fixture
-def mock_feeds(monkeypatch):
-    """Route live_feeds' httpx.Client through a mock transport; returns a setter."""
+def mock_feeds(monkeypatch, tmp_path):
+    """Route live_feeds' httpx.Client through a mock transport; returns a setter.
+
+    The last-good disk cache lives in a fresh folder per test.
+    """
     state = {"fail": frozenset()}
+    monkeypatch.setattr(live_feeds, "_disk_dir", lambda: tmp_path)
     real_client = httpx.Client
 
     def client_factory(*args, **kwargs):
@@ -227,3 +258,157 @@ def test_expired_cache_is_served_while_refreshing(mock_feeds) -> None:
                 break
     assert live_feeds._cache["usgs"]["status"] == "stale"
     assert live_feeds._cache["usgs"]["events"]
+
+
+# ── severity rule ─────────────────────────────────────────────────────────────
+
+
+def _reading(source, *, alert=None, magnitude=None):
+    return {"source": source, "alert": alert, "magnitude": magnitude}
+
+
+def _rated(type_, *readings):
+    return live_feeds.severity_level({"type": type_, "sources": list(readings)})
+
+
+@pytest.mark.parametrize(
+    ("alert", "level"), [("green", "moderate"), ("orange", "high"), ("red", "very_high")]
+)
+def test_severity_from_gdacs_alert(alert, level) -> None:
+    for type_ in ("earthquake", "cyclone", "flood"):
+        assert _rated(type_, _reading("gdacs", alert=alert)) == (level, f"GDACS {alert.title()} alert")
+
+
+@pytest.mark.parametrize(
+    ("magnitude", "level"),
+    [
+        (4.5, "moderate"), (5.9, "moderate"), (5.94, "moderate"),
+        (5.96, "high"),  # shown as M6.0, so rated as M6.0
+        (6.0, "high"), (6.9, "high"), (7.0, "very_high"), (8.2, "very_high"),
+        (4.4, None),
+    ],
+)
+def test_severity_from_usgs_magnitude_without_gdacs_alert(magnitude, level) -> None:
+    assert _rated("earthquake", _reading("usgs", magnitude=magnitude))[0] == level
+
+
+def test_gdacs_alert_outranks_usgs_magnitude() -> None:
+    # A M7.2 with only a Green GDACS alert is Moderate: the alert decides.
+    level, basis = _rated(
+        "earthquake", _reading("usgs", magnitude=7.2, alert="yellow"), _reading("gdacs", alert="green")
+    )
+    assert (level, basis) == ("moderate", "GDACS Green alert")
+
+
+def test_usgs_pager_alert_is_not_a_gdacs_alert() -> None:
+    # PAGER "red" on the USGS reading must not be read as a GDACS Red alert.
+    assert _rated("earthquake", _reading("usgs", magnitude=5.0, alert="red"))[0] == "moderate"
+
+
+def test_events_the_rule_does_not_cover_are_not_rated() -> None:
+    assert _rated("cyclone", _reading("eonet", magnitude=None)) == (None, None)
+    assert _rated("flood", _reading("eonet")) == (None, None)
+    assert _rated("earthquake", _reading("gdacs", alert="yellow")) == (None, None)
+
+
+def test_live_events_carry_their_severity_level(mock_feeds) -> None:
+    payload = live_feeds.get_live(force=True)
+    assert payload["severity_rule"] == live_feeds.SEVERITY_RULE
+    by_title = {e["title"]: e for e in payload["events"]}
+    png = next(e for e in payload["events"] if "Kainantu" in e["title"])
+    assert png["severity_level"] == "high" and png["gdacs_alert"] == "orange"
+    assert by_title["M 4.7 - Scotia Sea"]["severity_level"] == "moderate"
+    assert by_title["M 4.7 - Scotia Sea"]["severity_basis"] == "USGS M4.7, no GDACS alert"
+    assert by_title["Flood in Italy"]["severity_level"] == "moderate"  # GDACS Green
+
+
+# ── duplicate merge ───────────────────────────────────────────────────────────
+
+
+def _quake(source, source_id, lat, lon, when, magnitude, alert=None):
+    return live_feeds._event(
+        source=source, source_id=source_id, type_="earthquake", title=f"{source} quake",
+        lat=lat, lon=lon, date=when, url=None, alert=alert, magnitude=magnitude,
+        severity_label=f"M{magnitude:.1f}",
+    )
+
+
+def test_merge_joins_the_same_quake_from_usgs_and_gdacs() -> None:
+    t = datetime(2026, 9, 1, 12, tzinfo=timezone.utc)
+    usgs = _quake("usgs", "a", -5.9, 146.0, t, 6.4)
+    gdacs = _quake("gdacs", "b", -5.95, 146.05, t + timedelta(seconds=50), 6.3, alert="Orange")
+    merged = live_feeds.merge([usgs, gdacs])
+    assert len(merged) == 1
+    row = live_feeds.finalise(merged[0])
+    assert [s["source"] for s in row["sources"]] == ["usgs", "gdacs"]
+    assert row["id"] == "earthquake:usgs:a+gdacs:b"
+    assert row["magnitude"] == 6.4  # the leading USGS reading, never an average
+    assert row["severity_level"] == "high"  # GDACS Orange
+    assert row["disagreement"] is None  # 0.1 apart is within tolerance
+
+
+def test_merge_keeps_distinct_quakes_apart() -> None:
+    t = datetime(2026, 9, 1, 12, tzinfo=timezone.utc)
+    far = _quake("gdacs", "c", 10.0, 10.0, t, 6.4)
+    late = _quake("gdacs", "d", -5.9, 146.0, t + timedelta(minutes=10), 6.4)
+    assert len(live_feeds.merge([_quake("usgs", "a", -5.9, 146.0, t, 6.4), far, late])) == 3
+
+
+# ── wind, tracks and the disk cache ───────────────────────────────────────────
+
+
+def test_cyclone_wind_and_track_come_only_from_the_sources(mock_feeds) -> None:
+    events = live_feeds.get_live(force=True)["events"]
+    polo = next(e for e in events if e["type"] == "cyclone")
+    assert polo["wind_kmh"] == 287  # GDACS km/h leads; EONET's 130 kts stays in its reading
+    assert polo["storm_name"] == "POLO-26"
+    assert polo["track"] == {
+        "observed": [[14.0, -100.0], [15.0, -101.0], [15.4, -101.8]],
+        "forecast": [[15.4, -101.8], [16.0, -103.0], [17.0, -104.0]],
+        "source": "GDACS",
+    }
+    quake = next(e for e in events if e["type"] == "earthquake")
+    assert quake["wind_kmh"] is None and quake["track"] is None and quake["storm_name"] is None
+
+
+def test_eonet_track_is_used_when_gdacs_has_none(mock_feeds, monkeypatch) -> None:
+    monkeypatch.setattr(live_feeds, "_gdacs_tracks", lambda client, urls: {})
+    polo = next(e for e in live_feeds.get_live(force=True)["events"] if e["type"] == "cyclone")
+    assert polo["track"] == {
+        "observed": [[15.0, -100.0], [15.2, -101.5]], "forecast": [], "source": "NASA EONET",
+    }
+
+
+def test_eonet_wind_is_converted_from_knots(mock_feeds) -> None:
+    mock_feeds["fail"] = frozenset({"gdacs"})
+    polo = next(e for e in live_feeds.get_live(force=True)["events"] if e["type"] == "cyclone")
+    assert polo["wind_kmh"] == round(130 * 1.852)
+    assert polo["severity_level"] is None  # no GDACS alert, not an earthquake: not rated
+
+
+def test_last_good_copy_survives_a_restart(mock_feeds) -> None:
+    live_feeds.get_live(force=True)
+    live_feeds.clear_cache()  # a restart: memory is gone, the disk copy is not
+    mock_feeds["fail"] = frozenset({"eonet"})
+    payload = live_feeds.get_live(force=True)
+    eonet = next(s for s in payload["sources"] if s["id"] == "eonet")
+    assert eonet["status"] == "stale" and eonet["count"] == 2
+    assert eonet["age_seconds"] is not None
+
+
+def test_failed_feed_is_not_retried_on_every_request(mock_feeds) -> None:
+    mock_feeds["fail"] = frozenset({"eonet"})
+    live_feeds.get_live(force=True)
+    assert "eonet" not in live_feeds._due(force=False)
+
+
+def test_a_disk_copy_older_than_two_days_is_not_served(mock_feeds, tmp_path) -> None:
+    live_feeds.get_live(force=True)
+    saved = tmp_path / "eonet.json"
+    data = json.loads(saved.read_text(encoding="utf-8"))
+    data["at"] -= live_feeds.DISK_MAX_AGE_SECONDS + 60
+    saved.write_text(json.dumps(data), encoding="utf-8")
+    live_feeds.clear_cache()
+    mock_feeds["fail"] = frozenset({"eonet"})
+    eonet = next(s for s in live_feeds.get_live(force=True)["sources"] if s["id"] == "eonet")
+    assert eonet["status"] == "unavailable"

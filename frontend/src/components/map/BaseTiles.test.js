@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { tileConfig } from './BaseTiles'
+import { WORLD_BASEMAPS, tileConfig, worldBasemap } from './BaseTiles'
 
 describe('tileConfig', () => {
   it('falls back to keyless Esri canvas tiles, per theme', () => {
@@ -19,5 +19,23 @@ describe('tileConfig', () => {
     const config = tileConfig('light', { VITE_MAPTILER_KEY: 'k', VITE_CARTO_KEY: 'c', VITE_MAPTILER_STYLE_LIGHT: 'basic-v2' })
     expect(config.provider).toBe('maptiler')
     expect(config.url).toBe('https://api.maptiler.com/maps/basic-v2/256/{z}/{x}/{y}{r}.png?key=k')
+  })
+})
+
+describe('worldBasemap', () => {
+  it('defaults to keyless Esri satellite imagery with the boundaries-and-places overlay', () => {
+    const { base, labels } = worldBasemap('satellite')
+    expect(base.url).toContain('/World_Imagery/MapServer/tile/{z}/{y}/{x}')
+    expect(base.url).not.toContain('key=')
+    expect(base.attribution).toMatch(/Esri/)
+    expect(labels.url).toContain('/Reference/World_Boundaries_and_Places/')
+    expect(worldBasemap(undefined).base.url).toBe(base.url)
+  })
+
+  it('offers a dark canvas with its own reference labels', () => {
+    const { base, labels } = worldBasemap('dark')
+    expect(base.url).toContain('World_Dark_Gray_Base')
+    expect(labels.url).toContain('World_Dark_Gray_Reference')
+    expect(WORLD_BASEMAPS.map((item) => item.label)).toEqual(['Satellite', 'Dark map'])
   })
 })

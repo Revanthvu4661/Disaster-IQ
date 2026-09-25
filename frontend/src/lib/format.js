@@ -18,7 +18,8 @@ export const formatRelative = (value, now = Date.now()) => {
   const time = new Date(value).getTime()
   if (Number.isNaN(time)) return String(value)
   const seconds = Math.round((now - time) / 1000)
-  if (seconds < 0) return new Date(time).toLocaleDateString()
+  // A few minutes "ahead" is clock skew or a `now` taken just before the data arrived.
+  if (seconds < -600) return new Date(time).toLocaleDateString()
   if (seconds < 90) return 'just now'
   const minutes = Math.round(seconds / 60)
   if (minutes < 90) return `${minutes} min ago`

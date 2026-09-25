@@ -1,238 +1,412 @@
-import { memo, useEffect, useMemo, useRef } from 'react'
-import L from 'leaflet'
-import { CircleMarker, MapContainer, Popup, Tooltip, useMap } from 'react-leaflet'
+import { memo, useEffect, useRef, useState } from 'react'
+import { CircleMarker, MapContainer, Marker, Pane, Polyline, Popup, ScaleControl, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import 'leaflet/dist/leaflet.css'
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css'
-import { DISASTER_TYPES, disasterHex, getDisasterType } from '../../config/disasterTypes'
-import { useTheme } from '../../context/ThemeContext'
+import { AlertTriangle, ExternalLink } from 'lucide-react'
 import { formatDateTime, formatRelative } from '../../lib/format'
-import BaseTiles, { MAX_ZOOM } from '../map/BaseTiles'
+import {
+  DEFAULT_SEVERITY_RULE,
+  eventHeadline,
+  eventLabel,
+  eventSubline,
+  eventTime,
+  mapType,
+} from '../../lib/liveEvents'
+import { MAX_ZOOM, worldBasemap } from '../map/BaseTiles'
 import { BoundsWatcher, MAP_LIMITS, SizeWatcher } from '../map/mapBehaviour'
+import { clusterIcon, eventIcon } from '../map/eventIcons'
+import { GeoLabels, LayersMenu, MapLegend, PlateBoundaries, ZoomLocateControls } from '../map/worldOverlays'
+import { SeverityPill, TypeIcon } from './parts'
 
-const WORLD_CENTER = [18, 12]
+const WORLD_CENTER = [20, 10]
+/** Clusters split into single markers from this zoom. */
+export const CLUSTER_OFF_ZOOM = 5
+const CYCLONE_HEX = '#60a5fa'
+/** Borders and place names (Esri reference layer) start at this zoom. */
+const REFERENCE_MIN_ZOOM = 3
 
 const prefersReducedMotion = () =>
-  typeof window !== 'undefined' &&
-  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
-/** Fixed pixel radius, 6–10 px by alert level; it does not grow with zoom. */
-const markerRadius = (event) => 6 + Math.min(4, event.severity?.rank ?? 0)
-
-/**
- * Cluster bubble: the count on the app surface, ringed in the colour of the
- * most common disaster type inside it. The colour is a CSS variable, so it
- * follows theme changes without rebuilding the clusters.
- */
-function clusterIcon(cluster) {
-  const counts = {}
-  cluster.getAllChildMarkers().forEach((marker) => {
-    const type = marker.options.eventType
-    counts[type] = (counts[type] ?? 0) + 1
-  })
-  const dominant = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0]
-  const count = cluster.getChildCount()
-  const size = count < 10 ? 32 : count < 50 ? 38 : 44
-  return L.divIcon({
-    html: `<span style="--ring: var(--dt-${dominant}, var(--accent))">${count}</span>`,
-    className: 'event-cluster',
-    iconSize: L.point(size, size),
-  })
+/** Smallest zoom (in quarter steps, never below `floor`) at which one world copy fills `width` px. */
+export function fillZoom(width, floor = MAP_LIMITS.minZoom) {
+  if (!width) return floor
+  return Math.max(floor, Math.ceil(Math.log2(width / 256) * 4) / 4)
 }
 
-/** Frames the given events once per `fitKey`, or the whole world when there are none. */
+/**
+ * One copy of the world, edge to edge: on a wide map the minimum zoom rises
+ * just enough that no empty band shows beside the world.
+ */
+function FillWorldWidth() {
+  const map = useMap()
+  useEffect(() => {
+    const apply = () => {
+      const min = fillZoom(map.getSize().x)
+      map.setMinZoom(min)
+      if (map.getZoom() < min) map.setZoom(min, { animate: false })
+    }
+    apply()
+    map.on('resize', apply)
+    return () => map.off('resize', apply)
+  }, [map])
+  return null
+}
+
+/** Frames the events once per `fitKey`, or the whole world when there are none. */
 function FitToEvents({ events, fitKey }) {
   const map = useMap()
-  const key = fitKey ?? events.map((event) => event.id).join('|')
   useEffect(() => {
     const points = events.map((event) => [event.latitude, event.longitude])
-    if (points.length === 0) {
-      map.setView(WORLD_CENTER, MAP_LIMITS.minZoom)
-    } else if (points.length === 1) {
-      map.setView(points[0], 4)
-    } else {
-      map.fitBounds(points, { padding: [28, 28], maxZoom: 5 })
-    }
-    // Refit only when the set of events changes, not on every render.
+    if (points.length === 0) map.setView(WORLD_CENTER, MAP_LIMITS.minZoom)
+    else if (points.length === 1) map.setView(points[0], 4)
+    else map.fitBounds(points, { padding: [28, 28], maxZoom: 4 })
+    // Refit only when the data is reloaded, not on filter changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, key])
+  }, [map, fitKey])
   return null
 }
 
 /**
- * Flies to an event chosen outside the map (a list row), then makes sure it is
- * not hidden inside a cluster: a cluster still holding it is spiderfied, and
- * the event's popup opens.
+ * Flies to an event chosen in the list, then lets the cluster layer reveal
+ * the marker (zoom or spiderfy) and opens its popup.
  */
 function FocusOn({ focus, clusterRef, markerRefs }) {
   const map = useMap()
   useEffect(() => {
     if (!focus) return undefined
     const target = [focus.latitude, focus.longitude]
-    const zoom = Math.max(map.getZoom(), 6)
+    const zoom = Math.max(map.getZoom(), CLUSTER_OFF_ZOOM + 1)
+    let cancelled = false
     const reveal = () => {
       const layer = markerRefs.current.get(focus.id)
       const group = clusterRef.current
-      if (!layer || !group) return
-      const parent = group.getVisibleParent(layer)
-      if (parent && parent !== layer && typeof parent.spiderfy === 'function') parent.spiderfy()
-      layer.openPopup()
+      if (cancelled || !layer) return
+      if (group?.hasLayer(layer)) group.zoomToShowLayer(layer, () => !cancelled && layer.openPopup())
+      else layer.openPopup()
     }
     map.once('moveend', reveal)
     if (prefersReducedMotion()) map.setView(target, zoom)
-    else map.flyTo(target, zoom, { duration: 0.6 })
-    return () => map.off('moveend', reveal)
+    else map.flyTo(target, zoom, { duration: 0.7 })
+    return () => {
+      cancelled = true
+      map.off('moveend', reveal)
+    }
   }, [map, focus, clusterRef, markerRefs])
   return null
 }
 
-function EventPopup({ event }) {
-  const type = getDisasterType(event.type)
+/**
+ * Adds `is-hot` (list row hovered) and `is-selected` classes to the marker,
+ * or to the cluster that currently holds it, without rebuilding any icon.
+ */
+function MarkerHighlight({ id, className, clusterRef, markerRefs }) {
+  const map = useMap()
+  const [tick, setTick] = useState(0)
+  useEffect(() => {
+    // Clusters are rebuilt after zooming and panning; re-apply the class then.
+    const bump = () => setTick((value) => value + 1)
+    const group = clusterRef.current
+    map.on('moveend', bump)
+    group?.on('animationend', bump)
+    return () => {
+      map.off('moveend', bump)
+      group?.off('animationend', bump)
+    }
+  }, [map, clusterRef])
+  useEffect(() => {
+    if (!id) return undefined
+    const layer = markerRefs.current.get(id)
+    if (!layer) return undefined
+    const group = clusterRef.current
+    const shown = group?.getVisibleParent?.(layer) ?? layer
+    const element = shown?.getElement?.()
+    if (!element) return undefined
+    element.classList.add(className)
+    return () => element.classList.remove(className)
+  }, [id, className, clusterRef, markerRefs, tick])
+  return null
+}
+
+/** One line of tooltip text: only the fields the source gave. */
+export function tooltipText(event) {
+  const parts = []
+  if (event.type === 'earthquake') {
+    parts.push(event.place ?? event.title)
+    if (event.magnitude != null) parts.push(`M${event.magnitude.toFixed(1)}`)
+    parts.push(formatRelative(eventTime(event)))
+  } else if (event.type === 'cyclone') {
+    parts.push(event.storm_name ?? event.title)
+    if (event.wind_kmh != null) parts.push(`${Math.round(event.wind_kmh)} km/h`)
+    if (event.gdacs_alert) parts.push(`${event.gdacs_alert[0].toUpperCase()}${event.gdacs_alert.slice(1)} alert`)
+  } else {
+    parts.push(event.title)
+    if (event.gdacs_alert) parts.push(`${event.gdacs_alert[0].toUpperCase()}${event.gdacs_alert.slice(1)} alert`)
+    parts.push(formatRelative(eventTime(event)))
+  }
+  return parts.filter(Boolean).join(' · ')
+}
+
+const capital = (text) => `${text[0].toUpperCase()}${text.slice(1)}`
+
+/** Dark popup card: type, place, time, the readings that exist, severity and sources. */
+export function EventPopup({ event, rule }) {
+  const type = mapType(event.type)
+  const headline = eventHeadline(event)
+  const subline = eventSubline(event)
+  const when = eventTime(event)
+  const storm =
+    event.storm_name && !headline?.toLowerCase().includes(event.storm_name.toLowerCase()) ? event.storm_name : null
+  const rows = [
+    event.type === 'earthquake' && event.magnitude != null && ['Magnitude', `M${event.magnitude.toFixed(1)}`],
+    storm && ['Storm', storm],
+    event.wind_kmh != null && ['Wind', `${Math.round(event.wind_kmh)} km/h`],
+    event.gdacs_alert && ['GDACS alert', capital(event.gdacs_alert)],
+  ].filter(Boolean)
+  const track = event.track
   return (
-    <div className="event-popup">
-      <p className="event-popup-type">{type?.label}</p>
-      <p className="event-popup-place">{event.location ?? event.title}</p>
-      <dl>
+    <div className="wm-popup-card">
+      <div className="wm-popup-top">
+        <TypeIcon type={event.type} size={34} decorative />
         <div>
-          <dt>Alert</dt>
-          <dd>{event.alert ? `${event.alert[0].toUpperCase()}${event.alert.slice(1)}` : 'None issued'}</dd>
+          <p className={`wm-type-label wm-text-${event.type}`}>{type?.label}</p>
+          <p className="wm-popup-place">{headline}</p>
+          {subline && <p className="wm-popup-sub">{subline}</p>}
         </div>
-        <div>
-          <dt>Time</dt>
-          <dd title={formatDateTime(event.updated ?? event.date)}>{formatRelative(event.updated ?? event.date)}</dd>
-        </div>
-        {event.kind === 'modelled' && (
-          <div>
-            <dt>Kind</dt>
-            <dd>Modelled estimate</dd>
-          </div>
+      </div>
+      <p className="wm-popup-time">
+        <time dateTime={when} title={formatDateTime(when)}>
+          {formatRelative(when)}
+        </time>
+        <span className="visually-hidden"> ({formatDateTime(when)})</span>
+      </p>
+      {rows.length > 0 && (
+        <dl className="wm-popup-facts">
+          {rows.map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      <div className="wm-popup-sev">
+        <span className="wm-popup-sev-label">Severity</span>
+        <SeverityPill event={event} rule={rule} />
+      </div>
+      {event.disagreement && (
+        <p className="wm-popup-note" role="note">
+          <AlertTriangle size={13} aria-hidden="true" />
+          Sources disagree: {event.disagreement}.
+        </p>
+      )}
+      {track && (
+        <p className="wm-popup-track">
+          Dotted line: {track.observed?.length ? 'observed track' : ''}
+          {track.observed?.length && track.forecast?.length ? ' and ' : ''}
+          {track.forecast?.length ? 'forecast path (fainter)' : ''} from {track.source}.
+        </p>
+      )}
+      <p className="wm-popup-sources">
+        <span>{event.sources.length > 1 ? `${event.sources.length} sources:` : 'Source:'}</span>
+        {event.sources.map((source) =>
+          source.url ? (
+            <a key={`${source.source}:${source.source_id}`} href={source.url} target="_blank" rel="noreferrer noopener">
+              {source.source_name}
+              <ExternalLink size={11} aria-hidden="true" />
+              <span className="visually-hidden"> report (opens in a new tab)</span>
+            </a>
+          ) : (
+            <span key={`${source.source}:${source.source_id}`}>{source.source_name}</span>
+          ),
         )}
-      </dl>
+      </p>
     </div>
   )
 }
 
-/** Type colours and the cluster symbol, drawn over the map. */
-export function MapLegend({ types = DISASTER_TYPES }) {
-  return (
-    <div className="map-overlay-legend" aria-label="Map legend">
-      <ul>
-        {types.map((type) => (
-          <li key={type.id}>
-            <span className="map-legend-dot" style={{ background: `var(--dt-${type.id})` }} aria-hidden="true" />
-            {type.shortLabel}
-          </li>
-        ))}
-        <li>
-          <span className="map-legend-cluster" aria-hidden="true">
-            n
-          </span>
-          Cluster
-        </li>
-      </ul>
-    </div>
-  )
-}
-
-/** The markers, memoised so panning (which re-renders the page via bounds) does not rebuild them. */
-const EventMarkers = memo(function EventMarkers({ events, selectedId, onSelect, theme, markerRefs }) {
-  return events.map((event) => {
-    const color = disasterHex(event.type, theme)
-    const selected = event.id === selectedId
-    const radius = markerRadius(event)
-    return (
-      <CircleMarker
-        key={event.id}
-        ref={(layer) => {
-          if (layer) markerRefs.current.set(event.id, layer)
-          else markerRefs.current.delete(event.id)
-        }}
-        center={[event.latitude, event.longitude]}
-        radius={radius}
-        eventType={event.type}
-        pathOptions={{
-          color: selected ? (theme === 'dark' ? '#ffffff' : '#11151c') : color,
-          weight: selected ? 3 : 1.5,
-          fillColor: color,
-          fillOpacity: 0.8,
-        }}
-        eventHandlers={{ click: () => onSelect?.(event) }}
-      >
-        <Tooltip direction="top" offset={[0, -radius]}>
-          {getDisasterType(event.type)?.label}: {event.location ?? event.title}
-        </Tooltip>
-        <Popup>
-          <EventPopup event={event} />
-        </Popup>
-      </CircleMarker>
-    )
-  })
+/** Markers, memoised on the event list so panning and hovering never rebuild them. */
+const EventMarkers = memo(function EventMarkers({ events, onSelect, markerRefs, rule }) {
+  return events.map((event) => (
+    <Marker
+      key={event.id}
+      ref={(layer) => {
+        if (layer) markerRefs.current.set(event.id, layer)
+        else markerRefs.current.delete(event.id)
+      }}
+      position={[event.latitude, event.longitude]}
+      icon={eventIcon(event.type, event.severity_level, event.latitude)}
+      eventType={event.type}
+      keyboard={false}
+      riseOnHover
+      eventHandlers={{
+        click: () => onSelect?.(event),
+        add: (leafletEvent) => leafletEvent.target.getElement()?.firstElementChild?.setAttribute('aria-label', eventLabel(event)),
+      }}
+    >
+      <Tooltip direction="top" className="wm-tooltip">
+        {tooltipText(event)}
+      </Tooltip>
+      <Popup className="wm-popup" maxWidth={300} minWidth={240}>
+        <EventPopup event={event} rule={rule} />
+      </Popup>
+    </Marker>
+  ))
 })
 
+/** Observed tracks (dotted) and forecast paths (fainter dots) for cyclones that have them. */
+const CycloneTracks = memo(function CycloneTracks({ events }) {
+  const tracks = events.filter((event) => event.type === 'cyclone' && event.track)
+  if (tracks.length === 0) return null
+  return (
+    <Pane name="wm-tracks" style={{ zIndex: 410 }}>
+      {tracks.flatMap((event) => [
+        event.track.observed?.length > 1 && (
+          <Polyline
+            key={`${event.id}:observed`}
+            positions={event.track.observed}
+            pathOptions={{ color: CYCLONE_HEX, weight: 2.5, opacity: 0.9, dashArray: '1 7', lineCap: 'round', interactive: false }}
+          />
+        ),
+        event.track.forecast?.length > 1 && (
+          <Polyline
+            key={`${event.id}:forecast`}
+            positions={event.track.forecast}
+            pathOptions={{ color: CYCLONE_HEX, weight: 2, opacity: 0.55, dashArray: '1 9', lineCap: 'round', interactive: false }}
+          />
+        ),
+      ].filter(Boolean))}
+    </Pane>
+  )
+})
+
+/** Imagery (or the dark canvas) plus the borders-and-places reference layer. */
+function Basemap({ basemap, labels }) {
+  const config = worldBasemap(basemap)
+  return (
+    <>
+      <TileLayer
+        key={`base-${basemap}`}
+        url={config.base.url}
+        attribution={config.base.attribution}
+        maxZoom={MAX_ZOOM}
+        maxNativeZoom={config.base.maxNativeZoom}
+        noWrap
+        bounds={MAP_LIMITS.maxBounds}
+        className={basemap === 'satellite' ? 'wm-imagery' : undefined}
+      />
+      {labels && (
+        <Pane name="wm-reference" style={{ zIndex: 340 }}>
+          <TileLayer
+            key={`labels-${basemap}`}
+            url={config.labels.url}
+            // Below zoom 3 the continent and ocean names come from GeoLabels;
+            // Esri's own low-zoom names would print them twice.
+            minZoom={REFERENCE_MIN_ZOOM}
+            maxZoom={MAX_ZOOM}
+            maxNativeZoom={config.labels.maxNativeZoom}
+            noWrap
+            bounds={MAP_LIMITS.maxBounds}
+          />
+        </Pane>
+      )}
+    </>
+  )
+}
+
+export const DEFAULT_MAP_SETTINGS = { basemap: 'satellite', plates: true, labels: true }
+
 /**
- * Leaflet map of live events, coloured by the shared disaster palette.
+ * Live World Map: satellite basemap, animated markers by type and severity,
+ * clusters that split at zoom 5, plate boundaries, cyclone tracks, and the
+ * zoom / locate / legend / layers controls.
  *
- * Events are filled circles. Nearby events cluster at low zoom and separate as
- * you zoom in. Tiles follow the app theme; panning is limited to one world
- * copy. Every marker also exists as a row in the accompanying table, which is
- * the keyboard path.
+ * Markers are not in the tab order: the Live Events list next to the map is
+ * the keyboard path to every event (a row opens the same popup).
  */
 export function LiveEventMap({
   events,
   selectedId,
+  hoverId,
   onSelect,
   onBoundsChange,
   focus,
-  fit = false,
   fitKey,
-  height = 460,
+  settings = DEFAULT_MAP_SETTINGS,
+  onSettingsChange,
+  types,
+  onToggleType,
+  typeNotes,
+  rule = DEFAULT_SEVERITY_RULE,
   label = 'Map of current disaster events',
 }) {
-  const { theme } = useTheme()
+  const [map, setMap] = useState(null)
+  const [me, setMe] = useState(null)
   const clusterRef = useRef(null)
   const markerRefs = useRef(new Map())
-  const presentTypes = useMemo(() => {
-    const ids = new Set(events.map((event) => event.type))
-    return DISASTER_TYPES.filter((type) => ids.has(type.id))
-  }, [events])
 
   return (
-    <div className="map-shell" style={{ height }} role="region" aria-label={label}>
+    <div className="wm-map-shell" role="region" aria-label={label}>
       <MapContainer
+        ref={setMap}
         center={WORLD_CENTER}
         zoom={MAP_LIMITS.minZoom}
         minZoom={MAP_LIMITS.minZoom}
         maxZoom={MAX_ZOOM}
         maxBounds={MAP_LIMITS.maxBounds}
         maxBoundsViscosity={MAP_LIMITS.maxBoundsViscosity}
-        preferCanvas
-        scrollWheelZoom={false}
+        worldCopyJump={false}
+        zoomControl={false}
+        zoomSnap={0.25}
+        scrollWheelZoom
+        className="wm-leaflet"
         style={{ height: '100%', width: '100%' }}
       >
-        <BaseTiles />
+        <Basemap basemap={settings.basemap} labels={settings.labels} />
+        {settings.plates && <PlateBoundaries />}
+        {settings.labels && <GeoLabels />}
+        <ScaleControl position="bottomleft" imperial={false} />
         <SizeWatcher />
+        <FillWorldWidth />
         {onBoundsChange && <BoundsWatcher onChange={onBoundsChange} />}
-        {fit && <FitToEvents events={events} fitKey={fitKey} />}
+        <FitToEvents events={events} fitKey={fitKey} />
         <FocusOn focus={focus} clusterRef={clusterRef} markerRefs={markerRefs} />
+        <CycloneTracks events={events} />
         <MarkerClusterGroup
           ref={clusterRef}
           chunkedLoading
-          maxClusterRadius={44}
+          maxClusterRadius={48}
+          disableClusteringAtZoom={CLUSTER_OFF_ZOOM}
           showCoverageOnHover={false}
           spiderfyOnMaxZoom
+          zoomToBoundsOnClick
           iconCreateFunction={clusterIcon}
         >
-          <EventMarkers
-            events={events}
-            selectedId={selectedId}
-            onSelect={onSelect}
-            theme={theme}
-            markerRefs={markerRefs}
-          />
+          <EventMarkers events={events} onSelect={onSelect} markerRefs={markerRefs} rule={rule} />
         </MarkerClusterGroup>
+        <MarkerHighlight id={hoverId} className="is-hot" clusterRef={clusterRef} markerRefs={markerRefs} />
+        <MarkerHighlight id={selectedId} className="is-selected" clusterRef={clusterRef} markerRefs={markerRefs} />
+        {me && (
+          <CircleMarker
+            center={me}
+            radius={7}
+            pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#22d3ee', fillOpacity: 1 }}
+            interactive={false}
+          />
+        )}
       </MapContainer>
-      {presentTypes.length > 0 && (
-        <MapLegend types={presentTypes} />
+      <div className="wm-vignette" aria-hidden="true" />
+      <ZoomLocateControls map={map} onLocated={setMe} />
+      <MapLegend />
+      {onSettingsChange && (
+        <LayersMenu
+          settings={settings}
+          onChange={(patch) => onSettingsChange({ ...settings, ...patch })}
+          types={types}
+          onToggleType={onToggleType}
+          typeNotes={typeNotes}
+        />
       )}
     </div>
   )

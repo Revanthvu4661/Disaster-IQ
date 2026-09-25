@@ -45,6 +45,11 @@ class Settings:
         self.live_ttl_seconds: int = int(os.getenv("LIVE_TTL_SECONDS", "600"))
         self.live_timeout_seconds: float = float(os.getenv("LIVE_TIMEOUT_SECONDS", "12"))
         self.live_prefetch: bool = os.getenv("LIVE_PREFETCH", "true").lower() == "true"
+        # Last good response of each feed, kept on disk so a feed that is down
+        # (NASA EONET often is) still shows its latest events after a restart.
+        self.live_cache_dir: Path = Path(
+            os.getenv("LIVE_CACHE_DIR", str(DATA_DIR / "live_cache"))
+        )
 
 
 @lru_cache(maxsize=1)

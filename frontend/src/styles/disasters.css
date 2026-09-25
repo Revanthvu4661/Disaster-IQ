@@ -560,21 +560,6 @@
 .layer-count { font-size: var(--text-xs); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .layer-toggle.is-down .layer-count { color: var(--severity-high); font-weight: 600; }
 
-.source-status {
-  list-style: none;
-  margin: var(--space-3) 0 0;
-  padding: var(--space-3) 0 0;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-5);
-  font-size: var(--text-xs);
-}
-.source-status li { display: inline-flex; align-items: center; gap: 6px; }
-.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--severity-low); }
-.status-stale .status-dot { background: var(--severity-medium); }
-.status-unavailable .status-dot,
-.status-disabled .status-dot { background: var(--severity-critical); }
 
 .map-layout {
   display: grid;
@@ -604,10 +589,6 @@
 :root[data-theme="dark"] .leaflet-control-attribution a { color: var(--text); }
 .leaflet-bar a { width: 34px !important; height: 34px !important; line-height: 34px !important; }
 
-.live-table td, .live-table th { vertical-align: middle; padding-left: var(--space-2); padding-right: var(--space-2); }
-.live-table td { white-space: normal; }
-.live-table td.wrap { min-width: 150px; }
-.live-table td:last-child { min-width: 72px; }
 .th-sort {
   display: inline-flex;
   align-items: center;
@@ -632,19 +613,7 @@
   min-height: 32px;
 }
 .row-button:hover { color: var(--accent-hover); text-decoration: underline; }
-.row-selected { background: var(--surface-hover); }
 .type-cell { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: var(--text-xs); }
-
-.event-detail {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  border: 1px solid color-mix(in srgb, var(--dt) 45%, var(--border));
-  border-left: 3px solid var(--dt);
-  background: var(--surface-2);
-}
-.detail-list { margin: var(--space-3) 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-2); }
-.detail-list dt { font-size: var(--text-xs); color: var(--text-muted); }
-.detail-list dd { margin: 0; font-size: var(--text-sm); }
 .source-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .source-list li {
   display: flex;
@@ -656,24 +625,10 @@
 }
 .source-list a { display: inline-flex; align-items: center; white-space: nowrap; min-height: 32px; }
 
-/* Live table when narrow: severity and date fold under the location. */
-.live-sort { display: none; align-items: center; gap: var(--space-2); }
-.live-sort .select { width: auto; flex: 1; }
-.live-meta { display: none; font-size: var(--text-xs); color: var(--text-secondary); }
-/* Sized by the list's own width, so the map-side panel folds too. */
-.live-table-host { container-type: inline-size; }
-@container (max-width: 520px) {
-  .live-sort { display: flex; }
-  .live-table .col-wide { display: none; }
-  .live-meta { display: block; }
-}
-
 /* ── historical impact pages ─────────────────────────────────────────── */
 
 .callout-coverage { --dt: var(--text-muted); }
 .callout-historical { border-left-style: dashed; }
-.callout-live { flex: 1; min-width: 220px; align-items: center; border-left-color: var(--severity-low); }
-.live-toolbar { justify-content: space-between; }
 
 .block-nav ol {
   list-style: none;
@@ -774,50 +729,7 @@
 
 .tooltip-swatch { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
 
-/* ── map: clusters, popups, overlay legend, states ─────────────────────── */
-
-.event-cluster { background: transparent; }
-.event-cluster span {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  border: 3px solid var(--ring, var(--accent));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring, var(--accent)) 25%, transparent), var(--shadow-2);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.event-popup { min-width: 180px; font-size: var(--text-sm); }
-.event-popup p { margin: 0; }
-.event-popup-type { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
-.event-popup-place { font-weight: 600; margin: 2px 0 6px !important; }
-.event-popup dl { margin: 0; display: grid; gap: 2px; }
-.event-popup dl > div { display: flex; justify-content: space-between; gap: var(--space-3); }
-.event-popup dt { color: var(--text-muted); }
-.event-popup dd { margin: 0; }
-
-.map-overlay-legend {
-  position: absolute;
-  left: 10px;
-  bottom: 22px;
-  z-index: 500;
-  max-width: calc(100% - 20px);
-  padding: 6px 10px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
-  box-shadow: var(--shadow-2);
-  pointer-events: none;
-}
-.map-overlay-legend ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; color: var(--text-secondary); }
-.map-overlay-legend li { display: inline-flex; align-items: center; gap: 5px; }
-.map-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
-.map-legend-cluster { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--accent); font-size: 9px; font-weight: 700; color: var(--text); }
+/* ── map: loading and error states ────────────────────────────────────── */
 
 .map-state { position: relative; display: flex; flex-direction: column; justify-content: center; }
 .map-state .skeleton { position: absolute; inset: 0; }

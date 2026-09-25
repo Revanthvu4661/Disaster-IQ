@@ -127,6 +127,7 @@ export default function App() {
   const { theme, toggleTheme } = useTheme()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const location = useLocation()
+  const isWorldMap = location.pathname === '/map'
 
   // The section colour tints the bar's top border: a disaster's own colour on
   // its page (and on Flood Risk Prediction), the brand accent elsewhere.
@@ -155,7 +156,8 @@ export default function App() {
   }, [location.pathname])
 
   return (
-    <div className="app-shell">
+    // The World Map uses the full window width and its own navy surface.
+    <div className={`app-shell${isWorldMap ? ' is-worldmap' : ''}`}>
       <a className="skip-link" href="#main">
         Skip to main content
       </a>
@@ -180,7 +182,7 @@ export default function App() {
         </button>
       </header>
 
-      <div className="shell-body">
+      <div className={`shell-body${isWorldMap ? ' shell-body-wide' : ''}`}>
         <main className="main-content" id="main" tabIndex={-1}>
           <Suspense fallback={<SkeletonCard height={280} />}>
             <Routes>

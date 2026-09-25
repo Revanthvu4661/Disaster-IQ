@@ -4,7 +4,7 @@ import { downSources, isIncomplete, useLiveEvents } from '../../hooks/useLive'
 import SourceBadge from '../SourceBadge'
 import { ErrorState, Skeleton } from '../ui'
 import { formatRelative, plural } from '../../lib/format'
-import { severityShort, shortPlace } from './LiveEventTable'
+import { severityShort, shortPlace } from '../../lib/liveEvents'
 
 /**
  * Live counterpart on a historical page: what the feeds report right now, in

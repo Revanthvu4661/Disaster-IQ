@@ -5,7 +5,7 @@ import { DISASTER_IDS, DISASTER_TYPES, applyDisasterTokens } from './disasterTyp
 import { NAV_ITEMS } from '../navigation'
 import SourceBadge from '../components/SourceBadge'
 import { downSources, isIncomplete } from '../hooks/useLive'
-import { shortPlace } from '../components/live/LiveEventTable'
+import { shortPlace } from '../lib/liveEvents'
 
 describe('disaster taxonomy', () => {
   it('lists the three types in the fixed order', () => {

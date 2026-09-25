@@ -13,6 +13,7 @@ coverage.xml
 backend/data/raw/
 backend/data/disasters.db
 backend/data/*.tmp
+backend/data/live_cache/
 
 # Node
 node_modules/
