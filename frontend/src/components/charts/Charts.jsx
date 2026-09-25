@@ -58,7 +58,6 @@ function CoverageBand({ from, to }) {
       fillOpacity={0.08}
       stroke="none"
       ifOverflow="visible"
-      label={{ value: 'sparser records', position: 'insideTopLeft', fill: 'var(--text-muted)', fontSize: 10 }}
     />
   )
 }
