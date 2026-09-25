@@ -1,26 +1,43 @@
-import {
-  BrainCircuit,
-  Gauge,
-  Info,
-  LayoutDashboard,
-  Lightbulb,
-  ListChecks,
-  Radar,
-} from 'lucide-react'
+import { Globe2, LayoutDashboard, LifeBuoy, ShieldCheck } from 'lucide-react'
+import { DISASTER_TYPES } from './config/disasterTypes'
 
-/** Single source of truth for routes, used by the shell and the palette. */
+/**
+ * Primary navigation, in the fixed order of the information architecture:
+ * Overview, the three disaster types, World Map, then the problem statement's
+ * Level 2 (Disaster Risk Prediction) and Level 3 (Preparedness & Response
+ * Recommendations), named in its own words. The disaster entries are generated from the shared
+ * taxonomy, never listed here.
+ */
 export const NAV_ITEMS = [
   {
     to: '/',
-    label: 'Dashboard',
+    label: 'Overview',
     icon: LayoutDashboard,
-    description: 'Corpus overview',
+    description: 'The three disasters compared',
     end: true,
+    section: 'overview',
   },
-  { to: '/insights', label: 'Insights', icon: Lightbulb, description: 'Deep analytics' },
-  { to: '/predict', label: 'Predict', icon: BrainCircuit, description: 'Classify a message' },
-  { to: '/triage', label: 'Triage Inbox', icon: ListChecks, description: 'Batch triage' },
-  { to: '/hazards', label: 'Live Hazards', icon: Radar, description: 'Open feeds' },
-  { to: '/model', label: 'Model', icon: Gauge, description: 'Performance and card' },
-  { to: '/about', label: 'About', icon: Info, description: 'Data and credits' },
+  ...DISASTER_TYPES.map((type) => ({
+    to: type.path,
+    label: type.label,
+    icon: type.icon,
+    description: 'Historical impact, trends and geography',
+    disasterId: type.id,
+    section: 'disasters',
+  })),
+  { to: '/map', label: 'World Map', icon: Globe2, description: 'Live and historical events', section: 'map' },
+  {
+    to: '/risk',
+    label: 'Disaster Risk Prediction',
+    icon: ShieldCheck,
+    description: 'Level 2: earthquake, flood and cyclone risk levels',
+    section: 'predict',
+  },
+  {
+    to: '/preparedness',
+    label: 'Preparedness & Response Recommendations',
+    icon: LifeBuoy,
+    description: 'Level 3: preparedness actions and response resources',
+    section: 'recommend',
+  },
 ]

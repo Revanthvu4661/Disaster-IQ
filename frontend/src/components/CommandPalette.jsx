@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Moon, Search, Sun } from 'lucide-react'
+import { Info, Moon, Search, Sun } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 import { NAV_ITEMS } from '../navigation'
 
@@ -18,7 +18,8 @@ export function CommandPalette({ open, onClose }) {
   const inputRef = useRef(null)
 
   const commands = useMemo(() => {
-    const navCommands = NAV_ITEMS.map((item) => ({
+    const about = { to: '/about', label: 'About the data', icon: Info, description: 'Sources and methods' }
+    const navCommands = [...NAV_ITEMS, about].map((item) => ({
       id: `nav:${item.to}`,
       label: `Go to ${item.label}`,
       hint: item.description,

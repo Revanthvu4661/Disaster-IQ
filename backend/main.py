@@ -3,14 +3,17 @@
 Run:
     uvicorn backend.main:app --reload --port 8000
 
-Startup loads the corpus, precomputes every analytics payload, loads the rule
-set and the model bundle (training one if it is missing). Failures are recorded
+Startup loads the historical store (building it from ``backend/data/clean/``
+if needed), precomputes every analytics payload and fits the flood risk model
+from ``backend/data/clean/flood/`` and the earthquake and cyclone hazard index from
+``backend/data/clean/hazard/``. Failures are recorded
 rather than fatal, so ``/health`` can report what is degraded.
 """
 
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from contextlib import asynccontextmanager
 
@@ -18,12 +21,13 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend import rate_limit, schemas
+from backend import live_feeds, schemas
+from backend.data_pipeline import use_system_trust_store
 from backend.config import get_settings
-from backend.routers import analytics, hazards, model, predict, recommend
+from backend.routers import disasters, flood_risk, hazard_risk, history, live, recommendations
 from backend.state import state
 
-VERSION = "2.0.0"
+VERSION = "5.0.0"
 
 logging.basicConfig(
     level=get_settings().log_level,
@@ -31,6 +35,10 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("disasteriq")
+
+# The live feeds and the data pipeline verify TLS against the OS store, so they
+# work behind TLS-inspecting proxies (no-op without the truststore package).
+use_system_trust_store()
 
 
 @asynccontextmanager
@@ -40,6 +48,10 @@ async def lifespan(app: FastAPI):
     started = time.perf_counter()
     if settings.warm_cache:
         state.warm()
+        # Prefetch the live feeds in the background so the first map visit is
+        # served from cache; a slow or dead feed never delays startup.
+        if settings.hazards_enabled and settings.live_prefetch:
+            threading.Thread(target=live_feeds.get_live, daemon=True, name="live-prefetch").start()
         logger.info("startup complete in %.1fs", time.perf_counter() - started)
         if state.errors:
             logger.warning("degraded components: %s", ", ".join(state.errors))
@@ -51,9 +63,10 @@ app = FastAPI(
     title="DisasterIQ API",
     version=VERSION,
     description=(
-        "Analyse, predict and recommend on disaster response messages. "
-        "Multi-label classification with tuned per-label thresholds, weighted "
-        "noisy-OR severity, rule-driven action plans and precomputed analytics."
+        "Historical impact of earthquakes, floods and cyclones "
+        "(OWID/EM-DAT, USGS, NOAA IBTrACS), live events from USGS, GDACS and "
+        "NASA EONET, risk prediction for earthquakes, floods and cyclones, and "
+        "preparedness and response recommendations built on it."
     ),
     lifespan=lifespan,
 )
@@ -63,10 +76,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_settings.cors_origins,
     allow_credentials=_settings.cors_allow_credentials,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "OPTIONS"],
     allow_headers=["*"],
 )
-rate_limit.install(app)
 
 
 @app.middleware("http")
@@ -98,12 +110,13 @@ def root() -> dict:
 
 @app.get("/health", tags=["health"], response_model=schemas.HealthResponse)
 def health() -> dict:
-    """Readiness probe: reports whether analytics and the model are loaded."""
+    """Readiness probe: reports whether the historical analytics are loaded."""
     return state.health(VERSION)
 
 
-app.include_router(analytics.router)
-app.include_router(predict.router)
-app.include_router(recommend.router)
-app.include_router(model.router)
-app.include_router(hazards.router)
+app.include_router(disasters.router)
+app.include_router(history.router)
+app.include_router(live.router)
+app.include_router(flood_risk.router)
+app.include_router(hazard_risk.router)
+app.include_router(recommendations.router)

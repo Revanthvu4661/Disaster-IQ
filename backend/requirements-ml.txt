@@ -1,8 +1,0 @@
-# Optional heavy dependencies for the transformer candidates and for serving
-# the DistilBERT model. Install with:
-#   pip install -r backend/requirements-ml.txt
-# On a CUDA machine install torch from the PyTorch index first, for example:
-#   pip install torch --index-url https://download.pytorch.org/whl/cu128
-torch>=2.2
-transformers>=4.40
-sentence-transformers>=3.0

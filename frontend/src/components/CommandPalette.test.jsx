@@ -29,15 +29,15 @@ describe('CommandPalette', () => {
   it('lists navigation and theme commands', () => {
     renderPalette()
     expect(screen.getByRole('dialog', { name: /command palette/i })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: /go to dashboard/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /go to overview/i })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: /switch to .* theme/i })).toBeInTheDocument()
   })
 
   it('filters as you type', async () => {
     renderPalette()
-    await userEvent.type(screen.getByRole('textbox'), 'triage')
-    expect(screen.getByRole('option', { name: /triage/i })).toBeInTheDocument()
-    expect(screen.queryByRole('option', { name: /go to dashboard/i })).not.toBeInTheDocument()
+    await userEvent.type(screen.getByRole('textbox'), 'cyclone')
+    expect(screen.getByRole('option', { name: /go to cyclone/i })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: /go to overview/i })).not.toBeInTheDocument()
   })
 
   it('shows an empty state when nothing matches', async () => {

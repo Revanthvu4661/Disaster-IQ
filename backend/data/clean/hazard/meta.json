@@ -1,0 +1,19 @@
+{
+  "built_at": "2026-09-25T05:29:32+00:00",
+  "regions": 36,
+  "earthquake": {
+    "first_year": 1950,
+    "last_year": 2025,
+    "min_magnitude": 6.0,
+    "radius_km": 300,
+    "events_in_catalogue": 10317
+  },
+  "cyclone": {
+    "first_season": 1980,
+    "last_season": 2025,
+    "radius_km": 100,
+    "tropical_storm_kt": 34,
+    "hurricane_kt": 64,
+    "basin": "North Indian Ocean"
+  }
+}

@@ -1,0 +1,227 @@
+country,iso3,ne_code,historical_state,latitude,longitude
+Afghanistan,AFG,AFG,False,33.835,66.005
+Albania,ALB,ALB,False,41.142,20.05
+Algeria,DZA,DZA,False,28.159,2.617
+American Samoa,ASM,ASM,False,-14.304,-170.718
+Angola,AGO,AGO,False,-12.332,17.564
+Anguilla,AIA,AIA,False,18.224,-63.065
+Antigua and Barbuda,ATG,ATG,False,17.078,-61.79
+Argentina,ARG,ARG,False,-35.18,-65.156
+Armenia,ARM,ARM,False,40.29,44.929
+Australia,AUS,AUS,False,-25.573,134.355
+Austria,AUT,AUT,False,47.585,14.126
+Azerbaijan,AZE,AZE,False,40.344,47.664
+Bahamas,BHS,BHS,False,24.701,-78.038
+Bangladesh,BGD,BGD,False,23.898,90.224
+Barbados,BRB,BRB,False,13.181,-59.56
+Belarus,BLR,BLR,False,53.531,28.032
+Belgium,BEL,BEL,False,50.64,4.639
+Belize,BLZ,BLZ,False,17.195,-88.718
+Benin,BEN,BEN,False,9.642,2.328
+Bermuda,BMU,BMU,False,32.314,-64.755
+Bhutan,BTN,BTN,False,27.411,90.402
+Bolivia,BOL,BOL,False,-16.708,-64.685
+Bosnia and Herzegovina,BIH,BIH,False,44.175,17.769
+Botswana,BWA,BWA,False,-22.184,23.799
+Brazil,BRA,BRA,False,-10.84,-53.117
+British Virgin Islands,VGB,VGB,False,18.423,-64.621
+Brunei,BRN,BRN,False,4.49,114.592
+Bulgaria,BGR,BGR,False,42.769,25.216
+Burkina Faso,BFA,BFA,False,12.27,-1.755
+Burundi,BDI,BDI,False,-3.359,29.875
+Cambodia,KHM,KHM,False,12.721,104.908
+Cameroon,CMR,CMR,False,5.691,12.74
+Canada,CAN,CAN,False,57.935,-102.366
+Cape Verde,CPV,CPV,False,15.082,-23.637
+Cayman Islands,CYM,CYM,False,19.321,-81.285
+Central African Republic,CAF,CAF,False,6.568,20.468
+Chad,TCD,TCD,False,15.333,18.645
+Chile,CHL,CHL,False,-35.748,-71.311
+China,CHN,CHN,False,36.617,103.797
+Colombia,COL,COL,False,3.914,-73.081
+Comoros,COM,COM,False,-11.654,43.339
+Congo,COG,COG,False,-0.838,15.22
+Cook Islands,COK,COK,False,-21.219,-159.787
+Costa Rica,CRI,CRI,False,9.976,-84.192
+Cote d'Ivoire,CIV,CIV,False,7.629,-5.57
+Croatia,HRV,HRV,False,45.159,16.424
+Cuba,CUB,CUB,False,21.614,-78.943
+Cyprus,CYP,CYP,False,34.917,33.006
+Czechia,CZE,CZE,False,49.733,15.312
+Czechoslovakia,OWID_CZS,OWID_CZS,True,,
+Democratic Republic of Congo,COD,COD,False,-2.877,23.644
+Denmark,DNK,DNK,False,56.24,9.356
+Djibouti,DJI,DJI,False,11.749,42.561
+Dominica,DMA,DMA,False,15.439,-61.358
+Dominican Republic,DOM,DOM,False,18.894,-70.506
+East Germany,OWID_GDR,OWID_GDR,True,,
+East Timor,TLS,TLS,False,-8.81,125.923
+Ecuador,ECU,ECU,False,-1.445,-78.39
+Egypt,EGY,EGY,False,26.496,29.862
+El Salvador,SLV,SLV,False,13.739,-88.872
+Equatorial Guinea,GNQ,GNQ,False,1.565,10.47
+Eritrea,ERI,ERI,False,15.36,38.838
+Estonia,EST,EST,False,58.686,25.832
+Eswatini,SWZ,SWZ,False,-26.558,31.482
+Ethiopia,ETH,ETH,False,8.623,39.601
+Fiji,FJI,FJI,False,-17.823,177.973
+Finland,FIN,FIN,False,64.505,26.284
+France,FRA,FRA,False,46.62,2.453
+French Guiana,GUF,GUF,False,,
+French Polynesia,PYF,PYF,False,-17.663,-149.42
+Gabon,GAB,GAB,False,-0.587,11.789
+Gambia,GMB,GMB,False,13.45,-15.396
+Georgia,GEO,GEO,False,42.169,43.508
+Germany,DEU,DEU,False,51.088,10.372
+Ghana,GHA,GHA,False,7.953,-1.217
+Greece,GRC,GRC,False,39.479,22.585
+Grenada,GRD,GRD,False,12.117,-61.682
+Guadeloupe,GLP,GLP,False,,
+Guam,GUM,GUM,False,13.442,144.768
+Guatemala,GTM,GTM,False,15.694,-90.365
+Guinea,GIN,GIN,False,10.436,-10.941
+Guinea-Bissau,GNB,GNB,False,12.064,-14.924
+Guyana,GUY,GUY,False,4.794,-58.982
+Haiti,HTI,HTI,False,18.928,-72.676
+Honduras,HND,HND,False,14.824,-86.616
+Hong Kong,HKG,HKG,False,22.439,114.139
+Hungary,HUN,HUN,False,47.163,19.396
+Iceland,ISL,ISL,False,64.996,-18.574
+India,IND,IND,False,22.909,79.586
+Indonesia,IDN,IDN,False,-0.191,114.014
+Iran,IRN,IRN,False,32.58,54.273
+Iraq,IRQ,IRQ,False,33.04,43.744
+Ireland,IRL,IRL,False,53.174,-8.135
+Israel,ISR,ISR,False,31.443,34.995
+Italy,ITA,ITA,False,43.529,12.149
+Jamaica,JAM,JAM,False,18.157,-77.315
+Japan,JPN,JPN,False,36.65,137.985
+Jordan,JOR,JOR,False,31.246,36.771
+Kazakhstan,KAZ,KAZ,False,48.157,67.293
+Kenya,KEN,KEN,False,0.6,37.795
+Kiribati,KIR,KIR,False,1.854,-157.374
+Kuwait,KWT,KWT,False,29.317,47.562
+Kyrgyzstan,KGZ,KGZ,False,41.458,74.532
+Laos,LAO,LAO,False,18.502,103.738
+Latvia,LVA,LVA,False,56.851,24.912
+Lebanon,LBN,LBN,False,33.923,35.88
+Lesotho,LSO,LSO,False,-29.58,28.227
+Liberia,LBR,LBR,False,6.453,-9.322
+Libya,LBY,LBY,False,27.031,18.009
+Liechtenstein,LIE,LIE,False,47.137,9.536
+Lithuania,LTU,LTU,False,55.326,23.892
+Luxembourg,LUX,LUX,False,49.767,6.072
+Macao,MAC,MAC,False,22.223,113.509
+Madagascar,MDG,MDG,False,-19.375,46.703
+Malawi,MWI,MWI,False,-13.22,34.289
+Malaysia,MYS,MYS,False,3.615,114.724
+Maldives,MDV,MDV,False,4.197,73.503
+Mali,MLI,MLI,False,17.346,-3.543
+Malta,MLT,MLT,False,35.89,14.443
+Marshall Islands,MHL,MHL,False,7.106,171.186
+Martinique,MTQ,MTQ,False,,
+Mauritania,MRT,MRT,False,20.257,-10.347
+Mauritius,MUS,MUS,False,-20.278,57.571
+Mayotte,MYT,MYT,False,,
+Mexico,MEX,MEX,False,23.941,-102.505
+Micronesia (country),FSM,FSM,False,6.886,158.233
+Moldova,MDA,MDA,False,47.195,28.457
+Mongolia,MNG,MNG,False,46.827,103.053
+Montenegro,MNE,MNE,False,42.789,19.239
+Montserrat,MSR,MSR,False,16.739,-62.185
+Morocco,MAR,MAR,False,29.838,-8.456
+Mozambique,MOZ,MOZ,False,-17.273,35.533
+Myanmar,MMR,MMR,False,21.221,96.489
+Namibia,NAM,NAM,False,-22.13,17.21
+Nepal,NPL,NPL,False,28.249,83.916
+Netherlands,NLD,NLD,False,52.282,5.642
+Netherlands Antilles,ANT,ANT,True,,
+New Caledonia,NCL,NCL,False,-21.325,165.487
+New Zealand,NZL,NZL,False,-43.973,170.528
+Nicaragua,NIC,NIC,False,12.847,-85.031
+Niger,NER,NER,False,17.419,9.385
+Nigeria,NGA,NGA,False,9.595,8.09
+Niue,NIU,NIU,False,-19.049,-169.87
+North Korea,PRK,PRK,False,40.154,127.193
+North Macedonia,MKD,MKD,False,41.595,21.682
+Northern Mariana Islands,MNP,MNP,False,15.181,145.744
+Norway,NOR,NOR,False,64.238,13.908
+Oman,OMN,OMN,False,20.575,56.085
+Pakistan,PAK,PAK,False,29.95,69.34
+Palau,PLW,PLW,False,7.513,134.58
+Palestine,PSE,PSX,False,31.948,35.248
+Panama,PAN,PAN,False,8.524,-80.112
+Papua New Guinea,PNG,PNG,False,-6.606,144.244
+Paraguay,PRY,PRY,False,-23.228,-58.4
+Peru,PER,PER,False,-9.153,-74.382
+Philippines,PHL,PHL,False,15.957,121.416
+Poland,POL,POL,False,52.128,19.39
+Portugal,PRT,PRT,False,39.677,-7.978
+Puerto Rico,PRI,PRI,False,18.23,-66.482
+Qatar,QAT,QAT,False,25.306,51.185
+Reunion,REU,REU,False,,
+Romania,ROU,ROU,False,45.852,24.973
+Russia,RUS,RUS,False,61.661,99.062
+Rwanda,RWA,RWA,False,-1.99,29.92
+Saint Barthelemy,BLM,BLM,False,17.899,-62.841
+Saint Helena,SHN,SHN,False,-15.959,-5.716
+Saint Kitts and Nevis,KNA,KNA,False,17.327,-62.748
+Saint Lucia,LCA,LCA,False,13.895,-60.97
+Saint Martin (French part),MAF,MAF,False,18.089,-63.06
+Saint Vincent and the Grenadines,VCT,VCT,False,13.254,-61.196
+Samoa,WSM,WSM,False,-13.631,-172.437
+Sao Tome and Principe,STP,STP,False,0.238,6.607
+Saudi Arabia,SAU,SAU,False,24.125,44.539
+Senegal,SEN,SEN,False,14.366,-14.473
+Serbia,SRB,SRB,False,44.222,20.79
+Serbia and Montenegro,OWID_SRM,OWID_SRM,True,,
+Seychelles,SYC,SYC,False,-4.661,55.476
+Sierra Leone,SLE,SLE,False,8.572,-11.785
+Sint Maarten (Dutch part),SXM,SXM,False,18.051,-63.057
+Slovakia,SVK,SVK,False,48.705,19.479
+Slovenia,SVN,SVN,False,46.116,14.804
+Solomon Islands,SLB,SLB,False,-9.624,160.169
+Somalia,SOM,SOM,False,4.751,45.707
+South Africa,ZAF,ZAF,False,-29.01,25.157
+South Korea,KOR,KOR,False,36.461,127.871
+South Sudan,SSD,SDS,False,7.309,30.248
+Spain,ESP,ESP,False,40.4,-3.563
+Sri Lanka,LKA,LKA,False,7.609,80.703
+Sudan,SDN,SDN,False,15.99,29.94
+Suriname,SUR,SUR,False,4.131,-55.912
+Sweden,SWE,SWE,False,62.825,16.735
+Switzerland,CHE,CHE,False,46.798,8.209
+Syria,SYR,SYR,False,35.023,38.505
+Taiwan,TWN,TWN,False,23.752,120.962
+Tajikistan,TJK,TJK,False,38.529,71.014
+Tanzania,TZA,TZA,False,-6.276,34.798
+Thailand,THA,THA,False,15.134,101.006
+Togo,TGO,TGO,False,8.525,0.962
+Tokelau,TKL,TKL,False,,
+Tonga,TON,TON,False,-21.167,-175.217
+Trinidad and Tobago,TTO,TTO,False,10.421,-61.293
+Tunisia,TUN,TUN,False,34.12,9.548
+Turkey,TUR,TUR,False,38.991,35.422
+Turkmenistan,TKM,TKM,False,39.116,59.373
+Turks and Caicos Islands,TCA,TCA,False,21.812,-71.741
+Tuvalu,TUV,TUV,False,-8.503,179.206
+USSR,OWID_USS,OWID_USS,True,,
+Uganda,UGA,UGA,False,1.275,32.369
+Ukraine,UKR,UKR,False,49.16,31.253
+United Arab Emirates,ARE,ARE,False,23.904,54.307
+United Kingdom,GBR,GBR,False,53.938,-2.507
+United States,USA,USA,False,39.527,-99.144
+United States Virgin Islands,VIR,VIR,False,17.741,-64.772
+Uruguay,URY,URY,False,-32.8,-56.018
+Uzbekistan,UZB,UZB,False,41.757,63.133
+Vanuatu,VUT,VUT,False,-15.225,166.85
+Venezuela,VEN,VEN,False,7.119,-66.187
+Vietnam,VNM,VNM,False,16.652,106.301
+Wallis and Futuna,WLF,WLF,False,-14.286,-178.13
+West Germany,OWID_GFR,OWID_GFR,True,,
+Yemen,YEM,YEM,False,15.936,47.541
+Yemen Arab Republic,OWID_YAR,OWID_YAR,True,,
+Yemen People's Republic,OWID_YPR,OWID_YPR,True,,
+Yugoslavia,OWID_YGS,OWID_YGS,True,,
+Zambia,ZMB,ZMB,False,-13.458,27.775
+Zimbabwe,ZWE,ZWE,False,-19.004,29.851

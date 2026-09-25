@@ -1,0 +1,16 @@
+{
+  "built_at": "2026-09-25T05:19:49+00:00",
+  "elevation_source": "open-meteo",
+  "power_first_day": "1981-01-01",
+  "power_last_day": "2026-09-21",
+  "training_years": [
+    1981,
+    2023
+  ],
+  "normal_period": [
+    1991,
+    2020
+  ],
+  "current_window_days": 30,
+  "ifi_last_year": 2023
+}

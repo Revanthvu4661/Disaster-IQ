@@ -6,23 +6,12 @@ import { Skeleton } from '../ui'
  *
  * Recharts is the largest dependency in the bundle (~114 KB gzipped). Loading
  * it on the critical path delayed first paint on a throttled connection, so
- * each chart is split into its own chunk and swapped in behind a skeleton once
- * the data and the library have both arrived.
+ * the charts are split into their own chunk and swapped in behind a skeleton
+ * once the data and the library have both arrived.
  */
 const load = () => import('./Charts')
 
-const CategoryBarChartLazy = lazy(() =>
-  load().then((module) => ({ default: module.CategoryBarChart })),
-)
-const SimpleBarChartLazy = lazy(() =>
-  load().then((module) => ({ default: module.SimpleBarChart })),
-)
-const GroupedBarChartLazy = lazy(() =>
-  load().then((module) => ({ default: module.GroupedBarChart })),
-)
-const SimpleLineChartLazy = lazy(() =>
-  load().then((module) => ({ default: module.SimpleLineChart })),
-)
+const lazyNamed = (name) => lazy(() => load().then((module) => ({ default: module[name] })))
 
 const withFallback = (Component) =>
   function LazyChart(props) {
@@ -33,7 +22,7 @@ const withFallback = (Component) =>
     )
   }
 
-export const CategoryBarChart = withFallback(CategoryBarChartLazy)
-export const SimpleBarChart = withFallback(SimpleBarChartLazy)
-export const GroupedBarChart = withFallback(GroupedBarChartLazy)
-export const SimpleLineChart = withFallback(SimpleLineChartLazy)
+export const YearBars = withFallback(lazyNamed('YearBars'))
+export const CategoryBars = withFallback(lazyNamed('CategoryBars'))
+export const StackedBars = withFallback(lazyNamed('StackedBars'))
+export const ScatterLog = withFallback(lazyNamed('ScatterLog'))

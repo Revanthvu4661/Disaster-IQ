@@ -1,367 +1,128 @@
 # DisasterIQ
 
-Analyse, predict and recommend on disaster response messages.
+Historical impact analytics, risk prediction and preparedness and response
+recommendations for three disaster types:
+**earthquake, flood and cyclone/hurricane**.
 
-DisasterIQ ingests the Figure-Eight disaster response corpus (~26,000 real
-messages from the Haiti earthquake, the Chile earthquake, the Pakistan floods
-and Superstorm Sandy), classifies an incoming message across 35 need
-categories, scores how life-threatening it is, explains which words drove each
-label, and turns the result into a prioritised action plan for named response
-teams.
+Every historical number is computed from public disaster-impact data:
+deaths, people affected, economic loss, frequency and geography from
+**EM-DAT via Our World in Data**, earthquake locations from the **USGS**
+catalogue, and cyclone tracks from **NOAA IBTrACS**. Live events come from
+USGS, GDACS and NASA EONET. A metric that is not in these sources is shown as
+unavailable, never estimated. See [docs/DATA_SOURCES.md](docs/DATA_SOURCES.md)
+for where every number comes from.
 
-| | |
-|---|---|
-| Test macro F1 | **0.4763** (previous model: 0.405) |
-| Serving model | fine-tuned multilingual DistilBERT, chosen by a six-candidate benchmark |
-| Decision rule | one tuned threshold per label, fitted on a validation split only |
-| API | FastAPI, 27 endpoints, every response typed with pydantic |
-| Tests | 157 backend tests (94% coverage on services), 33 frontend tests |
+It follows **Analyze → Predict → Recommend**, for all three disasters:
 
-Full metrics and limitations: [MODEL_CARD.md](MODEL_CARD.md). Design decisions:
-[docs/DECISIONS.md](docs/DECISIONS.md).
-
-![Dashboard](docs/screenshots/dashboard-desktop.png)
-
----
+1. **Analytics** (Level 1): the earthquake, flood and cyclone pages analyse
+   history, including a Recovery & resilience block from what EM-DAT records.
+2. **Disaster Risk Prediction** (Level 2): *flood* risk for Kerala's 14 districts
+   from a logistic regression trained on the India Flood Inventory and NASA
+   POWER (test ROC-AUC 0.79 on 2013–2023); *earthquake* and *cyclone* risk for
+   India's 36 states and union territories from a **statistical hazard index**
+   over the USGS catalogue and NOAA IBTrACS tracks. That index is not a trained
+   model, and the page says so. All three use the same four risk levels.
+3. **Preparedness & Response Recommendations** (Level 3): for the hazard you
+   pick, rule-based preparedness actions (retrofitting, drills, evacuation
+   routes, pre-positioning) and a formula-based response estimate (rescue
+   boats or search-and-rescue teams or cyclone shelters, medical teams, food,
+   water, shelter), both driven by the Level 2 risk. River-gauge data is not
+   included.
 
 ## Quick start
 
-You need **Python 3.11+** and **Node 18+**. From the project root:
-
 ```bash
 pip install -r backend/requirements-dev.txt
-python -m backend.etl                          # build the SQLite cache (~20 s)
-python -m backend.model.train_model --fast     # train a model (~10 min, CPU only)
-python -m uvicorn backend.main:app --port 8000
+cd frontend && npm install && cd ..
+
+python -m uvicorn backend.main:app --port 8000   # API
+cd frontend && npm run dev                        # UI on http://localhost:5173
 ```
 
-In a second terminal:
+The cleaned data is committed in `backend/data/clean/`, so the API starts
+offline and builds its SQLite store (`backend/data/disasters.db`) in about a
+second. To re-fetch and rebuild from the sources:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+python -m backend.data_pipeline            # download what is missing, clean, store
+python -m backend.data_pipeline --refresh  # re-download everything
+python -m backend.data_pipeline --verify   # print known disasters next to public figures
 ```
 
-Open <http://localhost:5173>. The API docs are at <http://localhost:8000/docs>.
-
-If you skip the training step the API trains a model on first start and logs
-its progress; the UI will show "Model unavailable" until it finishes.
-
-### With Docker
+The flood-risk features are committed too (`backend/data/clean/flood/`). To
+rebuild them, or refresh only the latest 30 days from NASA POWER before a demo:
 
 ```bash
-docker compose up --build
+python -m backend.flood_pipeline            # IFI, NASA POWER, elevation, census, boundaries
+python -m backend.flood_pipeline --current  # re-fetch the latest NASA POWER data only
+python -m backend.hazard_pipeline           # earthquake and cyclone counts per Indian state
+python -m backend.services.flood_risk       # print the model's test metrics and back-tests
 ```
 
-UI on <http://localhost:5173>, API on <http://localhost:8000>. The API trains a
-model on first start into a named volume, so later starts are fast. To build the
-image with torch and serve a DistilBERT bundle, run
-`INSTALL_ML=true docker compose up --build`.
+With make: `make setup`, `make data`, `make verify`, `make flood-current`, `make dev`, `make test`.
+With Docker: `docker compose up --build` (API on 8000, UI on 5173).
 
-### With make
+## Pages
 
-```bash
-make setup     # install backend and frontend dependencies
-make etl       # rebuild the SQLite cache
-make train     # full benchmark (needs a GPU for the transformer candidates)
-make dev       # API and UI together
-make test      # pytest + vitest
-```
+| Route | Page | Content |
+|---|---|---|
+| `/` | Overview | Type cards; live strip; sortable comparison table (events, deaths, affected, loss, countries, per-event averages); global deaths and loss trend; top-15 most severe records across all types; source panel |
+| `/earthquake`, `/flood`, `/cyclone` | Disaster pages | Eight full-width blocks: human impact, economic impact, frequency & trends, geography, severity, time-based analysis, correlation, recovery & resilience (reconstruction cost and outcome indicators by decade; no recovery timeline exists in the data); plus a live "right now" card and the Analyze → Predict → Recommend links |
+| `/map` | World Map | **Live now**: current events from USGS, GDACS, NASA EONET. **Historical**: decade slider; USGS earthquakes and IBTrACS cyclones at exact positions; EM-DAT floods at country centres |
+| `/risk?type=flood\|earthquake\|cyclone` | Disaster Risk Prediction (Level 2) | A selector for the three hazards. **Flood**: Kerala districts, logistic regression on the latest 30 days of NASA POWER rainfall and soil moisture, elevation and India Flood Inventory history, with back-test replays (Aug 2018, Aug 2019, Jun 2013, Sep 2018), a "check a region" scorer with per-factor contributions and a model card. **Earthquake / cyclone**: Indian states, annual probability from catalogue counts, the cut-offs, a "check a state" view, known-event checks and what the index does not include |
+| `/preparedness?type=…` | Preparedness & Response Recommendations (Level 3) | Two labelled parts. **Preparedness**: states or districts ranked by risk, with the rule-based actions that fire for each and why. **Response**: resources in priority order (people needing assistance, medical teams, food, water, shelter, plus boats, rescue teams or cyclone shelters), the arithmetic for each line, and every parameter with its basis |
+| `/about` | About the data | Sources, methods, what is not available |
 
----
+Every chart has an insight headline, loading/empty/error states, a data table
+and CSV/PNG export, and a badge naming its source.
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    subgraph Data
-        CSV[disaster_messages.csv<br/>disaster_categories.csv]
-        DB[(SQLite<br/>messages + derived columns)]
-    end
-
-    subgraph ETL["backend/etl.py"]
-        CLEAN[dedupe ids and messages<br/>parse 36 labels<br/>flag related=2 as noise]
-        EVENT["services/events.py<br/>keyword + id-range event inference"]
-    end
-
-    subgraph Model["backend/model"]
-        TRAIN[train_model.py<br/>60/20/20 split<br/>class balancing<br/>6-candidate benchmark]
-        TUNE[evaluate.py<br/>per-label thresholds<br/>tuned on validation]
-        BUNDLE[(disaster_model.joblib<br/>predictor + explainer<br/>thresholds + metrics)]
-    end
-
-    subgraph API["backend/main.py - FastAPI"]
-        WARM[startup: precompute analytics<br/>load rules, load model]
-        RA[/api/analytics/*]
-        RP[/api/predict, /predict/batch]
-        RR[/api/recommend]
-        RM[/api/model/*]
-        RH[/api/hazards]
-    end
-
-    subgraph Services["backend/services"]
-        SEV[severity.py<br/>weighted noisy-OR]
-        REC[recommend.py<br/>YAML rule table]
-        LANG[language.py<br/>detect + translate]
-        ANA[analytics.py<br/>cached aggregates]
-        HAZ[hazards.py<br/>USGS / EONET / GDACS]
-    end
-
-    subgraph UI["frontend - React + Vite"]
-        DASH[Dashboard]
-        INS[Insights]
-        PRED[Predict]
-        TRI[Triage Inbox]
-        HAZP[Live Hazards]
-        MOD[Model]
-    end
-
-    CSV --> CLEAN --> EVENT --> DB
-    DB --> TRAIN --> TUNE --> BUNDLE
-    DB --> ANA --> WARM
-    BUNDLE --> WARM
-    WARM --> RA & RP & RR & RM & RH
-    RP --> SEV & LANG
-    RP --> REC
-    RR --> REC
-    RH --> HAZ
-    RA --> DASH & INS
-    RP --> PRED & TRI
-    RM --> MOD
-    RH --> HAZP
-```
-
-### Request flow for one prediction
-
-1. `language.py` detects the language and translates to English when a backend
-   is reachable; if not, the multilingual model classifies the original text.
-2. The model returns 35 probabilities, each compared with its own tuned
-   threshold.
-3. `severity.py` combines the life-threatening categories with a weighted
-   noisy-OR, so one confident signal escalates instead of being averaged away.
-4. The explainer (a linear TF-IDF model) attributes the prediction to specific
-   n-grams, which the UI highlights inline.
-5. `recommend.py` matches the prediction against the rule table and returns a
-   prioritised plan with teams, resources and urgency.
-
----
-
-## Screens
-
-| | |
-|---|---|
-| **Dashboard** - KPI cards with sparklines, clickable category drill-down, event comparison, genre x event and co-occurrence heatmaps | ![Dashboard](docs/screenshots/dashboard-desktop.png) |
-| **Predict** - severity gauge, triggered labels with confidence, highlighted evidence, recommended action timeline | ![Predict](docs/screenshots/predict-desktop.png) |
-| **Triage Inbox** - paste or upload a CSV, sort by severity, filter, export, resource demand forecast | ![Triage](docs/screenshots/triage-desktop.png) |
-| **Insights** - term explorer, needs bundles, urgent vocabulary, keyword in context, data quality | ![Insights](docs/screenshots/insights-desktop.png) |
-| **Model** - candidate comparison, per-label metrics, PR and threshold curves | ![Model](docs/screenshots/model-desktop.png) |
-| **Live Hazards** - USGS, EONET and GDACS on a map, with an India filter and an offline state | ![Hazards](docs/screenshots/hazards-desktop.png) |
-
-Light theme and 360px-wide captures of every page are in
-[docs/screenshots](docs/screenshots).
-
-Regenerate them with both servers running:
-
-```bash
-cd frontend && node scripts/screenshots.mjs http://localhost:5173 ../docs/screenshots
-```
-
----
-
-## API reference
-
-Base URL `http://localhost:8000`. Interactive docs at `/docs`.
-
-### Health
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/` , `/health` | Readiness, row count, whether the model loaded |
-
-### Analytics (served from the startup cache)
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/analytics/summary-stats` | KPIs, sparklines and deltas |
-| GET | `/api/analytics/category-distribution` | Count and share per category |
-| GET | `/api/analytics/top-categories?limit=&needs_only=` | Top N for the bar chart |
-| GET | `/api/analytics/volume-by-event` | Volume per inferred event, with provenance |
-| GET | `/api/analytics/volume-by-genre` | Volume per source genre |
-| GET | `/api/analytics/event-category-mix` | Need mix per event, as shares |
-| GET | `/api/analytics/genre-event-matrix` | Genre x event heatmap |
-| GET | `/api/analytics/category-cooccurrence` | Full matrix, Jaccard and top pairs |
-| GET | `/api/analytics/needs-bundles?limit=` | Frequent category combinations |
-| GET | `/api/analytics/message-length` | Length histogram and per-genre medians |
-| GET | `/api/analytics/top-terms/{category}` | Distinctive terms for a category |
-| GET | `/api/analytics/urgent-terms?limit=` | Vocabulary of urgent messages |
-| GET | `/api/analytics/data-quality` | Duplicates, noise, imbalance, empties |
-| GET | `/api/analytics/search?q=&category=&event=` | Keyword in context |
-
-### Prediction and recommendation
-
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/predict` | Classify one message with severity, explanation and plan |
-| POST | `/api/predict/batch` | Triage up to 500 messages, sorted by severity |
-| POST | `/api/predict/batch-csv` | The same from a CSV upload |
-| POST | `/api/recommend` | Plan from a message or from explicit probabilities |
-| GET | `/api/recommend/rules` | The rule table that drives the plans |
-
-### Model and hazards
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/api/model/info` | Serving model, training date, library versions |
-| GET | `/api/model/performance` | Test metrics, per label, plus the benchmark |
-| GET | `/api/model/curves/{category}` | PR curve and F1 by threshold |
-| GET | `/api/model/global-terms/{category}` | Highest-weight features |
-| GET | `/api/model/categories` | Categories with their tuned thresholds |
-| GET | `/api/hazards?india_only=&source=&refresh=` | Live hazards, cached 10 minutes |
-
-Example:
-
-```bash
-curl -s localhost:8000/api/predict \
-  -H 'Content-Type: application/json' \
-  -d '{"message":"We are trapped under a collapsed building and need water"}' \
-  | python -m json.tool
-```
-
-```jsonc
-{
-  "severity": { "score": 100.0, "level": "critical", "contributors": [ /* ... */ ] },
-  "event": "Other",
-  "triggered_categories": ["related", "aid_related", "search_and_rescue", "water", "..."],
-  "highlights": [ { "start": 12, "end": 19, "text": "trapped", "category": "aid_related" } ],
-  "recommendation": {
-    "immediate_count": 4,
-    "actions": [
-      {
-        "action": "Dispatch a search and rescue team to the reported location",
-        "agency": "Search and rescue",
-        "urgency": "immediate",
-        "resources": ["USAR team", "lifting and cutting equipment", "canine unit"],
-        "rationale": "People are reported trapped or missing at the scene."
-      }
-    ]
-  }
-}
-```
-
----
-
-## Model results
-
-Full detail, per-label numbers and honest limitations in
-[MODEL_CARD.md](MODEL_CARD.md). Summary of the benchmark (test split, 5,198
-messages, identical splits and tuning for every candidate):
-
-| Model | Macro F1 | Micro F1 | Macro PR-AUC | Macro F1 at 0.5 |
-|---|---|---|---|---|
-| **distilbert** (serving) | **0.4763** | 0.6797 | 0.4554 | 0.3894 |
-| tfidf_linearsvc_wordchar | 0.4578 | 0.6709 | 0.4294 | 0.3116 |
-| tfidf_logreg_word | 0.4508 | 0.6570 | 0.4251 | 0.4337 |
-| minilm_logreg | 0.4456 | 0.6681 | 0.4202 | 0.3528 |
-| tfidf_logreg_wordchar | 0.4454 | 0.6472 | 0.4225 | 0.4381 |
-| ensemble_sgd_cnb (previous design, tuned) | 0.4171 | 0.6250 | 0.3873 | 0.4097 |
-
-The previous release reported 0.405 macro F1. The tuned version of that same
-ensemble reaches 0.4171, so class balancing and per-label thresholds alone
-account for part of the gain; DistilBERT adds the rest.
-
----
-
-## Configuration
-
-Copy `.env.example` to `.env` and adjust. Everything has a working default.
-
-| Variable | Default | Purpose |
-|---|---|---|
-| `CORS_ORIGINS` | `http://localhost:5173,...` | Comma-separated allowed origins |
-| `CORS_ALLOW_CREDENTIALS` | `true` | Ignored when the origin list is `*` |
-| `DB_PATH` / `MODEL_PATH` / `RULES_PATH` | under `backend/` | Artifact locations |
-| `AUTO_TRAIN` | `true` | Train on start when the bundle is missing or stale |
-| `WARM_CACHE` | `true` | Precompute analytics at startup |
-| `PREDICT_RATE_LIMIT` | `60/minute` | Per-client limit on `/api/predict` |
-| `BATCH_RATE_LIMIT` / `BATCH_MAX_MESSAGES` | `10/minute` / `500` | Batch limits |
-| `HAZARDS_ENABLED` / `HAZARDS_TTL_SECONDS` | `true` / `600` | Live feed proxy |
-| `TRANSLATION_ENABLED` | `true` | Turn off to always classify the original text |
-| `VITE_API_URL` | empty | API base for the frontend; empty uses the dev proxy |
-
----
-
-## Project layout
-
 ```
 backend/
-  config.py            env-driven settings
-  etl.py               CSV -> cleaned DataFrame -> SQLite
-  main.py              app factory, middleware, startup warm-up
-  schemas.py           pydantic request and response models
-  state.py             shared corpus, analytics, model and rules
-  routers/             analytics, predict, recommend, model, hazards
-  services/            events, severity, analytics, recommend, explain,
-                       language, hazards, incident, text
-  model/               train_model.py, predictors.py, evaluate.py
-  data/                raw CSVs, SQLite cache, recommendation_rules.yaml
-  tests/               pytest suite
+  data_pipeline.py     fetch → clean (backend/data/clean/*.csv) → SQLite store
+  services/history.py  every analytics payload, precomputed at startup
+  disaster_types.py    the five types: OWID column, point source, feed codes
+  live_feeds.py        USGS / GDACS / NASA EONET, merged, cached 10 min
+  flood_pipeline.py    Kerala: IFI + NASA POWER + DEM + census -> backend/data/clean/flood/
+  services/flood_risk.py   Level 2 model, fitted and evaluated at startup
+  hazard_pipeline.py   India states: USGS + IBTrACS + census -> backend/data/clean/hazard/
+  services/hazard_risk.py  Level 2 earthquake and cyclone index
+  services/recommendations.py  Level 3 rules and formula, all three hazards
+  routers/             /api/disasters, /api/history, /api/live, /api/flood-risk, /api/hazard-risk, /api/recommendations
 frontend/src/
-  styles/tokens.css    design tokens, dark and light
-  context/             theme and toast providers
-  components/          shell primitives, charts, gauge, palette
-  pages/               Dashboard, Insights, Predict, Triage, Hazards, Model, About
-  scripts/             screenshot capture
-docs/                  PLAN.md, DECISIONS.md, metrics.json, screenshots/
+  config/disasterTypes.js   the UI taxonomy (id, label, icon, colour)
+  config/sources.js         the source registry behind every badge
+  pages/                    Overview, DisasterPage (+ pages/disaster/*), WorldMap, About
+  components/history/       blocks, choropleth/point map, historical map layer
 ```
 
-## Measured quality
+## API
 
-Lighthouse 12 (mobile preset, simulated slow 4G and 4x CPU throttling) against
-the production build served with gzip on this machine, median of three runs:
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/health` | readiness, record count, data build time |
+| GET | `/api/disasters/types` | the five types and their data mapping |
+| GET | `/api/disasters/overview` | comparison table, global severity ranking, global trend, coverage |
+| GET | `/api/disasters/{id}` | the eight analysis blocks for one type |
+| GET | `/api/history/map?decade=&types=` | historical map layers for one decade |
+| GET | `/api/live/events?type=&refresh=` | merged live events and per-source status |
+| GET | `/api/live/summary` | live counts per type |
+| GET | `/api/flood-risk` | flood model card, test metrics, back-tests, current risk per district |
+| GET | `/api/flood-risk/scenario/{id}` | `current` or a back-test month such as `2018-08` |
+| GET | `/api/flood-risk/score?district=&…` | risk and per-factor contributions for a district or hand-entered conditions |
+| GET | `/api/hazard-risk/{earthquake\|cyclone}` | state-level risk index, method, cut-offs, known-event checks |
+| GET | `/api/recommendations/{earthquake\|flood\|cyclone}?scenario=&days=` | preparedness actions and response estimate per region, rules, formula, parameters |
 
-| Category | Score |
-|---|---|
-| Accessibility | 100 |
-| Best practices | 100 |
-| SEO | 100 |
-| Performance | 81 (runs ranged 73-85) |
-
-Performance is below the 90 target. The gap is first contentful paint (~2.3 s)
-and largest contentful paint (~3.4 s) under Lighthouse's throttling: the page
-is a client-rendered SPA whose largest element depends on an API response, and
-the measurement machine also hosts the API and the model. Cumulative layout
-shift is 0 and total blocking time is 180-380 ms. The next step, not taken
-here, is server-side rendering or a static pre-render of the dashboard shell
-with the KPI payload inlined. What has been done: route-level code splitting,
-lazy chart chunks, deferred below-the-fold heatmaps, a separate request for the
-largest analytics payload, an inline critical-path shell in `index.html`, and
-memoised chart components.
-
-Reproduce it with:
+## Tests
 
 ```bash
-cd frontend && npm run build && node scripts/serve-dist.mjs 4174
-npx lighthouse http://localhost:4174/ --only-categories=performance,accessibility,best-practices,seo
+python -m pytest          # pipeline, analytics, known-event checks, endpoints, live feeds
+cd frontend && npm test   # components, formatting, taxonomy
 ```
 
-## Testing
+## Data licences
 
-```bash
-python -m pytest                    # 157 tests
-python -m pytest --cov=backend/services --cov-report=term
-cd frontend && npm run test         # 33 tests
-cd frontend && npm run lint
-```
-
-The backend suite runs against the real corpus and the real model bundle when
-one is present; model-dependent tests skip cleanly when it is not.
-
-## Credits
-
-Dataset: Figure-Eight / Appen disaster response messages. Hazard feeds: USGS
-earthquake catalogue, NASA EONET, GDACS. Map tiles: OpenStreetMap contributors.
-Icons: Lucide. Charts: Recharts.
-
-DisasterIQ is a decision-support prototype. It is not a warning system and must
-not be used to decide that a message does not need a human.
+EM-DAT via Our World in Data (CC BY 4.0, cite CRED / UCLouvain), USGS and NOAA
+(US public domain), Natural Earth (public domain), OpenStreetMap tiles
+(© OpenStreetMap contributors).

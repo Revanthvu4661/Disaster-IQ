@@ -1,20 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import {
-  SEVERITY_ORDER,
-  formatDelta,
+  formatChange,
+  formatDecade,
   formatNumber,
   formatPercent,
-  humanCategory,
-  seriesColor,
-  severityMeta,
-  titleCase,
+  formatINR,
+  formatINRFull,
+  formatIndian,
+  formatLakh,
+  formatUsdApprox,
 } from './format'
 import { toCsv } from './download'
 
 describe('formatting helpers', () => {
-  it('title-cases snake_case categories', () => {
-    expect(titleCase('search_and_rescue')).toBe('Search And Rescue')
-    expect(humanCategory('medical_help')).toBe('medical help')
+  it('formats money, decades and changes', () => {
+    expect(formatUsdApprox(1.482e8)).toBe('$148.2M')
+    expect(formatDecade(1990)).toBe('1990s')
+    expect(formatChange(12.4)).toBe('+12%')
+    expect(formatChange(-3.2)).toBe('-3%')
+    expect(formatChange(null)).toBe('—')
   })
 
   it('formats numbers and percentages', () => {
@@ -23,40 +27,32 @@ describe('formatting helpers', () => {
     expect(formatPercent(0.4463)).toBe('44.6%')
     expect(formatPercent(0.0071, 2)).toBe('0.71%')
   })
-
-  it('signs deltas and ignores invalid values', () => {
-    expect(formatDelta(12.34)).toBe('+12.3%')
-    expect(formatDelta(-3)).toBe('-3.0%')
-    expect(formatDelta(null)).toBeNull()
-  })
 })
 
-describe('severity language', () => {
-  it('covers every level with an icon and a label', () => {
-    SEVERITY_ORDER.forEach((level) => {
-      const meta = severityMeta(level)
-      expect(meta.label).toBeTruthy()
-      expect(meta.icon).toBeTruthy()
-      expect(meta.className).toBe(`sev-${level}`)
-    })
+describe('rupees', () => {
+  it('uses lakh and crore, with the exact amount in Indian grouping', () => {
+    expect(formatINRFull(123456789)).toBe('₹12,34,56,789')
+    expect(formatINR(12345678900)).toBe('₹1,234.6 Cr')
+    expect(formatINR(4520000)).toBe('₹45.2 L')
+    expect(formatINR(2.9e12)).toBe('₹2.9 lakh Cr')
+    expect(formatINR(1.23e17)).toBe('₹1,23,000 lakh Cr')
+    expect(formatINR(98765)).toBe('₹98,765')
+    expect(formatINR(null)).toBe('—')
   })
 
-  it('falls back to low for an unknown level', () => {
-    expect(severityMeta('nonsense').label).toBe('Low')
-  })
-})
-
-describe('series colours', () => {
-  it('cycles through the token palette', () => {
-    expect(seriesColor(0)).toBe('var(--series-1)')
-    expect(seriesColor(7)).toBe(seriesColor(0))
+  it('shortens counts to lakh and crore without a rupee sign', () => {
+    expect(formatIndian(3241830)).toBe('32,41,830')
+    expect(formatLakh(3241830)).toBe('32.4 lakh')
+    expect(formatLakh(33406061)).toBe('3.3 crore')
+    expect(formatLakh(66029)).toBe('66,029')
+    expect(formatLakh(undefined)).toBe('—')
   })
 })
 
 describe('toCsv', () => {
   it('writes a header and quotes awkward values', () => {
-    const csv = toCsv([{ category: 'water, clean', count: 12 }])
-    expect(csv).toBe('category,count\n"water, clean",12')
+    const csv = toCsv([{ country: 'Congo, Dem. Rep.', count: 12 }])
+    expect(csv).toBe('country,count\n"Congo, Dem. Rep.",12')
   })
 
   it('returns an empty string for no rows', () => {

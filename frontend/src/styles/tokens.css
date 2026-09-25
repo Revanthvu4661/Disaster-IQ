@@ -41,8 +41,7 @@
 
   /* layout */
   --shell-max: 1280px;
-  --topbar-height: 56px;
-  --sidebar-width: 216px;
+  --topbar-height: 60px;
   --tap-target: 44px;
 
   /* severity language: identical meaning in both themes */
@@ -81,6 +80,9 @@
   --text-muted: #9aa2b1;
   --accent: #ef4444;
   --accent-hover: #f87171;
+  /* Filled buttons: white text on this clears 4.5:1 (4.83). */
+  --accent-solid: #dc2626;
+  --accent-solid-hover: #b91c1c;
   --accent-contrast: #ffffff;
   --accent-soft: rgba(239, 68, 68, 0.14);
   --focus: #93c5fd;
@@ -104,6 +106,8 @@
   --text-muted: #5b6575;
   --accent: #b91c1c;
   --accent-hover: #991b1b;
+  --accent-solid: #b91c1c;
+  --accent-solid-hover: #991b1b;
   --accent-contrast: #ffffff;
   --accent-soft: rgba(185, 28, 28, 0.1);
   --focus: #1d4ed8;
@@ -132,6 +136,8 @@
     --text-muted: #5b6575;
     --accent: #b91c1c;
     --accent-hover: #991b1b;
+    --accent-solid: #b91c1c;
+    --accent-solid-hover: #991b1b;
     --accent-soft: rgba(185, 28, 28, 0.1);
     --focus: #1d4ed8;
     --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.06);

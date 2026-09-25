@@ -18,15 +18,28 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path, options = {}) {
+/** A request that has not answered after this long fails instead of spinning forever. */
+const TIMEOUT_MS = 30_000
+
+async function request(path, { timeoutMs = TIMEOUT_MS, ...options } = {}) {
   let response
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
     response = await fetch(API_BASE + path, {
       headers: options.body instanceof FormData ? undefined : { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       ...options,
     })
-  } catch {
-    throw new ApiError('Cannot reach the API. Is the backend running?', 0)
+  } catch (error) {
+    throw new ApiError(
+      error?.name === 'AbortError'
+        ? 'The API took too long to answer. Try again.'
+        : 'Cannot reach the API. Is the backend running?',
+      0,
+    )
+  } finally {
+    clearTimeout(timer)
   }
   if (!response.ok) {
     const body = await response.json().catch(() => null)
@@ -51,59 +64,26 @@ const query = (params) => {
 export const api = {
   health: () => request('/../health'),
 
-  // analytics
-  summaryStats: () => request('/analytics/summary-stats'),
-  categoryDistribution: () => request('/analytics/category-distribution'),
-  topCategories: (limit = 15, needsOnly = false) =>
-    request(`/analytics/top-categories${query({ limit, needs_only: needsOnly || undefined })}`),
-  volumeByEvent: () => request('/analytics/volume-by-event'),
-  volumeByGenre: () => request('/analytics/volume-by-genre'),
-  eventCategoryMix: () => request('/analytics/event-category-mix'),
-  genreEventMatrix: () => request('/analytics/genre-event-matrix'),
-  cooccurrence: () => request('/analytics/category-cooccurrence'),
-  needsBundles: (limit = 12) => request(`/analytics/needs-bundles${query({ limit })}`),
-  messageLength: () => request('/analytics/message-length'),
-  topTerms: (category, limit = 15) =>
-    request(`/analytics/top-terms/${encodeURIComponent(category)}${query({ limit })}`),
-  urgentTerms: (limit = 40) => request(`/analytics/urgent-terms${query({ limit })}`),
-  dataQuality: () => request('/analytics/data-quality'),
-  search: (q, { limit = 25, category, event } = {}) =>
-    request(`/analytics/search${query({ q, limit, category, event })}`),
+  // historical impact analytics (OWID/EM-DAT, USGS, NOAA IBTrACS)
+  disasterOverview: () => request('/disasters/overview'),
+  disaster: (id) => request(`/disasters/${encodeURIComponent(id)}`),
+  historyMap: ({ decade, types } = {}) =>
+    request(`/history/map${query({ decade, types: types?.join(',') })}`),
 
-  // prediction
-  predict: (message, options = {}) =>
-    request('/predict', { method: 'POST', body: JSON.stringify({ message, ...options }) }),
-  predictBatch: (messages, options = {}) =>
-    request('/predict/batch', {
-      method: 'POST',
-      body: JSON.stringify({ messages, ...options }),
-    }),
-  predictBatchCsv: (file) => {
-    const form = new FormData()
-    form.append('file', file)
-    return request('/predict/batch-csv', { method: 'POST', body: form })
-  },
+  // live feeds (USGS, GDACS, NASA EONET), merged and cached server-side
+  liveEvents: ({ type, refresh = false } = {}) =>
+    request(`/live/events${query({ type, refresh: refresh || undefined })}`),
+  liveSummary: () => request('/live/summary'),
 
-  // recommendations
-  recommend: (payload) =>
-    request('/recommend', { method: 'POST', body: JSON.stringify(payload) }),
-  rules: () => request('/recommend/rules'),
+  // Level 2: flood risk model for the districts of Kerala
+  floodRisk: () => request('/flood-risk'),
+  floodScenario: (id) => request(`/flood-risk/scenario/${encodeURIComponent(id)}`),
+  floodScore: (params) => request(`/flood-risk/score${query(params)}`),
 
-  // model
-  modelInfo: () => request('/model/info'),
-  modelPerformance: () => request('/model/performance'),
-  modelCurves: (category) => request(`/model/curves/${encodeURIComponent(category)}`),
-  globalTerms: (category, limit = 15) =>
-    request(`/model/global-terms/${encodeURIComponent(category)}${query({ limit })}`),
-  modelCategories: () => request('/model/categories'),
+  // Level 2 for earthquakes and cyclones: statistical hazard index per state
+  hazardRisk: (hazard) => request(`/hazard-risk/${encodeURIComponent(hazard)}`),
 
-  // hazards
-  hazards: ({ indiaOnly = false, source, refresh = false } = {}) =>
-    request(
-      `/hazards${query({
-        india_only: indiaOnly || undefined,
-        source,
-        refresh: refresh || undefined,
-      })}`,
-    ),
+  // Level 3: preparedness and response recommendations from the Level 2 risk
+  recommendations: (hazard, { scenario = 'current', days = 7 } = {}) =>
+    request(`/recommendations/${encodeURIComponent(hazard)}${query({ scenario: hazard === 'flood' ? scenario : undefined, days })}`),
 }

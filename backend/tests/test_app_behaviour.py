@@ -1,4 +1,4 @@
-"""Application-level behaviour: CORS config, rate limiting, auto-training."""
+"""Application-level behaviour: CORS config, middleware, health."""
 
 from __future__ import annotations
 
@@ -6,8 +6,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.config import Settings
-from backend.rate_limit import SLOWAPI_AVAILABLE
-from backend.services import model_service as ms
 
 
 # ── configuration ────────────────────────────────────────────────────────────
@@ -51,58 +49,10 @@ def test_responses_carry_a_duration_header(client: TestClient) -> None:
     assert float(response.headers["X-Response-Time-ms"]) >= 0
 
 
-def test_rate_limiting_is_installed(client: TestClient) -> None:
-    if not SLOWAPI_AVAILABLE:
-        pytest.skip("slowapi is not installed")
-    assert client.app.state.limiter is not None
-
-
-# ── model bundle lifecycle ───────────────────────────────────────────────────
-
-
-def test_missing_bundle_triggers_training_when_allowed(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-) -> None:
-    """A missing artifact must train rather than serve a 500 forever."""
-    called = {}
-
-    def fake_train(fast: bool = False):
-        called["fast"] = fast
-        return {"schema_version": ms.BUNDLE_SCHEMA_VERSION, "trained": True}
-
-    import backend.model.train_model as train_module
-
-    monkeypatch.setattr(train_module, "train", fake_train)
-    bundle = ms.load_bundle(path=tmp_path / "missing.joblib", allow_train=True)
-    assert bundle["trained"] is True
-    assert called["fast"] is True
-
-
-def test_stale_sklearn_version_triggers_a_retrain(
-    monkeypatch: pytest.MonkeyPatch, tmp_path
-) -> None:
-    import joblib
-
-    import backend.model.train_model as train_module
-
-    path = tmp_path / "old.joblib"
-    joblib.dump(
-        {
-            "schema_version": ms.BUNDLE_SCHEMA_VERSION,
-            "sklearn_version": "0.24.0",
-            "predictor": None,
-            "category_names": [],
-            "thresholds": [],
-        },
-        path,
-    )
-    monkeypatch.setattr(
-        train_module, "train", lambda fast=False: {"retrained": True}
-    )
-    assert ms.load_bundle(path=path, allow_train=True) == {"retrained": True}
-
-
-def test_health_reports_a_degraded_state(client: TestClient) -> None:
+def test_health_reports_readiness(client: TestClient) -> None:
     body = client.get("/health").json()
-    assert set(body) >= {"status", "version", "model_loaded", "analytics_ready", "rows"}
-    assert body["version"].startswith("2.")
+    assert set(body) >= {"status", "version", "analytics_ready", "flood_model_ready", "hazard_index_ready", "records", "data_built_at"}
+    assert body["version"].startswith("5.")
+    assert body["analytics_ready"] is True
+    assert body["flood_model_ready"] is True
+    assert body["hazard_index_ready"] is True

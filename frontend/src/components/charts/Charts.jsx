@@ -1,4 +1,10 @@
-/** Recharts wrappers sharing one visual language and accessible labels. */
+/**
+ * Recharts wrappers for the historical-impact pages, sharing one visual
+ * language: one axis per chart, a single hue per series (the disaster type's
+ * colour), recessive grid, 4 px rounded bar ends, 2 px lines, a tooltip on
+ * every mark. Every chart sits inside a ChartCard that also offers the data
+ * as a table.
+ */
 
 import { memo } from 'react'
 import {
@@ -6,71 +12,130 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
+  ComposedChart,
   Line,
-  LineChart,
+  ReferenceArea,
   ResponsiveContainer,
+  Scatter,
+  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
-import { humanCategory, seriesColor, titleCase } from '../../lib/format'
+import { formatCompact1 } from '../../lib/format'
 
-const AXIS = { stroke: 'var(--border-strong)', tick: { fill: 'var(--text-muted)', fontSize: 11 } }
+const AXIS = {
+  stroke: 'var(--border-strong)',
+  tick: { fill: 'var(--text-muted)', fontSize: 11 },
+  tickLine: false,
+}
 
-function TooltipCard({ active, payload, label, formatter }) {
+function TooltipCard({ active, payload, label, format, labelFormat }) {
   if (!active || !payload?.length) return null
   return (
     <div className="tooltip-card">
-      <p style={{ fontWeight: 600, marginBottom: 4 }}>{titleCase(String(label ?? ''))}</p>
-      {payload.map((entry) => (
-        <p key={entry.dataKey ?? entry.name} style={{ color: entry.color }}>
-          {titleCase(String(entry.name))}:{' '}
-          <span className="mono">
-            {formatter ? formatter(entry.value) : entry.value?.toLocaleString?.() ?? entry.value}
-          </span>
-        </p>
-      ))}
+      <p style={{ fontWeight: 600, marginBottom: 4 }}>{labelFormat ? labelFormat(label, payload) : label}</p>
+      {payload
+        .filter((entry) => entry.value !== null && entry.value !== undefined)
+        .map((entry) => (
+          <p key={entry.dataKey ?? entry.name}>
+            <span className="tooltip-swatch" style={{ background: entry.color }} aria-hidden="true" />
+            {entry.name}: <span className="mono">{format ? format(entry.value) : entry.value}</span>
+          </p>
+        ))}
     </div>
   )
 }
 
-/** Horizontal category bars. Clicking a bar drills down. */
-function CategoryBarChartBase({ data = [], onSelect, selected, height = 380 }) {
-  const rows = data.map((row) => ({ ...row, label: humanCategory(row.category) }))
+/** Shaded band marking the years before reliable recording. */
+function CoverageBand({ from, to }) {
+  if (from === undefined || to === undefined || from >= to) return null
+  return (
+    <ReferenceArea
+      x1={from}
+      x2={to}
+      fill="var(--text-muted)"
+      fillOpacity={0.08}
+      stroke="none"
+      ifOverflow="visible"
+      label={{ value: 'sparser records', position: 'insideTopLeft', fill: 'var(--text-muted)', fontSize: 10 }}
+    />
+  )
+}
+
+/**
+ * Yearly values as bars, with an optional trailing moving average drawn as a
+ * line on the same axis (same unit, so still one axis).
+ */
+function YearBarsBase({
+  data = [],
+  valueKey,
+  valueLabel,
+  color,
+  height = 260,
+  format = formatCompact1,
+  average,
+  shadeBefore,
+}) {
+  const first = data[0]?.year
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
-        <CartesianGrid horizontal={false} stroke="var(--grid-line)" />
-        <XAxis type="number" {...AXIS} />
-        <YAxis
-          type="category"
-          dataKey="label"
-          width={118}
-          interval={0}
-          {...AXIS}
-          tick={{ fill: 'var(--text-secondary)', fontSize: 11 }}
+      <ComposedChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }} barCategoryGap={1}>
+        <CartesianGrid vertical={false} stroke="var(--grid-line)" />
+        <XAxis dataKey="year" type="number" domain={['dataMin - 1', 'dataMax + 1']} {...AXIS} />
+        <YAxis {...AXIS} width={62} tickFormatter={format} />
+        <Tooltip
+          content={<TooltipCard format={format} />}
+          cursor={{ fill: 'var(--surface-hover)' }}
         />
-        <Tooltip content={<TooltipCard />} cursor={{ fill: 'var(--surface-hover)' }} />
-        <Bar
-          dataKey="count"
-          name="messages"
-          radius={[0, 4, 4, 0]}
-          onClick={onSelect ? (entry) => onSelect(entry.category) : undefined}
-          cursor={onSelect ? 'pointer' : 'default'}
-          isAnimationActive={false}
-        >
-          {rows.map((row) => (
+        {shadeBefore && <CoverageBand from={first} to={shadeBefore} />}
+        <Bar dataKey={valueKey} name={valueLabel} fill={color} fillOpacity={average ? 0.55 : 1} radius={[2, 2, 0, 0]} isAnimationActive={false} />
+        {average && (
+          <Line
+            dataKey={average.key}
+            name={average.label}
+            stroke={color}
+            strokeWidth={2}
+            dot={false}
+            isAnimationActive={false}
+            connectNulls
+          />
+        )}
+      </ComposedChart>
+    </ResponsiveContainer>
+  )
+}
+
+/** Category bars (decades, months). `muted(row)` draws a bar lighter (e.g. a partial decade). */
+function CategoryBarsBase({
+  data = [],
+  xKey,
+  valueKey,
+  valueLabel,
+  color,
+  height = 240,
+  format = formatCompact1,
+  muted,
+  labelFormat,
+}) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
+        <CartesianGrid vertical={false} stroke="var(--grid-line)" />
+        <XAxis dataKey={xKey} {...AXIS} interval="preserveStartEnd" minTickGap={4} />
+        <YAxis {...AXIS} width={62} tickFormatter={format} />
+        <Tooltip
+          content={<TooltipCard format={format} labelFormat={labelFormat} />}
+          cursor={{ fill: 'var(--surface-hover)' }}
+        />
+        <Bar dataKey={valueKey} name={valueLabel} radius={[4, 4, 0, 0]} isAnimationActive={false}>
+          {data.map((row) => (
             <Cell
-              key={row.category}
-              fill={
-                selected === row.category
-                  ? 'var(--accent)'
-                  : row.is_urgent
-                    ? 'var(--severity-high)'
-                    : 'var(--series-1)'
-              }
-              opacity={selected && selected !== row.category ? 0.45 : 1}
+              key={row[xKey]}
+              fill={color}
+              fillOpacity={muted?.(row) ? 0.4 : 1}
+              stroke={muted?.(row) ? color : undefined}
+              strokeDasharray={muted?.(row) ? '3 2' : undefined}
             />
           ))}
         </Bar>
@@ -79,59 +144,26 @@ function CategoryBarChartBase({ data = [], onSelect, selected, height = 380 }) {
   )
 }
 
-/** Vertical bars for simple count series. */
-function SimpleBarChartBase({
-  data = [],
-  xKey,
-  yKey = 'count',
-  height = 260,
-  color = 'var(--series-1)',
-  colorBy,
-}) {
+/** Two series stacked on one axis (north/south hemisphere months). */
+function StackedBarsBase({ data = [], xKey, series, height = 240, format = formatCompact1 }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
+      <BarChart data={data} margin={{ top: 12, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid vertical={false} stroke="var(--grid-line)" />
-        <XAxis dataKey={xKey} {...AXIS} interval={0} angle={-12} textAnchor="end" height={54} />
-        <YAxis {...AXIS} width={46} />
-        <Tooltip content={<TooltipCard />} cursor={{ fill: 'var(--surface-hover)' }} />
-        <Bar dataKey={yKey} name="messages" radius={[4, 4, 0, 0]} isAnimationActive={false}>
-          {data.map((row, index) => (
-            <Cell key={row[xKey] ?? index} fill={colorBy ? colorBy(row, index) : color} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  )
-}
-
-/** Grouped bars: one group per event, one bar per category share. */
-function GroupedBarChartBase({ rows = [], categories = [], height = 320 }) {
-  return (
-    <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
-        <CartesianGrid vertical={false} stroke="var(--grid-line)" />
-        <XAxis dataKey="event" {...AXIS} height={48} interval={0} angle={-12} textAnchor="end" />
-        <YAxis
-          {...AXIS}
-          width={46}
-          tickFormatter={(value) => `${Math.round(value * 100)}%`}
-        />
-        <Tooltip
-          content={<TooltipCard formatter={(value) => `${(value * 100).toFixed(1)}%`} />}
-          cursor={{ fill: 'var(--surface-hover)' }}
-        />
-        <Legend
-          wrapperStyle={{ fontSize: 11, color: 'var(--text-muted)' }}
-          formatter={(value) => humanCategory(value)}
-        />
-        {categories.map((category, index) => (
+        <XAxis dataKey={xKey} {...AXIS} interval={0} />
+        <YAxis {...AXIS} width={62} tickFormatter={format} />
+        <Tooltip content={<TooltipCard format={format} />} cursor={{ fill: 'var(--surface-hover)' }} />
+        {series.map((item, index) => (
           <Bar
-            key={category}
-            dataKey={category}
-            name={category}
-            fill={seriesColor(index)}
-            radius={[3, 3, 0, 0]}
+            key={item.key}
+            dataKey={item.key}
+            name={item.label}
+            stackId="stack"
+            fill={item.color}
+            fillOpacity={item.opacity ?? 1}
+            stroke="var(--surface)"
+            strokeWidth={index > 0 ? 2 : 0}
+            radius={index === series.length - 1 ? [4, 4, 0, 0] : 0}
             isAnimationActive={false}
           />
         ))}
@@ -140,61 +172,74 @@ function GroupedBarChartBase({ rows = [], categories = [], height = 320 }) {
   )
 }
 
-/** Line chart used for PR curves and threshold sweeps. */
-function SimpleLineChartBase({
-  data = [],
-  xKey,
-  lines = [],
-  height = 260,
-  xLabel,
-  yLabel,
-  domain = [0, 1],
-}) {
+const logTicks = (min, max) => {
+  const ticks = []
+  for (let p = Math.floor(Math.log10(min)); p <= Math.ceil(Math.log10(max)); p += 1) ticks.push(10 ** p)
+  return ticks
+}
+
+/** Log-log scatter of records. points: [[x, y, country, year], ...] */
+function ScatterLogBase({ points = [], xLabel, yLabel, color, height = 280, formatX = formatCompact1, formatY = formatCompact1 }) {
+  const data = points.map(([x, y, country, year]) => ({ x, y, country, year }))
+  if (!data.length) return null
+  const xs = data.map((d) => d.x)
+  const ys = data.map((d) => d.y)
+  const xTicks = logTicks(Math.min(...xs), Math.max(...xs))
+  const yTicks = logTicks(Math.min(...ys), Math.max(...ys))
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 8, right: 12, bottom: 18, left: 0 }}>
+      <ScatterChart margin={{ top: 12, right: 12, bottom: 18, left: 0 }}>
         <CartesianGrid stroke="var(--grid-line)" />
         <XAxis
-          dataKey={xKey}
-          {...AXIS}
-          domain={domain}
+          dataKey="x"
           type="number"
-          label={
-            xLabel
-              ? { value: xLabel, position: 'insideBottom', offset: -8, fill: 'var(--text-muted)', fontSize: 11 }
-              : undefined
-          }
+          scale="log"
+          domain={[xTicks[0], xTicks[xTicks.length - 1]]}
+          ticks={xTicks}
+          tickFormatter={formatX}
+          name={xLabel}
+          {...AXIS}
+          label={{ value: xLabel, position: 'insideBottom', offset: -10, fill: 'var(--text-muted)', fontSize: 11 }}
         />
         <YAxis
+          dataKey="y"
+          type="number"
+          scale="log"
+          domain={[yTicks[0], yTicks[yTicks.length - 1]]}
+          ticks={yTicks}
+          tickFormatter={formatY}
+          name={yLabel}
+          width={62}
           {...AXIS}
-          width={46}
-          domain={[0, 1]}
-          label={
-            yLabel
-              ? { value: yLabel, angle: -90, position: 'insideLeft', fill: 'var(--text-muted)', fontSize: 11 }
-              : undefined
-          }
         />
-        <Tooltip content={<TooltipCard formatter={(value) => Number(value).toFixed(3)} />} />
-        {lines.map((line, index) => (
-          <Line
-            key={line.key}
-            type="monotone"
-            dataKey={line.key}
-            name={line.label}
-            stroke={line.color ?? seriesColor(index)}
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-          />
-        ))}
-      </LineChart>
+        <Tooltip
+          cursor={{ strokeDasharray: '3 3', stroke: 'var(--border-strong)' }}
+          content={({ active, payload }) => {
+            if (!active || !payload?.length) return null
+            const point = payload[0].payload
+            return (
+              <div className="tooltip-card">
+                <p style={{ fontWeight: 600, marginBottom: 4 }}>
+                  {point.country}, {point.year}
+                </p>
+                <p>
+                  {xLabel}: <span className="mono">{formatX(point.x)}</span>
+                </p>
+                <p>
+                  {yLabel}: <span className="mono">{formatY(point.y)}</span>
+                </p>
+              </div>
+            )
+          }}
+        />
+        <Scatter data={data} fill={color} fillOpacity={0.45} stroke={color} strokeOpacity={0.9} isAnimationActive={false} />
+      </ScatterChart>
     </ResponsiveContainer>
   )
 }
 
-export const CategoryBarChart = memo(CategoryBarChartBase)
-export const SimpleBarChart = memo(SimpleBarChartBase)
-export const GroupedBarChart = memo(GroupedBarChartBase)
-export const SimpleLineChart = memo(SimpleLineChartBase)
+export const YearBars = memo(YearBarsBase)
+export const CategoryBars = memo(CategoryBarsBase)
+export const StackedBars = memo(StackedBarsBase)
+export const ScatterLog = memo(ScatterLogBase)
 export { TooltipCard }

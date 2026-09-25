@@ -1,145 +1,125 @@
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { useApi } from '../hooks/useApi'
-import { PageHeader, Skeleton } from '../components/ui'
-import { titleCase } from '../lib/format'
+import { SOURCES } from '../config/sources'
+import { PageHeader } from '../components/ui'
+import { InfoCard } from '../components/history/Block'
+import { UnavailableList } from '../components/history/Unavailable'
 
-function Section({ title, children }) {
-  return (
-    <section className="card">
-      <h2 className="card-title" style={{ marginBottom: 'var(--space-3)' }}>
-        {title}
-      </h2>
-      {children}
-    </section>
-  )
-}
+const FEEDS = [
+  ['USGS', 'Earthquakes of magnitude 4.5+ in the past week.'],
+  ['GDACS', 'Earthquake, cyclone and flood alerts from the Global Disaster Alert and Coordination System.'],
+  ['NASA EONET', 'Open storm and flood events from the Earth Observatory Natural Event Tracker.'],
+]
 
+const NOT_AVAILABLE = [
+  { metric: 'Missing people (separately)', reason: 'EM-DAT folds missing people into deaths.' },
+  { metric: 'Displaced / evacuated', reason: 'Not in the free export; "left homeless" is the closest figure.' },
+  { metric: 'Sector losses (infrastructure, agriculture, housing, business)', reason: 'EM-DAT gives one total damage figure per record.' },
+  { metric: 'Urban vs rural', reason: 'No source used records it.' },
+  { metric: 'Recovery time, response time', reason: 'Not in any source used.' },
+  { metric: 'Month / season for floods', reason: 'Their only source (EM-DAT via OWID) has no event dates.' },
+  { metric: 'Point locations for floods', reason: 'The Dartmouth Flood Observatory archive is gone (HTTP 410), so EM-DAT flood impact is country-level. The Kerala flood model uses the India Flood Inventory instead.' },
+]
+
+/** Data sources, their coverage, what each feeds, and what is not available. */
 export default function About() {
-  const rules = useApi(() => api.rules(), [])
-
+  const { data } = useApi(() => api.disasterOverview(), [])
+  const coverage = data?.coverage
   return (
     <div className="stack">
       <PageHeader
-        title="About DisasterIQ"
-        description="What the data is, how the pipeline works, and what it cannot do."
+        title="About the data"
+        description="Every historical number in DisasterIQ is a computation on one of the public datasets below. Where a figure is not in them, the app says so rather than estimating it."
       />
 
-      <Section title="Data">
-        <p className="text-sm secondary">
-          The corpus is the Figure-Eight (Appen) disaster response dataset: roughly 26,000
-          messages collected during the 2010 Haiti earthquake, the 2010 Chile earthquake,
-          the 2010 Pakistan floods and Superstorm Sandy in 2012, labelled across 36
-          categories. Messages arrive from three sources: direct SMS, news wires and social
-          media. The dataset has no timestamps and no geocoordinates, so nothing in this
-          application is a real time series or a real map of these events.
-        </p>
-      </Section>
-
-      <Section title="Pipeline">
-        <ol className="text-sm secondary" style={{ paddingLeft: 18, lineHeight: 1.9 }}>
-          <li>
-            ETL cleans the CSVs, removes duplicate ids and messages, flags{' '}
-            <code>related = 2</code> rows as non-disaster noise, infers the disaster event
-            from keywords and id ranges, and stores everything in SQLite.
-          </li>
-          <li>
-            The classifier is chosen by a benchmark of six candidates. Thresholds are tuned
-            per label on a validation split; all published metrics come from an untouched
-            test split.
-          </li>
-          <li>
-            Severity uses a weighted noisy-OR over life-threatening categories, so a single
-            confident signal escalates instead of being averaged away.
-          </li>
-          <li>
-            Recommendations come from an editable rule table, combining category rules,
-            severity escalations and event-specific overlays.
-          </li>
-        </ol>
-      </Section>
-
-      <Section title="Recommendation rules">
-        {rules.loading && <Skeleton height={80} />}
-        {rules.data && (
-          <>
-            <p className="text-sm secondary">
-              {rules.data.rule_count} category rules, {rules.data.escalation_count} severity
-              escalations and {rules.data.overlay_count} event overlays, version{' '}
-              {rules.data.version}. Responsible teams:
-            </p>
-            <div className="row" style={{ gap: 6, marginTop: 'var(--space-3)' }}>
-              {Object.values(rules.data.agencies).map((agency) => (
-                <span key={agency} className="chip">
-                  {agency}
-                </span>
-              ))}
+      <InfoCard headingLevel={2} title="Data sources">
+        <dl className="answers">
+          {Object.entries(SOURCES).map(([id, source]) => (
+            <div key={id}>
+              <dt>
+                <a href={source.url} target="_blank" rel="noreferrer">
+                  {source.short}
+                </a>
+              </dt>
+              <dd>{source.long}</dd>
             </div>
-            <details style={{ marginTop: 'var(--space-3)' }}>
-              <summary className="text-sm" style={{ cursor: 'pointer' }}>
-                Browse the rule table
-              </summary>
-              <div className="table-wrap" style={{ marginTop: 8, maxHeight: 320 }}>
-                <table className="data">
-                  <caption className="visually-hidden">Recommendation rules</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Category</th>
-                      <th scope="col">Action</th>
-                      <th scope="col">Team</th>
-                      <th scope="col">Urgency</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rules.data.rules.map((rule) => (
-                      <tr key={rule.id}>
-                        <td>{titleCase(rule.category)}</td>
-                        <td className="wrap">{rule.action}</td>
-                        <td>{rule.agency}</td>
-                        <td>{rule.urgency.replace('_', ' ')}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </details>
-          </>
+          ))}
+        </dl>
+        {coverage && (
+          <p className="text-sm secondary" style={{ marginTop: 'var(--space-3)' }}>
+            Years covered: {coverage.first_year}–{coverage.last_year}. {coverage.note} {coverage.unit_note} Data
+            built {new Date(coverage.built_at).toLocaleDateString()}.
+          </p>
         )}
-      </Section>
+      </InfoCard>
 
-      <Section title="Limitations">
-        <ul className="text-sm secondary" style={{ paddingLeft: 18, lineHeight: 1.9 }}>
-          <li>
-            Rare labels (tools, shops, offers, fire, hospitals) have a few hundred examples
-            at most, and <code>child_alone</code> has none. Their scores are unstable, which
-            the <Link to="/model">Model page</Link> shows per label.
-          </li>
-          <li>
-            Event labels are inferred, not ground truth. Around 46% of messages, mostly news
-            wire copy, cannot be attributed to one of the four events and stay as Other.
-          </li>
-          <li>
-            The corpus is from 2010 to 2012 and skews heavily towards Haiti, so vocabulary
-            and needs elsewhere may be under-represented.
-          </li>
-          <li>
-            Severity weights are an editorial judgement encoded in one file, not a
-            statistically derived score.
-          </li>
-          <li>
-            This is a decision-support prototype. It should never replace a trained
-            dispatcher or an official warning system.
-          </li>
-        </ul>
-      </Section>
+      <InfoCard
+        headingLevel={2}
+        title="How the derived figures are computed"
+        insight="Full definitions are in docs/DATA_SOURCES.md in the repository."
+      >
+        <dl className="answers">
+          <div>
+            <dt>Fatality rate</dt>
+            <dd>Deaths ÷ total affected × 100, pooled over records that report both.</dd>
+          </div>
+          <div>
+            <dt>Loss per affected person</dt>
+            <dd>Damages ÷ total affected, pooled over records that report both.</dd>
+          </div>
+          <div>
+            <dt>Money</dt>
+            <dd>
+              Shown in ₹. Each record&apos;s damage figure as EM-DAT reported it (US$ of that year) is
+              converted at that year&apos;s average exchange rate (World Bank WDI, from IMF data,
+              1960–2025; earlier years use the 1960 rate and are marked *), then summed. Converted from
+              USD using that year&apos;s average exchange rate. Not adjusted for inflation. The original
+              US$ figure appears on hover. Rankings across years (Severity Index, trends, highest-loss
+              decade) use EM-DAT damages adjusted with the US consumer price index (2024 prices).
+            </dd>
+          </div>
+          <div>
+            <dt>Severity Index</dt>
+            <dd>
+              log10(1 + x) of deaths, total affected and damages, each min-max scaled within the records
+              being ranked, weighted 50 / 25 / 25, times 100.
+            </dd>
+          </div>
+          <div>
+            <dt>Trends</dt>
+            <dd>Spearman rank test on yearly totals from 1980; &quot;increasing&quot; needs p &lt; 0.05.</dd>
+          </div>
+          <div>
+            <dt>Correlation</dt>
+            <dd>Pearson r on log10 values and Spearman ρ, over records reporting both figures.</dd>
+          </div>
+        </dl>
+      </InfoCard>
 
-      <Section title="Credits">
-        <p className="text-sm secondary">
-          Dataset: Figure-Eight / Appen disaster response messages. Hazard feeds: USGS
-          earthquake catalogue, NASA EONET, GDACS. Map tiles: OpenStreetMap contributors.
-          Icons: Lucide. Charts: Recharts.
+      <InfoCard headingLevel={2} title="Not available in these sources">
+        <UnavailableList items={NOT_AVAILABLE} title="Shown as unavailable in the app" />
+      </InfoCard>
+
+      <InfoCard
+        headingLevel={2}
+        title="Live feeds"
+        insight="Fetched every 10 minutes and shown on the World Map and each disaster page. They are separate from the historical records."
+      >
+        <dl className="answers">
+          {FEEDS.map(([name, text]) => (
+            <div key={name}>
+              <dt>{name}</dt>
+              <dd>{text}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="text-sm" style={{ marginTop: 'var(--space-3)' }}>
+          <Link to="/map" className="text-link">
+            Open the World Map
+          </Link>
         </p>
-      </Section>
+      </InfoCard>
     </div>
   )
 }

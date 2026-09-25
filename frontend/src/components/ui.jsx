@@ -1,7 +1,6 @@
-/** Small shared primitives: skeletons, states, chips, meters, page headers. */
+/** Small shared primitives: skeletons, states, page headers. */
 
 import { AlertTriangle, Inbox, RefreshCw } from 'lucide-react'
-import { severityMeta, titleCase } from '../lib/format'
 
 export function Skeleton({ height = 16, width = '100%', style }) {
   return (
@@ -80,73 +79,5 @@ export function PageHeader({ title, description, actions }) {
       </div>
       {actions}
     </header>
-  )
-}
-
-export function SeverityBadge({ level, score, size = 'sm' }) {
-  const meta = severityMeta(level)
-  const Icon = meta.icon
-  return (
-    <span
-      className={`chip ${meta.className}`}
-      style={size === 'lg' ? { fontSize: 'var(--text-sm)', padding: '6px 12px' } : undefined}
-    >
-      <Icon size={size === 'lg' ? 15 : 13} aria-hidden="true" />
-      {meta.label}
-      {typeof score === 'number' && <span className="mono">{score.toFixed(0)}</span>}
-    </span>
-  )
-}
-
-export function ConfidenceMeter({ value, label, color = 'var(--accent)' }) {
-  const percent = Math.max(0, Math.min(1, value ?? 0)) * 100
-  return (
-    <div
-      role="meter"
-      aria-valuenow={Math.round(percent)}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-label={label}
-      className="meter"
-    >
-      <span style={{ width: `${percent}%`, background: color }} />
-    </div>
-  )
-}
-
-export function CategoryChip({ category, confidence, threshold, onClick, active = false }) {
-  const Tag = onClick ? 'button' : 'span'
-  return (
-    <Tag
-      type={onClick ? 'button' : undefined}
-      onClick={onClick}
-      className="chip"
-      aria-pressed={onClick ? active : undefined}
-      style={{
-        flexDirection: 'column',
-        alignItems: 'stretch',
-        gap: 4,
-        minWidth: 132,
-        padding: '8px 10px',
-        cursor: onClick ? 'pointer' : 'default',
-        borderColor: active ? 'var(--accent)' : undefined,
-        textAlign: 'left',
-      }}
-      title={
-        threshold !== undefined
-          ? `Tuned threshold ${threshold.toFixed(2)}`
-          : undefined
-      }
-    >
-      <span className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ color: 'var(--text)' }}>{titleCase(category)}</span>
-        {typeof confidence === 'number' && (
-          <span className="mono muted">{(confidence * 100).toFixed(0)}%</span>
-        )}
-      </span>
-      {typeof confidence === 'number' && (
-        <ConfidenceMeter value={confidence} label={`${titleCase(category)} confidence`} />
-      )}
-    </Tag>
   )
 }

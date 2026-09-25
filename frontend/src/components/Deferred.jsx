@@ -4,9 +4,9 @@ import { SkeletonCard } from './ui'
 /**
  * Renders children only once they are near the viewport.
  *
- * The dashboard's heatmaps and grouped charts add hundreds of SVG nodes each;
- * mounting them all on load pushed largest-contentful-paint and total blocking
- * time well past target on a throttled phone. Deferring them keeps the first
+ * The disaster pages' maps and scatter plots add hundreds of SVG nodes each;
+ * mounting them all on load pushes largest-contentful-paint and total blocking
+ * time past target on a throttled phone. Deferring them keeps the first
  * screen cheap without changing what the page eventually shows.
  *
  * Browsers without IntersectionObserver render immediately.

@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+} from 'react'
+import { applyDisasterTokens } from '../config/disasterTypes'
 
 const STORAGE_KEY = 'disasteriq.theme'
 const ThemeContext = createContext(null)
@@ -33,8 +42,10 @@ export function ThemeProvider({ children }) {
 
   const theme = preference ?? system
 
-  useEffect(() => {
+  // Layout effect so the theme and the disaster colours are in place before paint.
+  useLayoutEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
+    applyDisasterTokens(theme)
   }, [theme])
 
   const setTheme = useCallback((next) => {
