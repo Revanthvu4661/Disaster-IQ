@@ -26,7 +26,7 @@ from backend.services.flood_risk import FEATURE_KEYS, KNOWN_EVENTS, load_flood_m
 
 @pytest.fixture(scope="module")
 def flood():
-    return load_flood_model()
+    return load_flood_model(use_cache=False)
 
 
 @pytest.fixture(scope="module")
@@ -303,3 +303,22 @@ def test_payload_is_strict_json(client: TestClient) -> None:
     """Districts without a census row must serialise as null, not NaN."""
     text = client.get("/api/flood-risk").text
     assert "NaN" not in text and "Infinity" not in text
+
+
+# ── startup cache ────────────────────────────────────────────────────────────
+
+
+def test_committed_cache_matches_the_data_and_the_model(flood) -> None:
+    """A server starts from model_cache.json.gz instead of fitting; it must agree with a fresh fit."""
+    from backend.services.flood_risk import CACHE_NAME, FLOOD_DIR, cache_key
+
+    assert (FLOOD_DIR / CACHE_NAME).exists(), "run: python -m backend.services.flood_risk --write-cache"
+    fast = load_flood_model()
+    assert fast.cached is not None, "the cache is out of date: run python -m backend.services.flood_risk --write-cache"
+    assert cache_key() == fast.cached["key"]
+    assert fast.evaluation["logistic"] == flood.evaluation["logistic"]
+    assert fast.payload["coverage"] == flood.payload["coverage"]
+    assert fast.score("Idukki")["probability"] == flood.score("Idukki")["probability"]
+    assert fast.predictions("2022-06")["districts"][0]["district"] == flood.predictions("2022-06")["districts"][0]["district"]
+    with pytest.raises(ValueError, match="Unknown scenario"):
+        fast.predictions("1900-01")

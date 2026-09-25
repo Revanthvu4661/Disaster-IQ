@@ -34,10 +34,14 @@ refit on every row. Everything is computed at startup from the committed CSVs.
 
 from __future__ import annotations
 
+import gzip
+import hashlib
 import json
+import logging
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -58,7 +62,10 @@ from sklearn.preprocessing import StandardScaler
 
 from backend.config import DATA_DIR
 
+logger = logging.getLogger("flood_risk")
+
 FLOOD_DIR = DATA_DIR / "clean" / "flood"
+CACHE_NAME = "model_cache.json.gz"
 
 FEATURES: list[dict[str, Any]] = [
     {"key": "rain_pct_normal", "label": "Rainfall vs normal", "unit": "% of normal",
@@ -187,6 +194,17 @@ class Fit:
     def intercept(self) -> float:
         return float(self.model.intercept_[0])
 
+    def to_dict(self) -> dict[str, Any]:
+        return {"mean": self.scaler.mean_.tolist(), "scale": self.scaler.scale_.tolist(),
+                "coef": self.model.coef_[0].tolist(), "intercept": self.intercept, "regions": self.regions}
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Fit":
+        """A fit restored from the cache: it can explain and score, but not be re-trained or ``predict`` a frame."""
+        scaler = SimpleNamespace(mean_=np.array(data["mean"]), scale_=np.array(data["scale"]))
+        model = SimpleNamespace(coef_=np.array([data["coef"]]), intercept_=np.array([data["intercept"]]))
+        return cls(scaler, model, list(data["regions"]))  # type: ignore[arg-type]
+
     def region_effect(self, state: str | None) -> float:
         if state in self.regions:
             return float(self.model.coef_[0][len(FEATURE_KEYS) + self.regions.index(state)])
@@ -227,19 +245,26 @@ class FloodModel:
     """The served model plus everything the Flood Risk Prediction page shows."""
 
     districts: pd.DataFrame
-    months: pd.DataFrame
+    months: pd.DataFrame | None
     current: pd.DataFrame
-    kerala: pd.DataFrame
+    kerala: pd.DataFrame | None
     meta: dict
     report: pd.DataFrame | None = None
+    cached: dict | None = None      # a model_cache.json.gz: skips fitting, which is slow on a small server
     fit: Fit = field(init=False)
     split_fit: Fit = field(init=False)
     evaluation: dict = field(init=False)
     payload: dict = field(init=False)
 
     def __post_init__(self) -> None:
-        data = self.months.dropna(subset=FEATURE_KEYS + [LABEL])
         self._districts = self.districts.set_index("district")
+        if self.cached is not None:
+            self.evaluation = self.cached["evaluation"]
+            self.fit = Fit.from_dict(self.cached["fit"])
+            self.split_fit = Fit.from_dict(self.cached["split_fit"])
+            self.payload = self.cached["payload"]
+            return
+        data = self.months.dropna(subset=FEATURE_KEYS + [LABEL])
         self.evaluation = self._evaluate(data)
         self.fit = Fit.train(data)
         self.payload = self._build_payload(data)
@@ -505,6 +530,8 @@ class FloodModel:
         known = [item["id"] for item in self.scenarios()]
         if scenario not in known:
             raise ValueError(f"Unknown scenario '{scenario}'. Use one of: {', '.join(known)}")
+        if self.cached is not None:
+            return self.cached["scenarios"][scenario]
         year, month = (int(part) for part in scenario.split("-"))
         window = self.months[(self.months["year"] == year) & (self.months["month"] == month)]
         window = window.dropna(subset=FEATURE_KEYS)
@@ -662,21 +689,68 @@ class FloodModel:
         }
 
 
-def load_flood_model(flood_dir: Path = FLOOD_DIR) -> FloodModel:
+def cache_key(flood_dir: Path = FLOOD_DIR) -> str:
+    """Identifies the data and the model code a cache was built from (line endings ignored)."""
+    digest = hashlib.sha256()
+    for path in (flood_dir / "meta.json", Path(__file__)):
+        digest.update(path.read_bytes().replace(b"\r\n", b"\n"))
+    return digest.hexdigest()
+
+
+def _plain(value: Any) -> Any:
+    return value.item() if hasattr(value, "item") else str(value)
+
+
+def write_cache(model: FloodModel, flood_dir: Path = FLOOD_DIR) -> Path:
+    """Store the fitted model, its evaluation, the payload and every scenario, so a server can start without fitting."""
+    scenarios = {item["id"]: model.predictions(item["id"]) for item in model.scenarios() if item["kind"] == "backtest"}
+    body = {"key": cache_key(flood_dir), "evaluation": model.evaluation, "fit": model.fit.to_dict(),
+            "split_fit": model.split_fit.to_dict(), "payload": model.payload, "scenarios": scenarios}
+    path = flood_dir / CACHE_NAME
+    with gzip.open(path, "wt", encoding="utf-8", compresslevel=9) as handle:
+        json.dump(body, handle, default=_plain, allow_nan=False, separators=(",", ":"))
+    return path
+
+
+def _read_cache(flood_dir: Path) -> dict | None:
+    path = flood_dir / CACHE_NAME
+    if not path.exists():
+        return None
+    with gzip.open(path, "rt", encoding="utf-8") as handle:
+        body = json.load(handle)
+    if body.get("key") != cache_key(flood_dir):
+        logger.warning("flood model cache is out of date; refitting (run: python -m backend.services.flood_risk --write-cache)")
+        return None
+    return body
+
+
+def load_flood_model(flood_dir: Path = FLOOD_DIR, use_cache: bool = True) -> FloodModel:
+    """The served model: from the committed cache when it matches the data, else fitted from the CSVs."""
+    common = dict(
+        districts=pd.read_csv(flood_dir / "districts.csv"),
+        current=pd.read_csv(flood_dir / "current.csv"),
+        meta=json.loads((flood_dir / "meta.json").read_text(encoding="utf-8")),
+    )
+    cached = _read_cache(flood_dir) if use_cache else None
+    if cached is not None:
+        return FloodModel(months=None, kerala=None, cached=cached, **common)
     report_path = flood_dir / "unmatched_names.csv"
     return FloodModel(
-        districts=pd.read_csv(flood_dir / "districts.csv"),
         months=pd.read_csv(flood_dir / "months.csv.gz"),
-        current=pd.read_csv(flood_dir / "current.csv"),
         kerala=pd.read_csv(flood_dir / "kerala_imd.csv"),
-        meta=json.loads((flood_dir / "meta.json").read_text(encoding="utf-8")),
         report=pd.read_csv(report_path) if report_path.exists() else None,
+        **common,
     )
 
 
 def main() -> int:
-    """Print the evaluation: ``python -m backend.services.flood_risk``."""
-    model = load_flood_model()
+    """Print the evaluation: ``python -m backend.services.flood_risk``; with ``--write-cache``, refresh the cache."""
+    import sys
+
+    model = load_flood_model(use_cache=False)
+    if "--write-cache" in sys.argv:
+        print("wrote", write_cache(model))
+        return 0
     ev = model.evaluation
     print(f"train {ev['split']['train']} ({ev['train_rows']} rows, flood rate {ev['train_positive_rate']}), "
           f"test {ev['split']['test']} ({ev['test_rows']} rows, flood rate {ev['test_positive_rate']})")

@@ -37,6 +37,9 @@ flood-data:
 flood-current:
 	$(PY) -m backend.flood_pipeline --current
 
+flood-cache:
+	$(PY) -m backend.services.flood_risk --write-cache
+
 flood-report:
 	$(PY) -m backend.services.flood_risk
 
