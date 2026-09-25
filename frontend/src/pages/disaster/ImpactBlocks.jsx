@@ -68,6 +68,8 @@ export function HumanBlock({ type, data }) {
                 sub={`${formatNumber(metric.records_reporting)} of ${formatNumber(human.records)} records report it`}
                 icon={<Icon size={16} aria-hidden="true" />}
                 accent={color}
+                tone={metric.key}
+                meter={human.records ? metric.records_reporting / human.records : null}
               />
             )
           })}
@@ -78,6 +80,7 @@ export function HumanBlock({ type, data }) {
               sub={`Deaths ÷ total affected, ${formatNumber(rate.records)} records`}
               icon={<Percent size={16} aria-hidden="true" />}
               accent={color}
+              tone="fatality_rate"
             />
           )}
         </div>
@@ -175,6 +178,7 @@ export function EconomicBlock({ type, data }) {
                 sub={kpi.sub}
                 icon={<Icon size={16} aria-hidden="true" />}
                 accent={color}
+                tone={`economic_${kpi.key}`}
               />
             )
           })}

@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react'
 import { History, Info } from 'lucide-react'
 import { api } from '../api/client'
 import { useApi } from '../hooks/useApi'
-import { disasterVar, getDisasterType } from '../config/disasterTypes'
+import { DISASTER_IDS, disasterVar, getDisasterType } from '../config/disasterTypes'
 import { DisasterHeader } from '../components/DisasterHeader'
 import SourceBadge from '../components/SourceBadge'
 import LevelChain from '../components/LevelChain'
@@ -15,7 +16,10 @@ import {
   RecoveryBlock,
   SeverityBlock,
 } from './disaster/PlaceBlocks'
+import { HazardBackdrop, HazardPanel, TileMotif } from '../components/hazard/HazardHero'
 import { formatNumber } from '../lib/format'
+import { heroStats } from '../lib/heroStats'
+import '../styles/hazard-themes.css'
 
 const SECTIONS = [
   ['human', 'Human impact'],
@@ -30,6 +34,35 @@ const SECTIONS = [
 ]
 
 /**
+ * Marks the section chip whose block is in view (aria-current), so the chip
+ * bar doubles as a "you are here" marker. Without IntersectionObserver the
+ * chips simply stay plain links.
+ */
+function useSectionInView(ids, enabled) {
+  const [current, setCurrent] = useState(ids[0])
+  useEffect(() => {
+    if (!enabled || typeof IntersectionObserver === 'undefined') return undefined
+    const visible = new Map()
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => visible.set(entry.target.id, entry.isIntersecting))
+        const first = ids.find((id) => visible.get(id))
+        if (first) setCurrent(first)
+      },
+      { rootMargin: '-90px 0px -55% 0px' },
+    )
+    ids.forEach((id) => {
+      const element = document.getElementById(id)
+      if (element) observer.observe(element)
+    })
+    return () => observer.disconnect()
+  }, [ids, enabled])
+  return current
+}
+
+const SECTION_IDS = SECTIONS.map(([id]) => id)
+
+/**
  * One page per disaster type: nine full-width analysis blocks over the
  * historical impact data (OWID/EM-DAT, plus USGS or NOAA IBTrACS points where
  * the type has them), and a compact live card.
@@ -37,11 +70,17 @@ const SECTIONS = [
 function DisasterView({ type }) {
   const { data, error, loading, reload } = useApi(() => api.disaster(type.id), [type.id])
   const pointSource = type.historical.points
+  const inView = useSectionInView(SECTION_IDS, Boolean(data))
+  const hazardNo = `Hazard ${String(DISASTER_IDS.indexOf(type.id) + 1).padStart(2, '0')}`
 
   const header = (
     <DisasterHeader
       type={type}
       eyebrow="Historical impact · live monitoring"
+      hazardNo={hazardNo}
+      panel={<HazardPanel hazard={type.id} stats={heroStats(type, data)} />}
+      backdrop={<HazardBackdrop hazard={type.id} />}
+      motif={<TileMotif hazard={type.id} />}
       badges={
         <>
           <SourceBadge source={pointSource ? ['emdat', pointSource] : 'emdat'} />
@@ -51,9 +90,13 @@ function DisasterView({ type }) {
     />
   )
 
+  // Every state uses the same wrapper with the header first, so the header
+  // (and its entrance animations) stays mounted when the data arrives.
+  const pageStyle = { '--dt': disasterVar(type.id) }
+
   if (loading) {
     return (
-      <div className="stack">
+      <div className="stack disaster-page" style={pageStyle}>
         {header}
         <SkeletonCard height={160} />
         <SkeletonCard height={320} />
@@ -64,7 +107,7 @@ function DisasterView({ type }) {
 
   if (error) {
     return (
-      <div className="stack">
+      <div className="stack disaster-page" style={pageStyle}>
         {header}
         <ErrorState message={error} onRetry={reload} />
       </div>
@@ -73,7 +116,7 @@ function DisasterView({ type }) {
 
   const { coverage } = data
   return (
-    <div className="stack disaster-page" style={{ '--dt': disasterVar(type.id) }}>
+    <div className="stack disaster-page" style={pageStyle}>
       {header}
 
       {/* Every hazard continues into Level 2 (risk prediction) and Level 3 (preparedness and response). */}
@@ -98,7 +141,7 @@ function DisasterView({ type }) {
         <ol>
           {SECTIONS.map(([id, label], index) => (
             <li key={id}>
-              <a href={`#${id}`}>
+              <a href={`#${id}`} aria-current={inView === id ? 'location' : undefined}>
                 <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span> {label}
               </a>
             </li>
@@ -119,7 +162,17 @@ function DisasterView({ type }) {
   )
 }
 
+/**
+ * The page root carries `data-hazard`, which scopes the hazard's theme
+ * (styles/hazard-themes.css): switching tabs swaps the theme, and no other
+ * page is affected.
+ */
 export default function DisasterPage({ id }) {
   const type = getDisasterType(id)
-  return <DisasterView key={id} type={type} />
+  return (
+    <div className="hazard-page" data-hazard={type.id}>
+      <div className="hz-band" aria-hidden="true" />
+      <DisasterView key={id} type={type} />
+    </div>
+  )
 }

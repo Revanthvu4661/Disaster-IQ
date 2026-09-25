@@ -1,0 +1,327 @@
+/* Disaster-page themes, one per hazard, scoped by `data-hazard` on the page
+   root (pages/DisasterPage.jsx). Each block defines the --hz-* tokens in a
+   dark and a light variant; the rules that use them live in disasters.css
+   ("hazard pages"). Inside a themed page the app's own tokens (--surface,
+   --text, --dt-<id>, --focus…) are remapped to the theme, so every shared
+   card, chart, table and control follows it without being forked.
+
+   Text colours clear WCAG AA (4.5:1) on the surfaces they sit on:
+   --hz-accent-ink is the text-safe accent; --hz-accent is for fills,
+   strokes and large display type. --hz-alert (deaths, fatality rate) is the
+   one warning red, shared by all three themes.
+
+   Selectors also match `.app-shell:has(...)` so the page backdrop behind the
+   content takes the theme's background; nothing else outside the page does. */
+
+/* ── Earthquake: basalt, molten orange ─────────────────────────────────── */
+
+[data-hazard="earthquake"],
+.app-shell:has([data-hazard="earthquake"]) {
+  --hz-bg: #0d0b0a;
+  --hz-hero: #100d0b;
+  --hz-surface: #120f0d;
+  --hz-surface-2: #0b0908;
+  --hz-raised: #1a1512;
+  --hz-current: #1f110a;
+  --hz-tile: #2a140a;
+  --hz-border: #2f2622;
+  --hz-border-strong: #3a2e28;
+  --hz-grid: #1f1a17;
+  --hz-crack: #3b2a22;
+  --hz-text: #f1ece6;
+  --hz-text-strong: #ffffff;
+  --hz-text-2: #cfc4bb;
+  --hz-muted: #a4968c;
+  --hz-dim: #6d5d53;
+  --hz-accent: #ff6a2b;
+  --hz-accent-2: #ffb38a;
+  --hz-accent-ink: #ffb38a;
+  --hz-accent-fill: #ff6a2b;
+  --hz-on-accent: #140a05;
+  --hz-alert: #ff5a4a;
+  --hz-warn: #ffc24d;
+  --hz-warn-bg: #17120b;
+  --hz-warn-box: #3a2a10;
+  --hz-warn-line: #6b4a1f;
+  --hz-live: #7ee2a8;
+  --hz-live-bg: #0f2419;
+  --hz-live-line: #1f5b3a;
+  --hz-tone-affected: #ff8a3d;
+  --hz-tone-assist: #ffb020;
+  --hz-tone-injured: #ff8a3d;
+  --hz-tone-homeless: #e0c9b3;
+  --hz-band: repeating-linear-gradient(135deg, #ff6a2b 0 14px, #1a1512 14px 28px);
+  --hz-hero-bg: #100d0b;
+  --hz-font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --hz-font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --hz-display-weight: 800;
+  --hz-display-case: uppercase;
+  --hz-display-tracking: 0.01em;
+  --hz-display-settings: normal;
+  --hz-title-size: clamp(3rem, 7.4vw, 6.5rem);
+  --hz-title-fit: 5.3; /* longest title word, in em */
+  --hz-kpi-size: clamp(2.25rem, 3.6vw, 3.5rem);
+  --hz-readout-size: 1.875rem;
+}
+:root[data-theme="light"] [data-hazard="earthquake"],
+:root[data-theme="light"] .app-shell:has([data-hazard="earthquake"]) {
+  --hz-bg: #f6f0e9;
+  --hz-hero: #fbf5ee;
+  --hz-surface: #fffaf4;
+  --hz-surface-2: #f4ebe1;
+  --hz-raised: #efe4d8;
+  --hz-current: #fde6d6;
+  --hz-tile: #fde2cf;
+  --hz-border: #e2d3c4;
+  --hz-border-strong: #cdb8a4;
+  --hz-grid: #eadfd3;
+  --hz-crack: #e3cfbd;
+  --hz-text: #1c1511;
+  --hz-text-strong: #120c08;
+  --hz-text-2: #43362d;
+  --hz-muted: #6b5a4d;
+  --hz-dim: #9c8878;
+  --hz-accent: #e0561c;
+  --hz-accent-2: #9a3412;
+  --hz-accent-ink: #b43c0e;
+  --hz-accent-fill: #b43c0e;
+  --hz-on-accent: #ffffff;
+  --hz-alert: #b91c1c;
+  --hz-warn: #8a5a00;
+  --hz-warn-bg: #fff6e0;
+  --hz-warn-box: #fde9b8;
+  --hz-warn-line: #d9a441;
+  --hz-live: #166534;
+  --hz-live-bg: #e8f7ee;
+  --hz-live-line: #86c9a0;
+  --hz-tone-affected: #b13a0c;
+  --hz-tone-assist: #8a4f00;
+  --hz-tone-injured: #b13a0c;
+  --hz-tone-homeless: #7a5f48;
+  --hz-band: repeating-linear-gradient(135deg, #e0561c 0 14px, #2a1d15 14px 28px);
+  --hz-hero-bg: #fbf5ee;
+}
+
+/* ── Flood: deep water, teal, foam ─────────────────────────────────────── */
+
+[data-hazard="flood"],
+.app-shell:has([data-hazard="flood"]) {
+  --hz-bg: #0a1a2e;
+  --hz-hero: #0c1f36;
+  --hz-surface: #12283f;
+  --hz-surface-2: #0c2036;
+  --hz-raised: #173150;
+  --hz-current: #103a52;
+  --hz-tile: #0f3450;
+  --hz-border: #1f3a58;
+  --hz-border-strong: #2b4c70;
+  --hz-grid: #16324f;
+  --hz-crack: #1d4466;
+  --hz-text: #e8f6fb;
+  --hz-text-strong: #ffffff;
+  --hz-text-2: #c3dbe6;
+  --hz-muted: #9dbcd0;
+  --hz-dim: #56809c;
+  --hz-accent: #2ea3c9;
+  --hz-accent-2: #7fd4e8;
+  --hz-accent-ink: #7fd4e8;
+  --hz-accent-fill: #2ea3c9;
+  --hz-on-accent: #04121f;
+  --hz-alert: #ff6b6b;
+  --hz-warn: #ffd166;
+  --hz-warn-bg: #0f2334;
+  --hz-warn-box: #2c3a2a;
+  --hz-warn-line: #5c6b3a;
+  --hz-live: #6ee7b7;
+  --hz-live-bg: #0b2a2c;
+  --hz-live-line: #1f6158;
+  --hz-tone-affected: #7fd4e8;
+  --hz-tone-assist: #5eead4;
+  --hz-tone-injured: #9ab8ff;
+  --hz-tone-homeless: #d9e8f0;
+  --hz-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='8'%3E%3Cpath d='M0 4 Q12 0 24 4 T48 4 V8 H0Z' fill='%232ea3c9'/%3E%3C/svg%3E") repeat-x, #0c2036;
+  --hz-hero-bg:
+    radial-gradient(ellipse at 15% -10%, rgba(46, 163, 201, 0.2), transparent 55%),
+    radial-gradient(ellipse at 95% 110%, rgba(127, 212, 232, 0.12), transparent 50%),
+    #0c1f36;
+  --hz-font-display: "Fraunces", Georgia, serif;
+  --hz-font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --hz-display-weight: 700;
+  --hz-display-case: none;
+  --hz-display-tracking: -0.015em;
+  --hz-display-settings: "SOFT" 100, "opsz" 144;
+  --hz-title-size: clamp(2.75rem, 6.4vw, 5.5rem);
+  --hz-title-fit: 3.4; /* longest title word, in em */
+  --hz-kpi-size: clamp(2rem, 3vw, 3rem);
+  --hz-readout-size: 1.5rem;
+}
+:root[data-theme="light"] [data-hazard="flood"],
+:root[data-theme="light"] .app-shell:has([data-hazard="flood"]) {
+  --hz-bg: #eef6fa;
+  --hz-hero: #f5fafd;
+  --hz-surface: #ffffff;
+  --hz-surface-2: #e9f3f8;
+  --hz-raised: #dcebf3;
+  --hz-current: #dff1f8;
+  --hz-tile: #d5eef7;
+  --hz-border: #cfe0ea;
+  --hz-border-strong: #a9c4d4;
+  --hz-grid: #dbe9f1;
+  --hz-crack: #bfdbe8;
+  --hz-text: #0b2233;
+  --hz-text-strong: #061725;
+  --hz-text-2: #25475d;
+  --hz-muted: #45657a;
+  --hz-dim: #7c98aa;
+  --hz-accent: #1b8fb5;
+  --hz-accent-2: #0e7490;
+  --hz-accent-ink: #0e6a86;
+  --hz-accent-fill: #0e6a86;
+  --hz-on-accent: #ffffff;
+  --hz-alert: #b91c1c;
+  --hz-warn: #8a5a00;
+  --hz-warn-bg: #fff8e6;
+  --hz-warn-box: #fdecc0;
+  --hz-warn-line: #d9b45a;
+  --hz-live: #166534;
+  --hz-live-bg: #e8f7ee;
+  --hz-live-line: #86c9a0;
+  --hz-tone-affected: #0e6a86;
+  --hz-tone-assist: #0f766e;
+  --hz-tone-injured: #3651b8;
+  --hz-tone-homeless: #4b6576;
+  --hz-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='8'%3E%3Cpath d='M0 4 Q12 0 24 4 T48 4 V8 H0Z' fill='%231b8fb5'/%3E%3C/svg%3E") repeat-x, #d5eef7;
+  --hz-hero-bg:
+    radial-gradient(ellipse at 15% -10%, rgba(27, 143, 181, 0.14), transparent 55%),
+    radial-gradient(ellipse at 95% 110%, rgba(14, 116, 144, 0.08), transparent 50%),
+    #f5fafd;
+}
+
+/* ── Cyclone: storm grey, violet ───────────────────────────────────────── */
+
+[data-hazard="cyclone"],
+.app-shell:has([data-hazard="cyclone"]) {
+  --hz-bg: #0f0e18;
+  --hz-hero: #13121f;
+  --hz-surface: #1a1830;
+  --hz-surface-2: #121126;
+  --hz-raised: #221f3d;
+  --hz-current: #231d4a;
+  --hz-tile: #251e52;
+  --hz-border: #2a2748;
+  --hz-border-strong: #3a3662;
+  --hz-grid: #221f3a;
+  --hz-crack: #2c2850;
+  --hz-text: #eeeaff;
+  --hz-text-strong: #ffffff;
+  --hz-text-2: #cdc6f0;
+  --hz-muted: #a9a2cf;
+  --hz-dim: #6a6394;
+  --hz-accent: #7c5cff;
+  --hz-accent-2: #b39cff;
+  --hz-accent-ink: #b39cff;
+  --hz-accent-fill: #6d4aff;
+  --hz-on-accent: #ffffff;
+  --hz-alert: #ff6b6b;
+  --hz-warn: #ffd166;
+  --hz-warn-bg: #17152a;
+  --hz-warn-box: #33301f;
+  --hz-warn-line: #5f5836;
+  --hz-live: #6ee7b7;
+  --hz-live-bg: #102722;
+  --hz-live-line: #1f5b4a;
+  --hz-tone-affected: #b39cff;
+  --hz-tone-assist: #8fb8ff;
+  --hz-tone-injured: #d7a6ff;
+  --hz-tone-homeless: #d9d4f5;
+  --hz-band: repeating-linear-gradient(90deg, #7c5cff 0 42px, transparent 42px 50px, #b39cff 50px 62px, transparent 62px 74px), #121126;
+  --hz-hero-bg:
+    radial-gradient(circle at 88% 45%, rgba(124, 92, 255, 0.2), transparent 50%),
+    radial-gradient(ellipse at 0% 0%, rgba(179, 156, 255, 0.08), transparent 45%),
+    #13121f;
+  --hz-font-display: "Saira", "Segoe UI", sans-serif;
+  --hz-font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --hz-display-weight: 750;
+  --hz-display-case: uppercase;
+  --hz-display-tracking: 0.03em;
+  --hz-display-settings: normal;
+  --hz-title-size: clamp(2.25rem, 4.6vw, 4.25rem);
+  --hz-title-fit: 6.2; /* longest title word, in em */
+  --hz-kpi-size: clamp(1.9rem, 2.8vw, 2.75rem);
+  --hz-readout-size: 1.45rem;
+}
+:root[data-theme="light"] [data-hazard="cyclone"],
+:root[data-theme="light"] .app-shell:has([data-hazard="cyclone"]) {
+  --hz-bg: #f3f1fb;
+  --hz-hero: #f8f7fd;
+  --hz-surface: #ffffff;
+  --hz-surface-2: #efecf9;
+  --hz-raised: #e4e0f5;
+  --hz-current: #ebe5ff;
+  --hz-tile: #e6dfff;
+  --hz-border: #dcd7f0;
+  --hz-border-strong: #b9b1e0;
+  --hz-grid: #e6e2f6;
+  --hz-crack: #d6cff2;
+  --hz-text: #16132b;
+  --hz-text-strong: #0c0a1d;
+  --hz-text-2: #3a3460;
+  --hz-muted: #585180;
+  --hz-dim: #8f88b5;
+  --hz-accent: #6d4aff;
+  --hz-accent-2: #4c2fc9;
+  --hz-accent-ink: #5433d6;
+  --hz-accent-fill: #5433d6;
+  --hz-on-accent: #ffffff;
+  --hz-alert: #b91c1c;
+  --hz-warn: #8a5a00;
+  --hz-warn-bg: #fff8e6;
+  --hz-warn-box: #fdecc0;
+  --hz-warn-line: #d9b45a;
+  --hz-live: #166534;
+  --hz-live-bg: #e8f7ee;
+  --hz-live-line: #86c9a0;
+  --hz-tone-affected: #5433d6;
+  --hz-tone-assist: #1d4ed8;
+  --hz-tone-injured: #8a2fc9;
+  --hz-tone-homeless: #5b5577;
+  --hz-band: repeating-linear-gradient(90deg, #6d4aff 0 42px, transparent 42px 50px, #4c2fc9 50px 62px, transparent 62px 74px), #e6dfff;
+  --hz-hero-bg:
+    radial-gradient(circle at 88% 45%, rgba(109, 74, 255, 0.12), transparent 50%),
+    #f8f7fd;
+}
+
+/* ── the page backdrop, and the app tokens remapped inside the page ────── */
+
+.app-shell:has(.hazard-page) { --bg: var(--hz-bg); }
+
+.hazard-page {
+  --bg: var(--hz-bg);
+  --bg-elevated: var(--hz-surface);
+  --surface: var(--hz-surface);
+  --surface-2: var(--hz-surface-2);
+  --surface-hover: var(--hz-raised);
+  --border: var(--hz-border);
+  --border-strong: var(--hz-border-strong);
+  --text: var(--hz-text);
+  --text-secondary: var(--hz-text-2);
+  --text-muted: var(--hz-muted);
+  --accent: var(--hz-accent-ink);
+  --accent-hover: var(--hz-accent-2);
+  --accent-soft: color-mix(in srgb, var(--hz-accent) 16%, transparent);
+  --focus: var(--hz-accent-2);
+  --grid-line: var(--hz-grid);
+  --dt: var(--hz-accent-ink);
+  --dt-earthquake: var(--hz-accent-ink);
+  --dt-flood: var(--hz-accent-ink);
+  --dt-cyclone: var(--hz-accent-ink);
+  --dt-earthquake-soft: color-mix(in srgb, var(--hz-accent) 14%, transparent);
+  --dt-flood-soft: color-mix(in srgb, var(--hz-accent) 14%, transparent);
+  --dt-cyclone-soft: color-mix(in srgb, var(--hz-accent) 14%, transparent);
+  --dt-earthquake-line: color-mix(in srgb, var(--hz-accent) 40%, transparent);
+  --dt-flood-line: color-mix(in srgb, var(--hz-accent) 40%, transparent);
+  --dt-cyclone-line: color-mix(in srgb, var(--hz-accent) 40%, transparent);
+  color: var(--hz-text);
+}
+/* In light themes the focus ring uses the darker accent, so it stays visible on pale surfaces. */
+:root[data-theme="light"] .hazard-page { --focus: var(--hz-accent-ink); }

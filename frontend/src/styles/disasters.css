@@ -757,3 +757,415 @@
 .heatmap-label { fill: var(--text-muted); font-size: 9px; }
 .heatmap-legend { display: flex; align-items: center; gap: 4px; font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-2); flex-wrap: wrap; }
 .heatmap-swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
+
+/* ── KPI card (shared; these match its former inline styles) ──────────── */
+
+.kpi-card { display: flex; flex-direction: column; gap: 10px; }
+.kpi-card-top { justify-content: space-between; }
+.kpi-title {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.kpi-icon { display: flex; color: var(--kpi-accent, var(--accent)); }
+.kpi-sub { margin-top: 4px; }
+.kpi-footer { color: var(--text-muted); gap: 6px; }
+.kpi-meter { display: block; height: 6px; margin-top: 10px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.kpi-meter > span { display: block; height: 100%; border-radius: inherit; background: var(--kpi-tone, var(--kpi-accent, var(--accent))); opacity: 0.8; }
+
+/* ── disaster header: neutral layout for the shared markup ────────────── */
+
+.disaster-title-row { display: flex; align-items: center; gap: var(--space-3); }
+.disaster-tile { position: relative; }
+.disaster-definition { margin: 2px 0 0; font-size: var(--text-sm); color: var(--text-secondary); }
+.disaster-badges { margin-top: var(--space-3); gap: 6px; }
+.hazard-no { margin-right: var(--space-2); }
+.level-chain-badge { display: none; }
+
+/* ══ hazard pages ═════════════════════════════════════════════════════════
+   Consumes the --hz-* tokens from hazard-themes.css. Structure and spacing
+   are shared by all three themes; only colour, type, the hero instrument
+   and the small motifs differ. */
+
+.hazard-page { display: flex; flex-direction: column; gap: var(--space-5); }
+.hazard-page .stack { gap: var(--space-5); }
+.hz-band { height: 7px; border-radius: 4px; background: var(--hz-band); margin-bottom: calc(var(--space-2) * -1); }
+
+/* hero */
+.hazard-page .disaster-header {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 520px);
+  gap: var(--space-6) 40px;
+  align-items: center;
+  padding: 40px 44px;
+  border: 1px solid var(--hz-border);
+  border-radius: 14px;
+  background: var(--hz-hero-bg);
+  overflow: hidden;
+  isolation: isolate;
+}
+.hz-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  fill: none;
+  stroke: var(--hz-crack);
+  stroke-width: 1.5;
+  opacity: 0.7;
+  pointer-events: none;
+}
+[data-hazard="flood"] .hz-backdrop,
+[data-hazard="cyclone"] .hz-backdrop { stroke-width: 2; stroke-linecap: round; }
+.hazard-page .disaster-header-text { display: flex; flex-direction: column; gap: 14px; min-width: 0; container-type: inline-size; }
+.hazard-page .eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  font-family: var(--hz-font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  color: var(--hz-accent-ink);
+}
+.hazard-page .hazard-no {
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--hz-accent) 40%, var(--hz-border));
+  border-radius: 4px;
+}
+.hazard-page .disaster-title-row { gap: 20px; }
+.hazard-page .disaster-header h1 {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--hz-font-display);
+  font-weight: var(--hz-display-weight);
+  /* As large as the theme wants, but never wider than the column: the
+     longest word (EARTHQUAKE, HURRICANE) must fit beside the 76px tile. */
+  font-size: min(var(--hz-title-size), calc((100cqi - 96px) / var(--hz-title-fit)));
+  font-variation-settings: var(--hz-display-settings);
+  line-height: 0.92;
+  letter-spacing: var(--hz-display-tracking);
+  text-transform: var(--hz-display-case);
+  color: var(--hz-text-strong);
+}
+.hazard-page .disaster-tile {
+  width: 76px;
+  height: 76px;
+  border-radius: 14px;
+  border: 2px solid var(--hz-accent);
+  background: var(--hz-tile);
+  color: var(--hz-accent);
+}
+.hazard-page .disaster-tile > svg { position: relative; z-index: 1; width: 40px; height: 40px; }
+.hazard-page .disaster-definition { font-size: 1.1875rem; color: var(--hz-text-2); max-width: 36rem; }
+.hazard-page .disaster-badges { margin-top: 6px; gap: 10px; }
+
+/* provenance badges as instrument labels */
+.hazard-page .source-badge-pill {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border-color: var(--hz-border-strong);
+  background: transparent;
+  font-family: var(--hz-font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--hz-text-2);
+}
+.hazard-page .source-badge-live .source-badge-pill {
+  border-color: var(--hz-live-line);
+  background: var(--hz-live-bg);
+  color: var(--hz-live);
+}
+.hazard-page .card-badge .source-badge-pill { min-height: 30px; padding: 0 10px; font-size: 12px; }
+
+/* instrument panel */
+.hz-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--hz-border-strong);
+  border-radius: 12px;
+  background: var(--hz-surface-2);
+  overflow: hidden;
+}
+.hz-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hz-border);
+  font-family: var(--hz-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hz-muted);
+}
+.hz-panel-status { color: var(--hz-alert); }
+.hz-panel-body { position: relative; height: 150px; }
+.hz-panel-body svg { display: block; width: 100%; height: 100%; }
+.hz-grid { stroke: var(--hz-grid); stroke-width: 1; fill: none; }
+.hz-readouts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr); margin: 0; border-top: 1px solid var(--hz-border); }
+.hz-readouts > div { padding: 12px 16px; min-width: 0; }
+.hz-readouts > div + div { border-left: 1px solid var(--hz-border); }
+.hz-readouts dt { font-family: var(--hz-font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hz-muted); }
+.hz-readouts dd {
+  margin: 2px 0 0;
+  font-family: var(--hz-font-display);
+  font-variation-settings: var(--hz-display-settings);
+  font-weight: 700;
+  font-size: var(--hz-readout-size);
+  line-height: 1.1;
+  color: var(--hz-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hz-readouts [data-tone="deaths"] dd { color: var(--hz-alert); }
+.hz-readouts [data-tone="total_affected"] dd { color: var(--hz-tone-affected); }
+
+/* seismograph: the trace draws itself once */
+.hz-trace {
+  fill: none;
+  stroke: var(--hz-accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  animation: hz-draw 3.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes hz-draw {
+  from { stroke-dasharray: 1400; stroke-dashoffset: 1400; }
+  to { stroke-dasharray: 1400; stroke-dashoffset: 0; }
+}
+
+/* water gauge: fills once, then the crest drifts slowly */
+.hz-water { animation: hz-rise 2s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+.hz-wave-back { fill: color-mix(in srgb, var(--hz-accent) 28%, transparent); animation: hz-drift 11s linear infinite reverse; }
+.hz-wave-front {
+  fill: color-mix(in srgb, var(--hz-accent) 48%, transparent);
+  stroke: var(--hz-accent-2);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  animation: hz-drift 7s linear infinite;
+}
+.hz-ticks { stroke: var(--hz-muted); stroke-width: 1.5; opacity: 0.7; }
+@keyframes hz-rise { from { transform: translateY(92px); } to { transform: none; } }
+@keyframes hz-drift { from { transform: translateX(0); } to { transform: translateX(-104px); } }
+
+/* radar: a slow sweep over range rings */
+.hz-rings { fill: none; stroke: color-mix(in srgb, var(--hz-accent) 45%, transparent); stroke-width: 1.2; }
+.hz-sweep {
+  fill: var(--hz-accent);
+  transform-box: view-box;
+  transform-origin: 259px 75px;
+  animation: hz-turn 6s linear infinite;
+}
+.hz-sweep-edge { stroke: var(--hz-accent-2); stroke-width: 2; }
+@keyframes hz-turn { to { transform: rotate(360deg); } }
+
+/* motifs by the icon tile */
+.hz-ripples { position: absolute; inset: 0; pointer-events: none; }
+.hz-ripples > span {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--hz-accent-2);
+  opacity: 0;
+  animation: hz-ripple 3.6s ease-out infinite;
+}
+.hz-ripples > span:nth-child(2) { animation-delay: 1.2s; }
+.hz-ripples > span:nth-child(3) { animation-delay: 2.4s; }
+@keyframes hz-ripple {
+  from { transform: scale(0.85); opacity: 0.7; }
+  to { transform: scale(1.75); opacity: 0; }
+}
+.hz-spiral {
+  position: absolute;
+  inset: -26px;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--hz-accent) 38%, transparent);
+  pointer-events: none;
+}
+.hz-spiral svg { width: 100%; height: 100%; animation: hz-spin-ccw 9s linear infinite; }
+.hz-spiral .wm-eye { fill: var(--hz-tile); }
+@keyframes hz-spin-ccw { to { transform: rotate(-360deg); } }
+
+/* one brief shake of the earthquake title on arrival; never loops */
+[data-hazard="earthquake"] .disaster-title-row { animation: hz-shake 0.5s ease-in-out 3; }
+@keyframes hz-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-1px, 1px); }
+  40% { transform: translate(1px, -1px); }
+  60% { transform: translate(-1px, 0); }
+  80% { transform: translate(1px, 1px); }
+}
+.hz-blink { animation: hz-blink 1.2s ease-in-out infinite; }
+@keyframes hz-blink { 50% { opacity: 0.25; } }
+
+/* L1 / L2 / L3 */
+.hazard-page .level-chain ol { gap: 16px; }
+.hazard-page .level-chain-step {
+  gap: 16px;
+  min-height: 84px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border-color: var(--hz-border);
+  background: var(--hz-surface);
+  color: var(--hz-text);
+}
+.hazard-page a.level-chain-step:hover { border-color: var(--hz-accent); background: var(--hz-raised); }
+.hazard-page .level-chain li.is-current .level-chain-step { border-color: var(--hz-accent); background: var(--hz-current); }
+.hazard-page .level-chain-icon { display: none; }
+.hazard-page .level-chain-badge {
+  display: block;
+  flex-shrink: 0;
+  font-family: var(--hz-font-display);
+  font-variation-settings: var(--hz-display-settings);
+  font-weight: 800;
+  font-size: 2.5rem;
+  line-height: 1;
+  color: var(--hz-dim);
+}
+.hazard-page .level-chain li.is-current .level-chain-badge { color: var(--hz-accent); }
+.hazard-page .level-chain-level { font-family: var(--hz-font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.12em; color: var(--hz-muted); }
+.hazard-page .level-chain li.is-current .level-chain-level { color: var(--hz-accent-ink); }
+.hazard-page .level-chain-title { font-size: 1.0625rem; }
+.hazard-page .level-chain-arrow { color: var(--hz-muted); width: 20px; height: 20px; }
+
+/* callouts: the coverage note reads as a warning label */
+.hazard-page .callout {
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--hz-border);
+  background: var(--hz-surface);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--hz-text-2);
+}
+.hazard-page .callout > svg {
+  box-sizing: content-box;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 9px;
+  border-radius: 8px;
+  background: var(--hz-raised);
+  color: var(--hz-accent-ink);
+}
+.hazard-page .callout-coverage { border: 1px dashed var(--hz-warn-line); background: var(--hz-warn-bg); }
+.hazard-page .callout-coverage > svg { background: var(--hz-warn-box); color: var(--hz-warn); }
+.hazard-page .callout-coverage strong { font-family: var(--hz-font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--hz-warn); }
+
+/* 01–09 section chips */
+.hazard-page .block-nav { padding-bottom: 18px; border-bottom: 2px solid var(--hz-accent); }
+.hazard-page .block-nav ol { gap: 10px; }
+.hazard-page .block-nav a {
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 6px;
+  border-color: var(--hz-border);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--hz-text-2);
+}
+.hazard-page .block-nav a span { font-family: var(--hz-font-mono); color: var(--hz-accent-ink); }
+.hazard-page .block-nav a:hover { border-color: var(--hz-accent); color: var(--hz-text-strong); background: var(--hz-raised); }
+.hazard-page .block-nav a[aria-current] { border-color: var(--hz-accent-fill); background: var(--hz-accent-fill); color: var(--hz-on-accent); font-weight: 600; }
+.hazard-page .block-nav a[aria-current] span { color: var(--hz-on-accent); }
+
+/* numbered blocks */
+.hazard-page .block-header { gap: 16px; padding-top: var(--space-2); border-top: 0; }
+.hazard-page .block-header > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.hazard-page .block-index { font-family: var(--hz-font-mono); font-size: 1rem; font-weight: 500; color: var(--hz-accent-ink); }
+.hazard-page .block-title {
+  font-family: var(--hz-font-display);
+  font-variation-settings: var(--hz-display-settings);
+  font-weight: 700;
+  font-size: clamp(1.75rem, 3.2vw, 2.75rem);
+  line-height: 1;
+  letter-spacing: var(--hz-display-tracking);
+  text-transform: var(--hz-display-case);
+  color: var(--hz-text-strong);
+}
+.hazard-page .block-lead { margin: 0; font-size: 0.9375rem; color: var(--hz-muted); }
+
+/* cards */
+.hazard-page .card { border-color: var(--hz-border); border-radius: 12px; background: var(--hz-surface); box-shadow: none; }
+.hazard-page .card-title { font-size: 1.25rem; font-weight: 600; color: var(--hz-text-strong); }
+.hazard-page .card-insight { font-size: 0.9375rem; color: var(--hz-muted); }
+
+/* stat cards: coloured top edge, display-type value, per-metric tone */
+.hazard-page .kpi-card {
+  --kpi-tone: var(--hz-accent);
+  position: relative;
+  padding: 18px 18px 16px;
+  border-radius: 10px;
+  background: var(--hz-surface-2);
+  overflow: hidden;
+}
+.hazard-page .kpi-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: var(--kpi-tone); }
+.hazard-page .kpi-title { font-family: var(--hz-font-mono); font-size: 12px; font-weight: 500; letter-spacing: 0.12em; color: var(--hz-text-2); }
+.hazard-page .kpi-icon { color: var(--kpi-tone); }
+.hazard-page .kpi-card-top { flex-wrap: nowrap; align-items: flex-start; gap: 8px; }
+.hazard-page .kpi-value {
+  font-family: var(--hz-font-display);
+  font-variation-settings: var(--hz-display-settings);
+  font-weight: var(--hz-display-weight);
+  font-size: var(--hz-kpi-size);
+  line-height: 1;
+  color: var(--kpi-tone-ink, var(--hz-text-strong));
+}
+.hazard-page .kpi-card[data-tone^="economic_"] .kpi-value { font-size: calc(var(--hz-kpi-size) * 0.7); line-height: 1.1; }
+.hazard-page .kpi-meter { background: var(--hz-raised); }
+.hazard-page .kpi-sub { margin-top: 8px; font-size: 0.8125rem; color: var(--hz-muted); }
+.hazard-page .kpi-card[data-tone="deaths"],
+.hazard-page .kpi-card[data-tone="fatality_rate"] { --kpi-tone: var(--hz-alert); --kpi-tone-ink: var(--hz-alert); }
+.hazard-page .kpi-card[data-tone="total_affected"] { --kpi-tone: var(--hz-tone-affected); --kpi-tone-ink: var(--hz-tone-affected); }
+.hazard-page .kpi-card[data-tone="injured"] { --kpi-tone: var(--hz-tone-injured); --kpi-tone-ink: var(--hz-tone-injured); }
+.hazard-page .kpi-card[data-tone="affected"] { --kpi-tone: var(--hz-tone-assist); --kpi-tone-ink: var(--hz-tone-assist); }
+.hazard-page .kpi-card[data-tone="homeless"],
+.hazard-page .kpi-card[data-tone="economic_reconstruction"] { --kpi-tone: var(--hz-tone-homeless); --kpi-tone-ink: var(--hz-tone-homeless); }
+.hazard-page .kpi-card[data-tone="economic_total"],
+.hazard-page .kpi-card[data-tone="economic_per-person"] { --kpi-tone: var(--hz-accent); --kpi-tone-ink: var(--hz-accent-ink); }
+.hazard-page .kpi-card[data-tone="economic_insured"] { --kpi-tone: var(--hz-tone-assist); --kpi-tone-ink: var(--hz-tone-assist); }
+
+/* event-frequency tiles, segmented controls, table headers */
+.hazard-page .event-tile { border-color: var(--hz-border); border-radius: 10px; background: var(--hz-surface-2); }
+.hazard-page .event-tile-label { font-family: var(--hz-font-mono); font-weight: 500; letter-spacing: 0.12em; }
+.hazard-page .event-tile .kpi-value { font-size: calc(var(--hz-kpi-size) * 0.75); }
+.hazard-page .seg-btn[aria-pressed="true"] { background: var(--hz-accent-fill); color: var(--hz-on-accent); }
+.hazard-page table.data th { font-family: var(--hz-font-mono); font-weight: 500; letter-spacing: 0.06em; }
+
+@media (max-width: 1023px) {
+  .hazard-page .disaster-header { grid-template-columns: 1fr; padding: 28px 24px; }
+}
+@media (max-width: 620px) {
+  .hazard-page .disaster-header { padding: 22px 16px; }
+  .hazard-page .disaster-tile { width: 60px; height: 60px; }
+  .hazard-page .disaster-tile > svg { width: 32px; height: 32px; }
+  .hazard-page .disaster-title-row { gap: 14px; }
+  .hz-readouts dd { font-size: calc(var(--hz-readout-size) * 0.72); }
+  .hazard-page .level-chain-step { min-height: 64px; }
+}
+
+/* Reduced motion: every theme animation off, in every theme, no exceptions.
+   Each animated element rests in its final state: trace drawn, water at its
+   level, radar still, no shake. */
+@media (prefers-reduced-motion: reduce) {
+  .hazard-page *,
+  .hazard-page *::before,
+  .hazard-page *::after { animation: none !important; transition: none !important; }
+  .hz-ripples > span:first-child { opacity: 0.45; }
+}

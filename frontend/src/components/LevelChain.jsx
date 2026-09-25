@@ -21,11 +21,15 @@ export function LevelChain({ current, hazard = 'flood' }) {
   return (
     <nav className="level-chain" aria-label="Analyze, predict, recommend" style={{ '--chain': `var(--dt-${hazard})`, '--chain-soft': `var(--dt-${hazard}-soft)` }}>
       <ol>
-        {steps.map((step) => {
+        {steps.map((step, index) => {
           const Icon = step.icon
           const here = step.id === current
           const body = (
             <>
+              {/* Large "L1" numeral: shown instead of the icon by the disaster-page themes only. */}
+              <span className="level-chain-badge" aria-hidden="true">
+                L{index + 1}
+              </span>
               <span className="level-chain-icon" aria-hidden="true">
                 <Icon size={16} />
               </span>

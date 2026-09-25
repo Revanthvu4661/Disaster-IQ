@@ -11,6 +11,18 @@
     <meta name="theme-color" content="#0a0a0f" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!--
+      Display and data fonts for the three disaster-page themes, loaded once
+      (two families per theme): Earthquake = Barlow Condensed + IBM Plex Mono,
+      Flood = Fraunces + IBM Plex Mono, Cyclone = Saira + IBM Plex Mono.
+      display=swap keeps text visible while they load.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Fraunces:opsz,wght,SOFT@9..144,500..800,100&family=IBM+Plex+Mono:wght@400;500;600&family=Saira:wght@500..800&display=swap"
+    />
 
     <!--
       Critical-path shell. Painted while the JS bundle downloads, so the first
