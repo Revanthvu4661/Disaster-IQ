@@ -8,6 +8,7 @@ import LevelChain from '../components/LevelChain'
 import { ErrorState, SkeletonCard } from '../components/ui'
 import { EconomicBlock, HumanBlock } from './disaster/ImpactBlocks'
 import { FrequencyBlock, TimeBlock } from './disaster/TrendBlocks'
+import { EventFrequencyBlock } from './disaster/EventFrequencyBlock'
 import {
   CorrelationBlock,
   GeographyBlock,
@@ -20,6 +21,7 @@ const SECTIONS = [
   ['human', 'Human impact'],
   ['economic', 'Economic impact'],
   ['frequency', 'Frequency & trends'],
+  ['event-frequency', 'Event frequency'],
   ['geography', 'Geography'],
   ['severity', 'Severity'],
   ['time', 'Time'],
@@ -28,7 +30,7 @@ const SECTIONS = [
 ]
 
 /**
- * One page per disaster type: eight full-width analysis blocks over the
+ * One page per disaster type: nine full-width analysis blocks over the
  * historical impact data (OWID/EM-DAT, plus USGS or NOAA IBTrACS points where
  * the type has them), and a compact live card.
  */
@@ -107,6 +109,7 @@ function DisasterView({ type }) {
       <HumanBlock type={type} data={data} />
       <EconomicBlock type={type} data={data} />
       <FrequencyBlock type={type} data={data} />
+      <EventFrequencyBlock type={type} data={data} />
       <GeographyBlock type={type} data={data} />
       <SeverityBlock type={type} data={data} />
       <TimeBlock type={type} data={data} />

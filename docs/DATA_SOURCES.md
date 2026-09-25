@@ -445,3 +445,32 @@ and are listed as unavailable; no timeline is shown. A falling deaths-per-1,000
 rate can reflect better warning and shelter but also more people being counted
 as affected, and a few catastrophes dominate individual decades (the earthquake
 series is dominated by Haiti 2010, for example); the page says both.
+
+## Event frequency by year, month and day
+
+Built in `backend/services/event_counts.py` and returned as `event_counts` on
+each disaster type (`/api/disasters/{type}`). Decade analysis is in the older
+"Frequency & trends" block and is not repeated. No date is estimated.
+
+| Type | Yearly | Monthly and daily |
+|---|---|---|
+| Earthquake | USGS M6+ per year (1900–2025) beside EM-DAT disasters per year | USGS `time`, one row per earthquake |
+| Cyclone | IBTrACS storms per genesis year beside EM-DAT | IBTrACS `genesis_date` |
+| Flood | EM-DAT disasters per year, worldwide | India Flood Inventory only (`ifi_event_dates.csv`, each event once on its resolved start date, 1967–2023) |
+
+* **Trend** from 1980 is a Spearman test (same as the rest of the site). Years
+  before 1973 (USGS) and 1980 (EM-DAT) are shaded as poorly recorded.
+* **Aftershocks.** The busiest earthquake day is 11 March 2011 (42 M6+ shocks,
+  the Tohoku sequence). A second, declustered version keeps one earthquake per
+  day per 5° cell (the largest): its busiest day has 5.
+* **IBTrACS 2025 is left out** of every cyclone count: the record ends on
+  24 October 2025 with 35 storms for the year (79 to 95 in 2022–2024), so counting
+  it would understate the year. Rule: a final year that stops before 1 December
+  is dropped.
+* **IFI counts reflect reporting.** 338 events dated 2021 but 1,138 in 2022, so
+  no trend is claimed for IFI, and the tabs say "India only".
+* **Full EM-DAT export.** If `backend/data/raw/emdat_public.xlsx` exists (columns
+  `Disaster Type`, `Start Year`, `Start Month`, `Start Day`), it replaces these
+  sources for months and days, worldwide, for all three types. Records with no
+  start month leave the monthly view and records with no start day leave the daily
+  view, and the counts dropped are reported. That file is not in the repository.

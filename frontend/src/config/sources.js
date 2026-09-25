@@ -48,6 +48,11 @@ export const SOURCES = {
     long: 'Census of India 2011 district population and households. Districts created after 2011 have no census row, so their population is unavailable, not estimated.',
     url: 'https://censusindia.gov.in/',
   },
+  emdat_public: {
+    short: 'EM-DAT public export',
+    long: 'EM-DAT (CRED / UCLouvain) event list with a start year, month and day for each disaster, worldwide. Records with no start month or day are left out of the monthly and daily views.',
+    url: 'https://public.emdat.be/',
+  },
   kerala_imd: {
     short: 'Kerala flood dataset',
     long: 'IMD monthly rainfall for the Kerala subdivision 1901-2018 with a yes/no flood flag, one row per year for the whole state. Used as a check, not as the training label.',

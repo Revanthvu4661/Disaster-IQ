@@ -21,6 +21,7 @@ import pandas as pd
 from scipy import stats
 
 from backend import disaster_types
+from backend.services import event_counts
 from backend.currency import FxTable, add_inr
 
 #: Trend questions ("is it increasing?") are answered on this window, where
@@ -218,6 +219,8 @@ class History:
     countries: pd.DataFrame
     meta: dict
     fx: FxTable | None = None
+    ifi_dates: pd.DataFrame | None = None       # India Flood Inventory events with resolved start dates
+    emdat_dates: pd.DataFrame | None = None     # the full EM-DAT export, when placed in backend/data/raw/
     types: dict[str, dict] = field(default_factory=dict)
     overview: dict = field(default_factory=dict)
 
@@ -602,6 +605,10 @@ class History:
             "human": self._human(recs),
             "economic": self._economic(recs),
             "frequency": frequency,
+            "event_counts": event_counts.build(
+                type_id, world=self.world, quakes=self.earthquakes if type_id == "earthquake" else None,
+                storms=self.cyclones if type_id == "cyclone" else None, ifi=self.ifi_dates,
+                emdat=self.emdat_dates, last_year=self.last_year, sources=SOURCES, trend=trend_verdict),
             "geography": self._geography(type_id, recs),
             "severity": self._severity(recs, "severity_type"),
             "time": self._time(type_id, frequency),
@@ -748,6 +755,8 @@ def build_history(tables: dict) -> History:
         countries=tables["countries"],
         meta=tables["meta"],
         fx=fx,
+        ifi_dates=event_counts.ifi_events(),
+        emdat_dates=event_counts.load_emdat_frame(),
     )
     history.types = {type_id: history.build_type(type_id) for type_id in disaster_types.IDS}
     history.overview = history.build_overview()

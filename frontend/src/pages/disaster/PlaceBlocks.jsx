@@ -117,7 +117,7 @@ export function GeographyBlock({ type, data }) {
       : 'Country-level data. EM-DAT via OWID records country totals, not event locations, so this map shades whole countries and cannot show where within a country the damage occurred.'
 
   return (
-    <Block id="geography" index={4} title="Geographic analysis" lead={precision}>
+    <Block id="geography" index={5} title="Geographic analysis" lead={precision}>
       <ChartCard
         headingLevel={3}
         title={`${formatNumber(geography.countries_affected)} countries have at least one recorded ${label} record; ${geography.top_deaths[0]?.country ?? '—'} has the highest death toll`}
@@ -262,7 +262,7 @@ export function SeverityBlock({ type, data }) {
   return (
     <Block
       id="severity"
-      index={5}
+      index={6}
       title="Severity analysis"
       lead={`Severity Index (0–100), ranked within the ${formatNumber(severity.population)} ${label} records.`}
     >
@@ -311,7 +311,7 @@ export function CorrelationBlock({ type, data }) {
   const { correlation } = data
   const color = `var(--dt-${type.id})`
   return (
-    <Block id="correlation" index={7} title="Correlation analysis" lead={correlation.method}>
+    <Block id="correlation" index={8} title="Correlation analysis" lead={correlation.method}>
       {correlation.pairs.map((pair) => {
         const x = PAIR_LABELS[pair.x]
         const y = PAIR_LABELS[pair.y]
@@ -386,7 +386,7 @@ export function RecoveryBlock({ type, data }) {
   return (
     <Block
       id="recovery"
-      index={8}
+      index={9}
       title="Recovery & resilience"
       lead="What EM-DAT records about rebuilding, and how outcomes have changed since 1980. It has no recovery timeline, so none is shown."
     >

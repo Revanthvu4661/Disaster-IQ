@@ -336,7 +336,7 @@ export function TimeBlock({ type, data }) {
   ]
   const headline = `Since ${coverage.trend_from}, recorded ${label} disasters show ${trendWords(time.frequency_trend) === 'no clear trend' ? 'no clear trend' : `an ${trendWords(time.frequency_trend)} trend`}, and losses ${trendWords(time.loss_trend) === 'no clear trend' ? 'show no clear trend' : `are ${trendWords(time.loss_trend)}`}`
   return (
-    <Block id="time" index={6} title="Time-based analysis">
+    <Block id="time" index={7} title="Time-based analysis">
       <InfoCard
         title={headline}
         insight="Trend verdicts use a Spearman rank test on yearly totals; “increasing” or “decreasing” needs p < 0.05."

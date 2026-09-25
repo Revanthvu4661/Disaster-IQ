@@ -38,6 +38,7 @@ Outputs (committed, so the API and tests run offline):
                                                   the observed label
     backend/data/clean/flood/current.csv          district x the latest 30 days
     backend/data/clean/flood/ifi_events.csv       IFI events, one row per event x district
+    backend/data/clean/flood/ifi_event_dates.csv  every IFI event with its resolved start date (event counts)
     backend/data/clean/flood/kerala_imd.csv       the Kerala dataset (state level)
     backend/data/clean/flood/unmatched_names.csv  names that could not be matched, and districts without a census row
     backend/data/clean/flood/meta.json            build time, sources, date ranges
@@ -515,6 +516,25 @@ def clean_ifi(path: Path, index: DistrictIndex) -> tuple[pd.DataFrame, list[dict
     return pd.DataFrame(rows), unmatched, stats
 
 
+def ifi_event_dates(path: Path) -> pd.DataFrame:
+    """Every IFI event with its resolved start and end date, one row per event (no district matching needed).
+
+    For counting when floods happened in India. Events with no readable start date are left out.
+    """
+    ifi = pd.read_csv(path, encoding="latin-1")
+    ifi = resolve_ifi_dates(ifi[["UEI", "Start Date", "End Date", "Duration(Days)", "State", "Location",
+                                 "Human fatality"]])
+    ifi = ifi.dropna(subset=["start"]).drop_duplicates("UEI")
+    return pd.DataFrame({
+        "uei": ifi["UEI"],
+        "start": ifi["start"].dt.date.astype(str),
+        "end": ifi["end"].dt.date.astype(str),
+        "state": ifi["State"].fillna("").str.strip(),
+        "location": ifi["Location"].fillna("").str.strip(),
+        "deaths": pd.to_numeric(ifi["Human fatality"], errors="coerce"),
+    }).sort_values(["start", "uei"]).reset_index(drop=True)
+
+
 def month_labels(events: pd.DataFrame, districts: list[str], first_year: int, last_year: int) -> pd.DataFrame:
     """District x calendar month: did IFI record a flood event touching the district?
 
@@ -809,6 +829,7 @@ def build(refresh: bool = False, current_only: bool = False, today: date | None 
     current.to_csv(out_dir / "current.csv", index=False)
     kerala.to_csv(out_dir / "kerala_imd.csv", index=False)
     events.drop(columns=["name"]).to_csv(out_dir / "ifi_events.csv", index=False)
+    ifi_event_dates(paths["ifi"]).to_csv(out_dir / "ifi_event_dates.csv", index=False)
     for stale in ("seasons.csv", "months.csv", "ifi_kerala_events.csv"):
         if (out_dir / stale).exists():
             (out_dir / stale).unlink()

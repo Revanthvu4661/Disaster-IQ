@@ -829,3 +829,19 @@
 .inr { white-space: nowrap; cursor: help; text-decoration: underline dotted color-mix(in srgb, var(--text-muted) 60%, transparent); text-underline-offset: 3px; }
 .inr-estimated { margin-left: 1px; color: var(--text-muted); font-size: 0.7em; }
 .currency-note { font-size: var(--text-xs); color: var(--text-muted); }
+
+
+/* ── event frequency: tabs, tiles and heatmaps ───────────────────────── */
+
+.event-series { display: flex; flex-direction: column; gap: var(--space-5); }
+.event-series-title { font-size: var(--text-sm); font-weight: 600; margin: 0 0 var(--space-1); }
+.event-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); }
+.event-tile { border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); }
+.event-tile-label { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; color: var(--text-muted); margin: 0 0 var(--space-1); }
+.event-year { gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-2); }
+.event-top { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-1); }
+.heatmap { width: 100%; overflow-x: auto; }
+.heatmap svg { display: block; width: 100%; min-width: 320px; height: auto; }
+.heatmap-label { fill: var(--text-muted); font-size: 9px; }
+.heatmap-legend { display: flex; align-items: center; gap: 4px; font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-2); flex-wrap: wrap; }
+.heatmap-swatch { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }

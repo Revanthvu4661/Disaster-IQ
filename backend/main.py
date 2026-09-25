@@ -20,6 +20,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from starlette.datastructures import MutableHeaders
 from fastapi.responses import JSONResponse
 
 from backend import live_feeds, schemas
@@ -83,18 +84,39 @@ app.add_middleware(
 )
 
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    """Structured access log with a duration, used for basic observability."""
-    started = time.perf_counter()
-    response = await call_next(request)
-    duration_ms = (time.perf_counter() - started) * 1000
-    logger.info(
-        "%s %s -> %s in %.1fms",
-        request.method, request.url.path, response.status_code, duration_ms,
-    )
-    response.headers["X-Response-Time-ms"] = f"{duration_ms:.1f}"
-    return response
+class AccessLogMiddleware:
+    """Structured access log with a duration, used for basic observability.
+
+    A plain ASGI middleware, not ``@app.middleware("http")``: that decorator wraps every body in a stream, which
+    stalled large responses (a few hundred KB) behind the Vite dev proxy.
+    """
+
+    def __init__(self, app) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        started = time.perf_counter()
+        status = 0
+
+        async def send_with_timing(message) -> None:
+            nonlocal status
+            if message["type"] == "http.response.start":
+                status = message["status"]
+                duration_ms = (time.perf_counter() - started) * 1000
+                MutableHeaders(scope=message)["X-Response-Time-ms"] = f"{duration_ms:.1f}"
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_with_timing)
+        finally:
+            logger.info("%s %s -> %s in %.1fms", scope["method"], scope["path"], status,
+                        (time.perf_counter() - started) * 1000)
+
+
+app.add_middleware(AccessLogMiddleware)
 
 
 @app.exception_handler(ValueError)
