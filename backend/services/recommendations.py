@@ -135,7 +135,8 @@ def _rules() -> dict[str, list[dict[str, Any]]]:
                  lambda r: f"{r['low_lying_pct']:.0f}% of the district is below 10 m.",
                  when=lambda r: r["low_lying_pct"] >= 5),
             rule("fl-camps", "Pre-positioning", "Stock relief camps with drinking water, sanitation and food.", "medium",
-                 lambda r: f"Level {r['level']}; {r['population'] / 1e5:,.1f} lakh people."),
+                 lambda r: f"Level {r['level']}; " + (f"{r['population'] / 1e5:,.1f} lakh people."
+                                                     if r["population"] is not None else "population unavailable.")),
             rule("fl-health", "Health", "Stock ORS, chlorine tablets and other waterborne-disease supplies.", "high",
                  lambda r: f"Level {r['level']} for floods."),
         ],
@@ -196,7 +197,13 @@ def preparedness(kind: str, row: dict) -> list[dict[str, Any]]:
     return actions
 
 
-def _resources(kind: str, row: dict, people: int, days: int, homeless: float) -> dict[str, int]:
+def _resources(kind: str, row: dict, people: int | None, days: int, homeless: float) -> dict[str, int | None]:
+    """The response estimate; every line is ``None`` (unavailable) when the district has no census population."""
+    if people is None:
+        keys = ["people", "medical_teams", "food_rations", "water_litres", "shelter_places", "shelter_m2"]
+        keys += {"flood": ["rescue_boats", "long_stay_places"], "earthquake": ["rescue_teams"]}.get(
+            kind, ["cyclone_shelters"])
+        return {k: None for k in keys}
     res = {
         "people": people,
         "medical_teams": math.ceil(people * CONSULT_RATE / EMT_PATIENTS_PER_DAY),
@@ -215,11 +222,15 @@ def _resources(kind: str, row: dict, people: int, days: int, homeless: float) ->
     return res
 
 
-def _reasoning(kind: str, row: dict, people: int) -> str:
-    parts = [f"{row['level']} {kind} risk ({row['probability']:.0%})", f"{row['population'] / 1e5:.1f} lakh people"]
+def _reasoning(kind: str, row: dict, people: int | None) -> str:
+    population = (f"{row['population'] / 1e5:.1f} lakh people" if row["population"] is not None
+                  else "population unavailable (no Census 2011 row)")
+    parts = [f"{row['level']} {kind} risk ({row['probability']:.0%})", population]
     if kind == "flood" and row["low_lying_pct"] >= 10:
         parts.append(f"{row['low_lying_pct']:.0f}% low-lying land")
     text = " + ".join(parts)
+    if people is None:
+        return text + " → resource needs unavailable without a population"
     if people == 0:
         return text + " → monitor, no resources committed"
     return text + f" → {people:,} people may need assistance"
@@ -234,9 +245,10 @@ def recommend(kind: str, predictions: dict[str, Any], homeless: dict[str, Any], 
     rows = []
     for d in predictions["districts"]:
         level = d["level"]
-        people = round(d["population"] * EXPOSURE[kind][level])
+        people = None if d["population"] is None else round(d["population"] * EXPOSURE[kind][level])
         rows.append({
             "region": _name(d),
+            "state": d.get("state"),
             "level": level,
             "probability": d["probability"],
             "population": d["population"],
@@ -250,13 +262,14 @@ def recommend(kind: str, predictions: dict[str, Any], homeless: dict[str, Any], 
             "resources": _resources(kind, d, people, days, homeless["value"]),
             "actions": preparedness(kind, d),
         })
-    rows.sort(key=lambda r: (r["tier"], -r["resources"]["people"], -r["probability"], r["region"]))
+    rows.sort(key=lambda r: (r["tier"], -(r["resources"]["people"] or 0), -r["probability"], r["region"]))
     for rank, row in enumerate(rows, start=1):
         row["rank"] = rank
         row["reasoning"] = _reasoning(kind, row, row["resources"]["people"])
 
     keys = rows[0]["resources"].keys() if rows else []
-    totals = {k: sum(r["resources"][k] for r in rows) for k in keys}
+    counted = [r for r in rows if r["resources"]["people"] is not None]
+    totals = {k: sum(r["resources"][k] for r in counted) for k in keys}
     return {
         "type": kind,
         "scenario": predictions["scenario"],
@@ -267,6 +280,7 @@ def recommend(kind: str, predictions: dict[str, Any], homeless: dict[str, Any], 
         "region_kind": "district" if kind == "flood" else "state or union territory",
         "regions": rows,
         "totals": totals,
+        "regions_without_population": len(rows) - len(counted),
         "tiers": {
             "response": {label: sum(1 for r in rows if r["tier"] == tier) for tier, label in RESPONSE_TIER_LABEL.items()},
             "preparedness": {label: sum(1 for r in rows if r["tier"] == tier)
@@ -287,7 +301,10 @@ def recommend(kind: str, predictions: dict[str, Any], homeless: dict[str, Any], 
                        "event usually affects only part of one. Population is Census 2011."},
             {"metric": "Road access and evacuation time",
              "reason": "No public dataset used; needed to confirm that routes and shelters are usable."},
-        ],
+        ] + ([{"metric": "Resources for districts without a Census 2011 population",
+               "reason": f"{len(rows) - len(counted)} districts were created after 2011 and have no census row, so "
+                         "their people, medical, food, water and shelter lines are unavailable, not estimated; "
+                         "they are left out of the totals."}] if len(rows) > len(counted) else []),
     }
 
 

@@ -17,8 +17,8 @@ const INFO = {
   },
   flood: {
     definition:
-      'The probability that a flood is recorded in each district of Kerala, from the last 30 days of rainfall and soil moisture, elevation and flood history: a trained model.',
-    eyebrow: 'Level 2 · Prediction · Kerala districts',
+      'The probability that a flood is recorded in each district of India, from the last 30 days of rainfall and soil moisture, elevation, state and flood history: a trained model.',
+    eyebrow: 'Level 2 · Prediction · Indian districts',
     badges: (
       <>
         <SourceBadge kind="model" source={['ifi', 'nasa_power']} />
@@ -36,7 +36,7 @@ const INFO = {
 
 /**
  * Level 2 for all three hazards. The selector switches between the flood model
- * (a trained classifier, Kerala districts) and the earthquake and cyclone
+ * (a trained classifier, Indian districts) and the earthquake and cyclone
  * indices (catalogue statistics, Indian states). All three use the same four
  * risk levels, map and table, and each states its own method.
  */

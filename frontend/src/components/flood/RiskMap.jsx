@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react'
-import { GeoJSON, MapContainer } from 'react-leaflet'
+import L from 'leaflet'
+import { GeoJSON, MapContainer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useTheme } from '../../context/ThemeContext'
 import BaseTiles from '../map/BaseTiles'
 import { SizeWatcher } from '../map/mapBehaviour'
 import { RISK_LEVELS, formatProbability, levelHex, levelLabel, levelVar } from '../../lib/risk'
 
-/** Map extents per region set: the Kerala districts and the states of India. */
+/** Map extents per region set: the districts of India and the states of India. */
 export const MAP_AREAS = {
-  kerala: {
-    url: 'geo/kerala-districts.json',
+  districts: {
+    url: 'geo/india-districts.json',
     nameKey: 'district',
-    bounds: [[8.17, 74.85], [12.8, 77.42]],
-    limits: [[6.5, 73], [14.5, 79.5]],
-    minZoom: 6,
-    label: 'districts of Kerala',
+    bounds: [[6.5, 68], [37.5, 97.5]],
+    limits: [[-2, 55], [42, 108]],
+    minZoom: 4,
+    label: 'districts of India',
   },
   india: {
     url: 'geo/india-states.json',
@@ -42,13 +43,36 @@ function loadShapes(url) {
 
 const nameOf = (row) => row.district ?? row.region
 
+/** Zooms the map to one state's districts, or back to all of India. Renders nothing. */
+function FocusState({ shapes, state, fallback }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!shapes) return
+    const inState = state ? shapes.features.filter((feature) => feature.properties.state === state) : []
+    const bounds = inState.length ? L.geoJSON({ type: 'FeatureCollection', features: inState }).getBounds() : null
+    if (bounds?.isValid()) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 9 })
+    else map.fitBounds(fallback)
+  }, [map, shapes, state, fallback])
+  return null
+}
+
 /**
- * Regions filled by predicted risk level (Kerala districts for floods, Indian
- * states for earthquakes and cyclones). Clicking a region selects it. Colour is
- * never the only cue: each tooltip names the level and probability, and the
- * table beside the map lists every region.
+ * Regions filled by predicted risk level (districts for floods, Indian states
+ * for earthquakes and cyclones). Clicking a region selects it. Colour is never
+ * the only cue: each tooltip names the level and probability, and the table
+ * beside the map lists every region. With `focusState`, the map zooms to that
+ * state and the other states' districts fade back.
  */
-export function RiskMap({ area = 'kerala', rows, selected, onSelect, height = 460, label, probabilityWord = '' }) {
+export function RiskMap({
+  area = 'districts',
+  rows,
+  selected,
+  onSelect,
+  focusState = null,
+  height = 460,
+  label,
+  probabilityWord = '',
+}) {
   const { theme } = useTheme()
   const config = MAP_AREAS[area]
   const [shapes, setShapes] = useState(null)
@@ -71,12 +95,13 @@ export function RiskMap({ area = 'kerala', rows, selected, onSelect, height = 46
     const name = feature.properties[config.nameKey]
     const row = byName[name]
     const isSelected = name === selected
+    const faded = focusState && feature.properties.state !== focusState
     return {
       color: isSelected ? border : theme === 'dark' ? '#0b0b10' : '#ffffff',
       weight: isSelected ? 3 : 1,
       opacity: 1,
       fillColor: row ? levelHex(row.level, theme) : '#64748b',
-      fillOpacity: isSelected ? 0.8 : 0.62,
+      fillOpacity: isSelected ? 0.8 : faded ? 0.18 : 0.62,
     }
   }
 
@@ -91,7 +116,7 @@ export function RiskMap({ area = 'kerala', rows, selected, onSelect, height = 46
   }
 
   // Remount the layer when the data, selection or theme changes so styles refresh.
-  const layerKey = `${area}-${theme}-${selected}-${rows.map((row) => `${nameOf(row)}:${row.level}`).join('|')}`
+  const layerKey = `${area}-${theme}-${selected}-${focusState}-${rows.map((row) => `${nameOf(row)}:${row.level}`).join('|')}`
 
   return (
     <div className="history-map">
@@ -107,6 +132,7 @@ export function RiskMap({ area = 'kerala', rows, selected, onSelect, height = 46
         >
           <BaseTiles />
           <SizeWatcher />
+          <FocusState shapes={shapes} state={focusState} fallback={config.bounds} />
           {shapes && <GeoJSON key={layerKey} data={shapes} style={style} onEachFeature={onEachFeature} />}
         </MapContainer>
       </div>

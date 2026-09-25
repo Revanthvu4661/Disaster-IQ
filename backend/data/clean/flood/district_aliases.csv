@@ -1,0 +1,160 @@
+source,name,geo_state,geo_name
+ifi,Kamrup Metro,Assam,Kamrup Metropolitan
+ifi,West Karbi Anglong,Assam,Karbi Anglong West
+ifi,Karbi Anglong,Assam,Karbi Anglong East
+ifi,Karbi Anglong,Assam,Karbi Anglong West
+ifi,Mancachar,Assam,South Salmara-Mankachar
+ifi,South Salmara Mancachar,Assam,South Salmara-Mankachar
+ifi,Bengaluru Rural,Karnataka,Bangalore Rural
+ifi,Bengaluru Urban,Karnataka,Bangalore
+ifi,Belagavi,Karnataka,Belgaum
+ifi,Ballari,Karnataka,Bellary
+ifi,Kalaburagi,Karnataka,Gulbarga
+ifi,Mysuru,Karnataka,Mysore
+ifi,Shivamogga,Karnataka,Shimoga
+ifi,Tumakuru,Karnataka,Tumkur
+ifi,Beedar,Karnataka,Bidar
+ifi,Vijayapura,Karnataka,Bijapur
+ifi,Uttar Kashia Kannada,Karnataka,Uttara Kannada
+ifi,Chikkamagaluru,Karnataka,Chikmagalur
+ifi,Davangere,Karnataka,Davanagere
+ifi,Bagalkotee,Karnataka,Bagalkot
+ifi,Chamarajanagaraa,Karnataka,Chamarajanagar
+ifi,Beed,Maharashtra,Bid
+ifi,Dharashiv,Maharashtra,Osmanabad
+ifi,Buldhana,Maharashtra,Buldana
+ifi,Ahmednagar,Maharashtra,Ahmadnagar
+ifi,Gondia,Maharashtra,Gondiya
+ifi,Raigad,Maharashtra,Raigarh
+ifi,Ayodhya,Uttar Pradesh,Faizabad
+ifi,Prayagraj,Uttar Pradesh,Allahabad
+ifi,Kanpur nagar Dehat,Uttar Pradesh,Kanpur Dehat
+ifi,Kanpur nagar-Dehat,Uttar Pradesh,Kanpur Dehat
+ifi,Amroha,Uttar Pradesh,Jyotiba Phule Nagar
+ifi,Kasganj,Uttar Pradesh,Kanshiram Nagar
+ifi,Hathras,Uttar Pradesh,Mahamaya Nagar
+ifi,Bhadohi,Uttar Pradesh,Sant Ravidas Nagar (Bhadohi)
+ifi,Shamli,Uttar Pradesh,Samli
+ifi,SShrawasti,Uttar Pradesh,Shrawasti
+ifi,Ghazipurr,Uttar Pradesh,Ghazipur
+ifi,North 24 Parganas,West Bengal,North Twenty Four Parganas
+ifi,South 24 Parganas,West Bengal,South Twenty Four Parganas
+ifi,Darjeeling,West Bengal,Darjiling
+ifi,Cooch Behar,West Bengal,Koch Bihar
+ifi,Hooghly,West Bengal,Hugli
+ifi,Howrah,West Bengal,Haora
+ifi,Malda,West Bengal,Maldah
+ifi,Purba Bardhaman,West Bengal,Barddhaman
+ifi,Paschim Bardhaman,West Bengal,Paschim Barddhaman
+ifi,Purulia,West Bengal,Puruliya
+ifi,Uttar Kashi Dinajpur,West Bengal,Uttar Dinajpur
+ifi,Ferozepur,Punjab,Firozpur
+ifi,S.A.S Nagar,Punjab,Sahibzada Ajit Singh Nagar
+ifi,Sri Muktsar Sahib,Punjab,Muktsar
+ifi,Poonch,Jammu and Kashmir,Punch
+ifi,Budgam,Jammu and Kashmir,Badgam
+ifi,Baramulla,Jammu and Kashmir,Baramula
+ifi,Shopian,Jammu and Kashmir,Shupiyan
+ifi,Bandipora,Jammu and Kashmir,Bandipore
+ifi,Muzaffarabad,Jammu and Kashmir,-
+ifi,Mirpur,Jammu and Kashmir,-
+ifi,Gangtok,Sikkim,East District
+ifi,Gyalshing,Sikkim,West District
+ifi,Mangan,Sikkim,North District
+ifi,Namchi,Sikkim,South District
+ifi,Pakyong,Sikkim,-
+ifi,Soreng,Sikkim,-
+ifi,Dangs,Gujarat,The Dangs
+ifi,Botad,Gujarat,Batod
+ifi,Arvalli,Gujarat,Aravali
+ifi,Dahod,Gujarat,Dohad
+ifi,Ahmedabad,Gujarat,Ahmadabad
+ifi,Boudh,Odisha,Baudh
+ifi,Deogarh,Odisha,Debagarh
+ifi,Upper Lower Subansiri,Arunachal Pradesh,Upper Subansiri
+ifi,Lower Lower Subansiri,Arunachal Pradesh,Lower Subansiri
+ifi,Sepahijala,Tripura,Sipahijula
+ifi,Unakoti,Tripura,Unokoti
+ifi,Y.S.R.,Andhra Pradesh,Kadapa(YSR)
+ifi,Ananthapuramu,Andhra Pradesh,Anantapur
+ifi,Ananthapuramuamu,Andhra Pradesh,Anantapur
+ifi,Palnadu,Andhra Pradesh,-
+ifi,Ntr,Andhra Pradesh,-
+ifi,Bhadradri Kothagudem,Telangana,Bhadradri
+ifi,Jayashankar Bhupalapally,Telangana,Jayashankar
+ifi,Kumuram Bheem Asifabad,Telangana,Komaram Bheem
+ifi,Medchal Malkajgiri,Telangana,Medchal
+ifi,Jogulamba Gadwal,Telangana,Jogulamba
+ifi,Yadadri Bhuvanagiri,Telangana,Yadadri Bhongiri
+ifi,Yadadri Yadadri Bhuvanagiri Yadadri Bhuvanagiri,Telangana,Yadadri Bhongiri
+ifi,Jangoan,Telangana,Jangaon
+ifi,Hyderabad,Telangana,Hydrabad
+ifi,Gurugram,Haryana,Gurgaon
+ifi,Nuh,Haryana,Mewat
+ifi,Charki Dadri,Haryana,-
+ifi,Narmadapuram,Madhya Pradesh,Hoshangabad
+ifi,East Nimar,Madhya Pradesh,Khandwa (East Nimar)
+ifi,Agar-Malwa,Madhya Pradesh,Agar
+ifi,Dholpur,Rajasthan,Dhaulpur
+ifi,Jhunjhunu,Rajasthan,Jhunjhunun
+ifi,Chittorgarh,Rajasthan,Chittaurgarh
+ifi,Jalore,Rajasthan,Jalor
+ifi,Purbi Champaran,Bihar,Purba Champaran
+ifi,Balodabazar-Bhatapara,Chhattisgarh,Baloda Bazar
+ifi,Korea,Chhattisgarh,Koriya
+ifi,Kabirdham,Chhattisgarh,Kabeerdham
+ifi,Bemetara,Chhattisgarh,Bemetra
+ifi,Kanker,Chhattisgarh,Uttar Bastar Kanker
+ifi,Dantewada,Chhattisgarh,Dakshin Bastar Dantewada
+ifi,Koderma,Jharkhand,Kodarma
+ifi,East Singhbhum,Jharkhand,Purbi Singhbhum
+ifi,West Singhbhum,Jharkhand,Pashchimi Singhbhum
+ifi,Sahebganj,Jharkhand,Sahibganj
+ifi,Kanniyakumariumari,Tamil Nadu,Kanniyakumari
+ifi,Chengalpattu,Tamil Nadu,Chengalputtu
+ifi,Siaha,Mizoram,Saiha
+ifi,Haridwar,Uttarakhand,Hardwar
+ifi,Pauri Garhwal,Uttarakhand,Garhwal
+ifi,Pondicherry,Puducherry,Puducherry
+ifi,Leh ladakh,Ladakh,Leh(Ladakh)
+census,Y.S.R.,Andhra Pradesh,Kadapa(YSR)
+census,PONDICHERRY,Puducherry,Puducherry
+ifi,Itanagar,Arunachal Pradesh,~
+ifi,Manali,Himachal Pradesh,~
+ifi,Siliguri,West Bengal,~
+ifi,Silchar,Assam,~
+ifi,Jagdalpur,Chhattisgarh,~
+ifi,Kochi,Kerala,~
+ifi,Bhubaneshwar,Odisha,~
+ifi,Palampur,Himachal Pradesh,~
+ifi,Khurja,Uttar Pradesh,~
+ifi,Nagarkoil,Tamil Nadu,~
+ifi,Kashmir,Jammu and Kashmir,~
+ifi,Kashmir Valley,Jammu and Kashmir,~
+ifi,Tripura,Tripura,~
+ifi,Goa,Goa,~
+ifi,Chhatisgarh,Chhattisgarh,~
+ifi,Rural,Karnataka,~
+ifi,Urban,Karnataka,~
+ifi,Pak,Jammu and Kashmir,~
+ifi,Jhelum,Jammu and Kashmir,~
+ifi,Spitti,Himachal Pradesh,~
+ifi,Jaloree,Rajasthan,Jalor
+ifi,Darjeelingm,West Bengal,Darjiling
+ifi,Udaiur,Rajasthan,Udaipur
+ifi,Uttar Kashia,Uttarakhand,Uttarkashi
+ifi,Yavotmal,Maharashtra,Yavatmal
+ifi,East West Singhbhum,Jharkhand,~
+ifi,West East Jaintia Hills,Meghalaya,~
+ifi,Paschim Purba Bardhaman,West Bengal,Paschim Barddhaman
+ifi,South Salmara Mancachar- Mankachar,Assam,South Salmara-Mankachar
+ifi,South Salmara Mancachar - Mankachar,Assam,South Salmara-Mankachar
+ifi,Bhadradri Bhadradri Kothagudem Bhadradri Kothagudem,Telangana,Bhadradri
+ifi,South Assam,Assam,~
+ifi,South Gujarat,Gujarat,~
+ifi,South Kashmir,Jammu and Kashmir,~
+ifi,West Madhya Pradesh,Madhya Pradesh,~
+ifi,Chikodi,Karnataka,~
+ifi,Mudigere,Karnataka,~
+ifi,Mangalore,Karnataka,Dakshina Kannada
+ifi,West Purba Purba Medinipur,West Bengal,~

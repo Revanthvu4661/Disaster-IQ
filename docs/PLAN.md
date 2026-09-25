@@ -9,7 +9,7 @@ prediction required.
 | Level | Where | For which hazards |
 |---|---|---|
 | 1 Analytics | Overview, the three disaster pages (with **Recovery & resilience**), World Map | earthquake, flood, cyclone |
-| 2 Prediction | **Disaster Risk Prediction** (`/risk?type=`) | flood: trained model, Kerala districts. Earthquake and cyclone: statistical index, Indian states |
+| 2 Prediction | **Disaster Risk Prediction** (`/risk?type=`) | flood: trained model, Indian districts. Earthquake and cyclone: statistical index, Indian states |
 | 3 Recommendation | **Preparedness & Response Recommendations** (`/preparedness?type=`) | all three: rule-based preparedness actions and a formula-based response estimate |
 
 Every disaster page links forward (Level 1 → 2 → 3) and each Level 2 and 3 page
@@ -70,51 +70,90 @@ text-message dataset, the classifier, `backend/model/` or the old Predict page.
 After the cleanup, lint, vitest, the build and pytest passed and all eight
 existing routes rendered without console errors.
 
-## 2. Level 2 for floods: the trained model (unchanged this round)
+## 2. Level 2 for floods: the trained model (extended to all Indian districts)
 
 ### What the sources actually contain (probed before building)
 
 | Source | Finding | Consequence |
 |---|---|---|
 | Kerala flood dataset (`kerala.csv`) | **State level**, one row per year 1901–2018, not districts. Its FLOODS flag is almost exactly a cut-off on annual rainfall: every NO year ≤ 2,931.1 mm, every YES year ≥ 2,923.1 mm. | Not usable as the training label: a model would relearn the cut-off and report ~99% accuracy. Used as an independent check. |
-| India Flood Inventory v3.0 | IMD-sourced flood events 1967–2023 with district lists and deaths; 608 Kerala events. Some ambiguous dates are month-first (the August 2018 event is stored as 08-01-2018 to 30-08-2018). | The training label. Dates are repaired in the pipeline (see DATA_SOURCES.md). |
+| India Flood Inventory v3.0 | IMD-sourced flood events 1967–2023 with district lists and deaths: 6,876 events, 6,816 with districts listed. District names use modern spellings and sometimes state-file errors; some ambiguous dates are month-first (the August 2018 Kerala event is stored as 08-01-2018 to 30-08-2018). | The training label. Names are matched inside each state and dates are repaired in the pipeline (see DATA_SOURCES.md). |
 | NASA POWER | Daily precipitation and root-zone soil wetness from 1981 to ~4 days ago, per point, no key. | Rainfall and soil features, and "current conditions". |
-| Open-Elevation | TLS certificate expired on the build day; HTTP redirects to HTTPS. | Tried first; Open-Meteo's elevation API (Copernicus GLO-90) is the fallback that answered. |
+| Open-Elevation | Answered on the all-India build (17,488 points, at most about 25 per district). | Tried first; Open-Meteo's elevation API (Copernicus GLO-90) is the fallback, and `meta.json` records which answered. |
 | River gauges (India-CWC) | No free, documented, no-key source was integrated in the time available. | **Omitted, not estimated.** Said on the page and in the model's "not included" list. |
 
 ### Design
 
-* **Unit:** district × monsoon month (June–September), 14 districts, 1981–2023:
-  2,408 rows. A first version at district × season was rejected: the label was
-  positive in ~61–70% of rows and test ROC-AUC was 0.60, no better than
-  always guessing "flood".
+* **Unit:** district × calendar month, 734 districts × 1981–2023 × 12 months
+  = 378,744 rows (377,495 with every input: Lakshadweep has no soil-wetness value
+  from NASA POWER and the first January lacks its preceding week). The earlier
+  Kerala-only model used June–September only (2,408 rows); all twelve months are
+  used now so northeast-monsoon floods count.
 * **Label:** IFI records a flood event listing the district that overlaps the
-  month (29% of rows).
-* **Features:** rainfall as % of the district's 1991–2020 normal for the same
-  dates; heaviest 3-day rainfall; soil wetness in the 7 days before the window;
-  mean elevation; share of the previous 10 seasons with a recorded flood.
+  month (5% of rows; 4.4% in the training years, 6.6% in the test years).
+* **Features:** rainfall as % of the district's 1991–2020 normal for the same month
+  (capped at 1,000%); heaviest 3-day rainfall; soil wetness in the 7 days before
+  the window; mean elevation; share of the previous 10 years with a recorded flood;
+  and the district's state as one 0/1 column per state.
 * **Model:** standardised logistic regression (served); random forest as a
-  benchmark. Explanations are coefficient × standardised value, which add up
-  to the log-odds.
-* **Evaluation:** time split, fit 1981–2012, test 2013–2023.
+  benchmark on the same inputs. Explanations are coefficient × standardised value,
+  which add up to the log-odds (the state baseline is one of the terms).
+* **Evaluation:** time split, fit 1981–2012, test 2013–2023, overall and per state.
 
 ### Results (test years, never seen in training)
 
 | Model | ROC AUC | Avg precision | Accuracy | Precision | Recall |
 |---|---|---|---|---|---|
-| Logistic, 50% cut-off | 0.792 | 0.657 | 0.659 | 0.727 | 0.170 |
-| Logistic, "medium or above" (25%) | 0.792 | 0.657 | 0.688 | 0.565 | 0.791 |
-| Random forest, 50% | 0.781 | 0.615 | 0.654 | 0.657 | 0.196 |
-| District-month climatology | 0.602 | 0.437 | 0.596 | 0.394 | 0.111 |
-| Flood history only | 0.536 | 0.421 | 0.619 | 0 | 0 |
-| Always "no flood" | 0.5 | 0.381 | 0.619 | 0 | 0 |
+| Logistic, 50% cut-off | 0.788 | 0.240 | 0.931 | 0.408 | 0.088 |
+| Logistic, "medium or above" (25%) | 0.788 | 0.240 | 0.921 | 0.348 | 0.224 |
+| Random forest, 50% | 0.790 | 0.291 | 0.934 | 0.900 | 0.001 |
+| Random forest, 25% | 0.790 | 0.291 | 0.923 | 0.382 | 0.270 |
+| District-month flood-rate baseline | 0.762 | 0.241 | 0.935 | 0.562 | 0.047 |
+| Flood history only | 0.702 | 0.135 | 0.934 | 0 | 0 |
+| Always "no flood" | 0.5 | 0.066 | 0.934 | 0 | 0 |
 
-Known-event checks (out of sample): August 2019, 12 of 14 districts high or
-critical, all 14 flooded; June 2013, 11 flagged, 9 of them flooded (11
-flooded); September 2018 (negative control, no floods recorded), 0 flagged.
-August 2018 is under-rated: 5 of 14 high, the other 9 medium (all 14
-flooded). Against the Kerala dataset's own flag, the model's statewide mean
-risk ranks its flood years with AUC 0.887 over 1981–2018.
+These are new numbers for a different task, so they are not comparable with the
+Kerala-only figures (ROC AUC 0.792 on 14 districts, June–September).
+
+Read them plainly: the model ranks flood months better than chance and better than
+flood history alone, but only about 0.03 ROC-AUC better than the district-month
+flood-rate baseline, and at 25% it catches about one recorded flood month in
+five. Rainfall as % of normal has a coefficient near zero once the heaviest 3-day
+rainfall is in the model. A calendar-month input would be the next thing to try;
+it is not in this change.
+
+Per state (test years; the full table is on the page): ROC AUC 0.82 in Assam
+(828 flood months), 0.75 Kerala, 0.82 Uttar Pradesh, 0.73 Maharashtra, 0.82 Tamil
+Nadu, 0.65 Gujarat, Rajasthan and Punjab, 0.93 Meghalaya. States with fewer than 20
+test-period floods get no AUC.
+
+Known-event checks (out of sample, judged inside the state, confirmed against IFI):
+
+| Month | Districts rated high or critical | Medium or above | IFI records floods in |
+|---|---|---|---|
+| Kerala, August 2018 | 12 of 14 | 14 | 14 |
+| Kerala, August 2019 | 9 of 14 | 13 | 14 |
+| Kerala, June 2013 | 4 of 14 | 10 | 11 |
+| Uttarakhand, June 2013 | 8 of 13 | 9 | 4 |
+| Tamil Nadu and Puducherry, December 2015 | 3 of 42 | 6 | 24 |
+| Assam, June 2022 | 24 of 33 | 30 | 32 |
+| Kerala, September 2018 (quiet) | 0 of 14 | 0 | 0 |
+| Punjab, August 2014 (quiet) | 0 of 22 | 0 | 0 |
+
+Uttarakhand is IFI's sparse record of the Kedarnath disaster, so most high ratings
+count as false alarms against it. December 2015 in Tamil Nadu is a miss: IFI lists
+floods across the state and the model rates few districts highly, because it sees
+no season. Against the Kerala dataset's own flag, the model's statewide mean risk
+ranks its flood years with AUC 0.890 over 1981–2018.
+
+### Coverage and unavailable data
+
+* 18 district names (16 in IFI, 2 in the census) could not be matched: 2.5% of
+  districts. `unmatched_names.csv` lists them, with 104 descriptions and towns,
+  8 districts geoBoundaries does not draw and 96 districts without a census row.
+* 96 districts created after 2011 have no population; Level 3 shows their resource
+  lines as unavailable.
+* Lakshadweep is not scored (no soil-wetness value).
 
 ## 3. Level 3: the response formula (now shared by all three hazards)
 

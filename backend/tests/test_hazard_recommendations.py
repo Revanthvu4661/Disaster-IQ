@@ -106,6 +106,29 @@ def test_response_formulas_per_hazard() -> None:
     assert cyclone["cyclone_shelters"] == math.ceil(cyclone["people"] / 1000)
 
 
+def test_a_district_without_a_census_population_is_unavailable_not_estimated() -> None:
+    """Districts created after 2011 have no census row: every population-based line is None, and left out of totals."""
+    newer = _prediction("high", None, region="New district")
+    older = _prediction("high", 1_000_000, region="Old district")
+    out = rec.recommend("flood", _predictions([newer, older]), HOMELESS, days=7)
+    by = {r["region"]: r for r in out["regions"]}
+    assert by["New district"]["population"] is None
+    assert set(by["New district"]["resources"].values()) == {None}
+    assert "unavailable" in by["New district"]["reasoning"]
+    assert by["Old district"]["resources"]["people"] == 1_000_000 * rec.EXPOSURE["flood"]["high"]
+    assert out["regions_without_population"] == 1
+    assert out["totals"]["people"] == by["Old district"]["resources"]["people"]
+    assert any("Census 2011" in item["metric"] for item in out["not_included"])
+    # The preparedness actions do not need a population, so they still fire from the risk level.
+    assert by["New district"]["actions"]
+
+
+def test_each_district_uses_its_own_population() -> None:
+    rows = [_prediction("high", 500_000, region="A"), _prediction("high", 2_000_000, region="B")]
+    out = {r["region"]: r for r in rec.recommend("flood", _predictions(rows), HOMELESS)["regions"]}
+    assert out["B"]["resources"]["people"] == 4 * out["A"]["resources"]["people"]
+
+
 def test_priority_order_is_level_then_people() -> None:
     rows = [_prediction("medium", 4_000_000, region="Big medium"),
             _prediction("critical", 500_000, region="Small critical"),

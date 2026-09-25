@@ -16,9 +16,11 @@ It follows **Analyze → Predict → Recommend**, for all three disasters:
 
 1. **Analytics** (Level 1): the earthquake, flood and cyclone pages analyse
    history, including a Recovery & resilience block from what EM-DAT records.
-2. **Disaster Risk Prediction** (Level 2): *flood* risk for Kerala's 14 districts
-   from a logistic regression trained on the India Flood Inventory and NASA
-   POWER (test ROC-AUC 0.79 on 2013–2023); *earthquake* and *cyclone* risk for
+2. **Disaster Risk Prediction** (Level 2): *flood* risk for each of India's 734
+   districts (733 scored) from a logistic regression trained on the India Flood
+   Inventory and NASA POWER for all twelve months, with a state baseline
+   (test ROC-AUC 0.788 on 2013–2023, reported per state on the page);
+   *earthquake* and *cyclone* risk for
    India's 36 states and union territories from a **statistical hazard index**
    over the USGS catalogue and NOAA IBTrACS tracks. That index is not a trained
    model, and the page says so. All three use the same four risk levels.
@@ -69,7 +71,7 @@ With Docker: `docker compose up --build` (API on 8000, UI on 5173).
 | `/` | Overview | Type cards; live strip; sortable comparison table (events, deaths, affected, loss, countries, per-event averages); global deaths and loss trend; top-15 most severe records across all types; source panel |
 | `/earthquake`, `/flood`, `/cyclone` | Disaster pages | Eight full-width blocks: human impact, economic impact, frequency & trends, geography, severity, time-based analysis, correlation, recovery & resilience (reconstruction cost and outcome indicators by decade; no recovery timeline exists in the data); plus a live "right now" card and the Analyze → Predict → Recommend links |
 | `/map` | World Map | **Live now**: current events from USGS, GDACS, NASA EONET. **Historical**: decade slider; USGS earthquakes and IBTrACS cyclones at exact positions; EM-DAT floods at country centres |
-| `/risk?type=flood\|earthquake\|cyclone` | Disaster Risk Prediction (Level 2) | A selector for the three hazards. **Flood**: Kerala districts, logistic regression on the latest 30 days of NASA POWER rainfall and soil moisture, elevation and India Flood Inventory history, with back-test replays (Aug 2018, Aug 2019, Jun 2013, Sep 2018), a "check a region" scorer with per-factor contributions and a model card. **Earthquake / cyclone**: Indian states, annual probability from catalogue counts, the cut-offs, a "check a state" view, known-event checks and what the index does not include |
+| `/risk?type=flood\|earthquake\|cyclone` | Disaster Risk Prediction (Level 2) | A selector for the three hazards. **Flood**: all Indian districts with a state filter and district search, logistic regression on the latest 30 days of NASA POWER rainfall and soil moisture, elevation, state and India Flood Inventory history, with back-test replays (Kerala Aug 2018, Aug 2019, Jun 2013, Sep 2018; Uttarakhand Jun 2013; Tamil Nadu Dec 2015; Assam Jun 2022; Punjab Aug 2014 as a quiet control), a "check a region" scorer with per-factor contributions and a model card with per-state metrics. **Earthquake / cyclone**: Indian states, annual probability from catalogue counts, the cut-offs, a "check a state" view, known-event checks and what the index does not include |
 | `/preparedness?type=…` | Preparedness & Response Recommendations (Level 3) | Two labelled parts. **Preparedness**: states or districts ranked by risk, with the rule-based actions that fire for each and why. **Response**: resources in priority order (people needing assistance, medical teams, food, water, shelter, plus boats, rescue teams or cyclone shelters), the arithmetic for each line, and every parameter with its basis |
 | `/about` | About the data | Sources, methods, what is not available |
 
@@ -84,7 +86,8 @@ backend/
   services/history.py  every analytics payload, precomputed at startup
   disaster_types.py    the five types: OWID column, point source, feed codes
   live_feeds.py        USGS / GDACS / NASA EONET, merged, cached 10 min
-  flood_pipeline.py    Kerala: IFI + NASA POWER + DEM + census -> backend/data/clean/flood/
+  flood_pipeline.py    India: IFI + NASA POWER + DEM + census -> backend/data/clean/flood/
+  district_names.py    district and state name matching across IFI, census and geoBoundaries
   services/flood_risk.py   Level 2 model, fitted and evaluated at startup
   hazard_pipeline.py   India states: USGS + IBTrACS + census -> backend/data/clean/hazard/
   services/hazard_risk.py  Level 2 earthquake and cyclone index

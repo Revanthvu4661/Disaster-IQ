@@ -14,6 +14,7 @@ import RiskMap from '../../components/flood/RiskMap'
 import { FactorBars, RiskPill, ScenarioSwitch, formatFeature } from '../../components/flood/parts'
 import { RISK_LEVELS, formatDay, formatProbability, levelLabel, levelVar } from '../../lib/risk'
 import { formatNumber, formatPercent } from '../../lib/format'
+import { ALL_INDIA, countByLevel, filterByState, mapHeadline, regionName, stateOptions } from '../../lib/floodRegion'
 
 const SECTIONS = [
   ['risk-map', 'Risk by district'],
@@ -21,33 +22,16 @@ const SECTIONS = [
   ['transparency', 'Model transparency'],
 ]
 
+const TABLE_PREVIEW = 25   // rows shown before "Show all"
+
 const FEATURE_SOURCE = { nasa_power: 'NASA POWER', elevation: 'Copernicus DEM', ifi: 'India Flood Inventory' }
 
-/** One sentence for the map card, from the counts per level. */
-function mapHeadline(view, scenario) {
-  const counts = Object.fromEntries(RISK_LEVELS.map((band) => [band.level, 0]))
-  view.districts.forEach((d) => {
-    counts[d.level] += 1
-  })
-  const raised = counts.critical + counts.high
-  if (view.kind === 'backtest') {
-    const observed = view.districts.filter((d) => d.observed).length
-    const mediumUp = raised + counts.medium
-    return `${scenario?.label}: the model rated ${raised} of 14 districts high or critical and ${mediumUp} medium or above; the India Flood Inventory recorded floods in ${observed}`
-  }
-  if (raised === 0) {
-    const low = Math.min(...view.districts.map((d) => d.rain_pct_normal))
-    const high = Math.max(...view.districts.map((d) => d.rain_pct_normal))
-    return `No district is at high risk: the last 30 days brought ${Math.round(low)}–${Math.round(high)}% of normal rain`
-  }
-  return `${raised} of 14 districts are at high or critical flood risk; ${view.districts[0].district} is highest at ${formatProbability(view.districts[0].probability)}`
-}
-
-function RiskCounts({ districts }) {
+function RiskCounts({ districts, region }) {
+  const counts = countByLevel(districts)
   return (
-    <ul className="risk-counts" aria-label="Districts per risk level">
+    <ul className="risk-counts" aria-label={`Districts per risk level in ${region}`}>
       {RISK_LEVELS.map((band) => {
-        const count = districts.filter((d) => d.level === band.level).length
+        const count = counts[band.level]
         return (
           <li key={band.level} style={{ '--level': levelVar(band.level), '--level-soft': levelVar(band.level, true) }}>
             <span className="risk-counts-value">{count}</span>
@@ -59,11 +43,43 @@ function RiskCounts({ districts }) {
   )
 }
 
-function RiskMapBlock({ data, scenario, setScenario, view, viewLoading, viewError, selected, onSelect }) {
+function RiskMapBlock({
+  data,
+  scenario,
+  setScenario,
+  view,
+  viewLoading,
+  viewError,
+  selected,
+  onSelect,
+  stateFilter,
+  setStateFilter,
+}) {
+  const [query, setQuery] = useState('')
+  const [showAll, setShowAll] = useState(false)
   const meta = data.scenarios.find((item) => item.id === scenario)
   const backtest = view?.kind === 'backtest'
+  const states = stateOptions(data.current.districts)
+  const region = regionName(stateFilter)
+  const inRegion = view ? filterByState(view.districts, stateFilter) : []
+  const needle = query.trim().toLowerCase()
+  const matching = needle ? inRegion.filter((d) => d.district.toLowerCase().includes(needle)) : inRegion
+  const byRisk = [...matching].sort((a, b) => b.probability - a.probability)
+  const tableRows = showAll ? byRisk : byRisk.slice(0, TABLE_PREVIEW)
+
+  // Typing a district's exact name selects it and zooms to its state.
+  const search = (value) => {
+    setQuery(value)
+    const match = view?.districts.find((d) => d.district.toLowerCase() === value.trim().toLowerCase())
+    if (match) {
+      setStateFilter(match.state)
+      onSelect(match.district, false)
+    }
+  }
+
   const columns = [
     { key: 'district', label: 'District' },
+    { key: 'state', label: 'State' },
     {
       key: 'probability',
       label: 'Risk',
@@ -93,7 +109,7 @@ function RiskMapBlock({ data, scenario, setScenario, view, viewLoading, viewErro
       id="risk-map"
       index={1}
       title="Flood risk by district"
-      lead="A logistic regression scores each district on the latest 30 days of NASA POWER rainfall and soil moisture, its elevation and its flood history. Switch to a past month to replay it through the model fitted on 1981–2012 only, and compare with what was recorded."
+      lead={`A logistic regression scores each of India’s ${data.coverage.districts} districts on the latest 30 days of NASA POWER rainfall and soil moisture, its elevation, its state and its flood history. Switch to a past month to replay it through the model fitted on 1981–2012 only, and compare with what was recorded.`}
     >
       {viewError ? (
         <ErrorState message={viewError} />
@@ -102,10 +118,12 @@ function RiskMapBlock({ data, scenario, setScenario, view, viewLoading, viewErro
       ) : (
         <ChartCard
           headingLevel={3}
-          title={mapHeadline(view, meta)}
+          title={mapHeadline({ rows: inRegion, state: stateFilter, kind: view.kind, scenarioLabel: meta?.label })}
           insight={
             backtest
-              ? meta?.note
+              ? meta?.states && stateFilter !== ALL_INDIA && !meta.states.includes(stateFilter)
+                ? `This back-test month is judged in ${meta.states.join(' and ')}. Here are the model’s ratings and IFI’s records for ${region} in the same month.`
+                : meta?.note
               : `Window ${formatDay(view.window_start)} to ${formatDay(view.as_of)}, compared with the same dates in 1991–2020. Click a district for its explanation.`
           }
           badge={<SourceBadge kind="model" source={['nasa_power', 'ifi']} />}
@@ -115,8 +133,9 @@ function RiskMapBlock({ data, scenario, setScenario, view, viewLoading, viewErro
               ? 'Back-test: scored by the model fitted on 1981–2012, which never saw this month. “IFI recorded” is what the India Flood Inventory lists for the district.'
               : `NASA POWER data up to ${formatDay(data.sources.power_last_day)} (about 4 days behind real time). Levels: low < 25%, medium 25–50%, high 50–75%, critical ≥ 75%.`
           }
-          csvRows={view.districts.map((d) => ({
+          csvRows={inRegion.map((d) => ({
             district: d.district,
+            state: d.state,
             level: d.level,
             probability: d.probability,
             rain_pct_normal: d.rain_pct_normal,
@@ -126,17 +145,49 @@ function RiskMapBlock({ data, scenario, setScenario, view, viewLoading, viewErro
             prior_flood_rate: d.prior_flood_rate,
             ...(backtest ? { ifi_recorded_flood: d.observed } : {}),
           }))}
-          csvName={`flood-risk-${scenario}.csv`}
+          csvName={`flood-risk-${scenario}-${region.toLowerCase().replace(/\s+/g, '-')}.csv`}
         >
-          <RiskCounts districts={view.districts} />
+          <form className="check-form" onSubmit={(event) => event.preventDefault()} aria-label="Choose a region">
+            <label className="check-field">
+              <span className="field-label">State</span>
+              <select className="select" value={stateFilter} onChange={(event) => setStateFilter(event.target.value)}>
+                <option value={ALL_INDIA}>{ALL_INDIA}</option>
+                {states.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="check-field">
+              <span className="field-label">Find a district</span>
+              <input
+                className="input"
+                type="search"
+                list="flood-district-names"
+                placeholder="Start typing a district"
+                value={query}
+                onChange={(event) => search(event.target.value)}
+              />
+              <datalist id="flood-district-names">
+                {data.current.districts.map((d) => (
+                  <option key={d.district} value={d.district}>
+                    {d.state}
+                  </option>
+                ))}
+              </datalist>
+            </label>
+          </form>
+          <RiskCounts districts={inRegion} region={region} />
           <Deferred height={460}>
             <RiskMap
-              area="kerala"
+              area="districts"
               rows={view.districts}
               selected={selected}
+              focusState={stateFilter === ALL_INDIA ? null : stateFilter}
               onSelect={(name) => onSelect(name, false)}
               height="var(--history-map-height)"
-              label="Map of predicted flood risk by district in Kerala"
+              label={`Map of predicted flood risk by district, ${region}`}
             />
           </Deferred>
         </ChartCard>
@@ -144,18 +195,25 @@ function RiskMapBlock({ data, scenario, setScenario, view, viewLoading, viewErro
 
       {view && !viewLoading && !viewError && (
         <InfoCard
-          title="Every district, highest risk first"
-          insight="Sort by any column. “Why?” opens the district in the check below with each input’s contribution."
+          title={`${region}: every district, highest risk first`}
+          insight={`${tableRows.length} of ${matching.length} districts shown, highest risk first. Sort by any column. “Why?” opens the district in the check below with each input’s contribution.`}
           badge={<SourceBadge kind="model" source={['nasa_power', 'ifi', 'elevation']} />}
         >
           <SortableTable
-            caption="Predicted flood risk by district"
+            caption={`Predicted flood risk by district, ${region}`}
             columns={columns}
-            rows={view.districts}
+            rows={tableRows}
             rowKey={(row) => row.district}
             initialSort={{ key: 'probability', dir: 'desc' }}
             rowStyle={(row) => (row.district === selected ? { background: 'var(--surface-hover)' } : undefined)}
           />
+          {matching.length > TABLE_PREVIEW && (
+            <p style={{ marginTop: 'var(--space-3)', textAlign: 'center' }}>
+              <button type="button" className="btn" onClick={() => setShowAll((value) => !value)}>
+                {showAll ? `Show top ${TABLE_PREVIEW} only` : `Show all ${matching.length} districts`}
+              </button>
+            </p>
+          )}
         </InfoCard>
       )}
     </Block>
@@ -177,6 +235,8 @@ function CheckBlock({ data, initialDistrict, onSelect }) {
   const [district, setDistrict] = useState(initialDistrict)
   const [form, setForm] = useState(() => formFor(features, current.find((d) => d.district === initialDistrict)))
   const [request, setRequest] = useState(initialDistrict ? { district: initialDistrict } : null)
+  const [customState, setCustomState] = useState('')
+  const states = stateOptions(current)
 
   const result = useApi(() => api.floodScore(request ?? {}), [JSON.stringify(request)], { enabled: Boolean(request) })
 
@@ -185,6 +245,7 @@ function CheckBlock({ data, initialDistrict, onSelect }) {
       setDistrict('')
       setForm(emptyForm(features))
       setRequest(null)
+      setCustomState('')
       return
     }
     if (name === initialDistrict) {
@@ -199,7 +260,7 @@ function CheckBlock({ data, initialDistrict, onSelect }) {
 
   const submit = (event) => {
     event.preventDefault()
-    const params = district ? { district } : {}
+    const params = district ? { district } : customState ? { state: customState } : {}
     const base = current.find((d) => d.district === district)
     features.forEach((f) => {
       const raw = form[f.key]
@@ -225,7 +286,7 @@ function CheckBlock({ data, initialDistrict, onSelect }) {
       id="check"
       index={2}
       title="Check a specific region"
-      lead="Pick a district to see its latest 30 days, or change any input, for example the rainfall of a storm you are expecting, and score it again. Choose “Custom” to enter every value yourself."
+      lead="Pick a district to see its latest 30 days, or change any input, for example the rainfall of a storm you are expecting, and score it again. Choose “Custom” to enter every value yourself, with or without a state’s baseline."
     >
       <InfoCard
         title="Inputs"
@@ -240,17 +301,35 @@ function CheckBlock({ data, initialDistrict, onSelect }) {
           <label className="check-field">
             <span className="field-label">District</span>
             <select className="select" value={district} onChange={(event) => pickDistrict(event.target.value)}>
-              {current
-                .map((d) => d.district)
-                .sort()
-                .map((name) => (
+              {states.map((name) => (
+                <optgroup key={name} label={name}>
+                  {current
+                    .filter((d) => d.state === name)
+                    .map((d) => d.district)
+                    .sort()
+                    .map((district_) => (
+                      <option key={district_} value={district_}>
+                        {district_}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+              <option value="">Custom (no district)</option>
+            </select>
+          </label>
+          {custom && (
+            <label className="check-field">
+              <span className="field-label">State (optional)</span>
+              <select className="select" value={customState} onChange={(event) => setCustomState(event.target.value)}>
+                <option value="">No state baseline</option>
+                {states.map((name) => (
                   <option key={name} value={name}>
                     {name}
                   </option>
                 ))}
-              <option value="">Custom (no district)</option>
-            </select>
-          </label>
+              </select>
+            </label>
+          )}
           {features.map((f) => (
             <label key={f.key} className="check-field">
               <span className="field-label">
@@ -304,7 +383,7 @@ function CheckBlock({ data, initialDistrict, onSelect }) {
             <div>
               <RiskPill level={score.level} compact />
               <p className="text-xs secondary" style={{ marginTop: 6 }}>
-                Chance that a flood is recorded in a 30-day window like this one.
+                Chance that a flood is recorded in a month like this one{score.state ? ` in ${score.state}` : ''}.
                 {score.overridden.length > 0 && ` Changed by you: ${score.overridden.map((key) => features.find((f) => f.key === key)?.label.toLowerCase()).join(', ')}.`}
               </p>
             </div>
@@ -314,14 +393,14 @@ function CheckBlock({ data, initialDistrict, onSelect }) {
           </p>
           <FactorBars factors={score.factors} format={(f) => formatFeature(f.key, f.value)} />
           <p className="card-footnote" style={{ marginTop: 'var(--space-3)' }}>
-            Each bar is the feature’s coefficient × its standardised value. They add up, with the baseline of{' '}
+            Each bar is the input’s coefficient × its standardised value (the region bar is the state’s own baseline). They add up, with the baseline of{' '}
             {score.baseline_log_odds.toFixed(2)}, to the log-odds {score.log_odds.toFixed(2)}, which is{' '}
             {formatProbability(score.probability)}.
           </p>
           {score.district && (
             <p style={{ marginTop: 'var(--space-3)' }}>
               <Link to="/preparedness?type=flood" className="inline-link">
-                See preparedness and response for Kerala <ArrowRight size={13} aria-hidden="true" />
+                See preparedness and response for {score.state ?? 'India'} <ArrowRight size={13} aria-hidden="true" />
               </Link>
             </p>
           )}
@@ -356,6 +435,27 @@ function TransparencyBlock({ data, onShowScenario }) {
     { key: 'f1', label: 'F1', numeric: true, render: (r) => r.f1.toFixed(3) },
   ]
   const metricRows = METRIC_ROWS.map(([key, name, cut]) => ({ id: key, name, cut, ...ev[key] }))
+  const rainNormal = model.features.find((f) => f.key === 'rain_pct_normal')
+  const soil = model.features.find((f) => f.key === 'soil_wetness_before')
+  const elevation = model.features.find((f) => f.key === 'elevation_m')
+  const forestBetter = ev.random_forest.roc_auc > lr.roc_auc
+  const pct = (value) => (typeof value === 'number' ? value.toFixed(3) : '—')
+  const regionColumns = [
+    { key: 'region', label: 'State or UT' },
+    { key: 'districts', label: 'Districts', numeric: true },
+    { key: 'positives', label: 'Test floods', numeric: true, render: (r) => `${formatNumber(r.positives)} of ${formatNumber(r.n)}` },
+    { key: 'roc_auc', label: 'ROC AUC', numeric: true, render: (r) => pct(r.roc_auc) },
+    { key: 'precision', label: 'Precision (50%)', numeric: true, render: (r) => pct(r.precision) },
+    { key: 'recall', label: 'Recall (50%)', numeric: true, render: (r) => pct(r.recall) },
+    { key: 'precision_action', label: 'Precision (25%)', numeric: true, render: (r) => pct(r.precision_action) },
+    { key: 'recall_action', label: 'Recall (25%)', numeric: true, render: (r) => pct(r.recall_action) },
+  ]
+  const regionEffectColumns = [
+    { key: 'region', label: 'State or UT' },
+    { key: 'coefficient', label: 'Baseline (log-odds)', numeric: true, render: (r) => (r.coefficient > 0 ? '+' : '') + r.coefficient.toFixed(2) },
+    { key: 'odds_ratio', label: 'Odds ×', numeric: true, render: (r) => r.odds_ratio.toFixed(2) },
+    { key: 'flood_rate', label: 'Months with a flood', numeric: true, render: (r) => formatPercent(r.flood_rate, 1) },
+  ]
   const featureColumns = [
     { key: 'label', label: 'Input' },
     { key: 'source', label: 'Source', render: (r) => FEATURE_SOURCE[r.source] ?? r.source },
@@ -373,7 +473,7 @@ function TransparencyBlock({ data, onShowScenario }) {
     >
       <InfoCard
         title={`Trained on ${formatNumber(model.training_rows)} district-months, ${model.training_years[0]}–${model.training_years[1]}`}
-        insight={`${model.type}. One row per district and monsoon month (June–September), ${model.districts} districts.`}
+        insight={`${model.type}. One row per district and calendar month (all twelve months), ${formatNumber(model.districts)} districts in ${model.regions} states and union territories.`}
         badge={<SourceBadge source={['ifi', 'nasa_power', 'elevation', 'census2011']} />}
       >
         <dl className="answers">
@@ -396,20 +496,31 @@ function TransparencyBlock({ data, onShowScenario }) {
           <div>
             <dt>Data fix applied</dt>
             <dd>
-              IFI writes some dates month-first: the August 2018 event is stored as 08-01-2018 to 30-08-2018 (30 days). The
-              pipeline reads each ambiguous date the way that keeps IFI’s event numbering in date order and matches the
-              recorded duration.
+              IFI writes some dates month-first: the August 2018 Kerala event is stored as 08-01-2018 to 30-08-2018 (30 days),
+              and Kerala’s August 2019 events as 08-09, 08-10 and 08-11. The pipeline reads each ambiguous date day-first,
+              unless that would put an event before the one numbered ahead of it within its state’s block of events; then
+              it takes the month-first reading. End dates must match the recorded duration.
             </dd>
           </div>
         </dl>
         <p className="field-label" style={{ marginTop: 'var(--space-4)' }}>Inputs and learned weights</p>
         <SortableTable caption="Model inputs and coefficients" columns={featureColumns} rows={model.features} rowKey={(r) => r.key} />
         <p className="card-footnote" style={{ marginTop: 'var(--space-3)' }}>
-          Coefficients are per standard deviation, so they compare directly. Two go against intuition and are shown as
-          learned: wetter soil before a window slightly <em>lowers</em> the modelled risk (likely because soil is wettest late
-          in the monsoon, when fewer floods are recorded), and higher districts score <em>higher</em>, because the highland
-          districts (Idukki, Wayanad) record the most flash floods.
+          Coefficients are per standard deviation, so they compare directly.
+          {rainNormal && Math.abs(rainNormal.coefficient) < 0.05 && ' Rainfall against normal adds almost nothing once the heaviest 3-day rainfall is known.'}
+          {soil && soil.coefficient < 0 && ' Wetter soil before a month slightly lowers the modelled risk, as learned (soil is wettest late in a season, when fewer floods are recorded).'}
+          {elevation && elevation.coefficient > 0 && ' Higher districts score higher, as learned: hill districts record many flash floods.'}
+          {' '}The state baselines below matter as much as any single input: IFI’s recording practice and climate differ widely across India.
         </p>
+        <p className="field-label" style={{ marginTop: 'var(--space-4)' }}>State baselines (region feature)</p>
+        <SortableTable
+          caption="Learned baseline of each state, highest first"
+          columns={regionEffectColumns}
+          rows={model.region_feature.effects}
+          rowKey={(r) => r.region}
+          initialSort={{ key: 'coefficient', dir: 'desc' }}
+        />
+        <p className="card-footnote" style={{ marginTop: 'var(--space-3)' }}>{model.region_feature.note}</p>
       </InfoCard>
 
       <InfoCard
@@ -419,43 +530,63 @@ function TransparencyBlock({ data, onShowScenario }) {
       >
         <SortableTable caption="Model and baseline metrics on the test years" columns={metricColumns} rows={metricRows} rowKey={(r) => r.id} />
         <p className="card-footnote" style={{ marginTop: 'var(--space-3)' }}>
-          Floods were recorded in {formatPercent(ev.test_positive_rate, 0)} of test rows but only{' '}
-          {formatPercent(ev.train_positive_rate, 0)} of training rows (IFI records more events in recent years), so at the
-          50% cut-off the model is cautious: precision {lr.precision.toFixed(2)}, recall {lr.recall.toFixed(2)}. The 25%
-          (“medium”) cut-off is the one to act on. The random forest was not better, so the simpler model is served.
+          Floods were recorded in {formatPercent(ev.test_positive_rate, 1)} of test rows and {formatPercent(ev.train_positive_rate, 1)} of
+          training rows. At the 50% cut-off the model is cautious: precision {lr.precision.toFixed(2)}, recall{' '}
+          {lr.recall.toFixed(2)}. The 25% (“medium”) cut-off is the one to act on.{' '}
+          {forestBetter
+            ? `The random forest ranks slightly better (ROC AUC ${ev.random_forest.roc_auc.toFixed(3)}); the logistic regression is served because each input’s effect can be read and explained.`
+            : 'The random forest was not better, so the simpler model is served.'}
+        </p>
+      </InfoCard>
+
+      <InfoCard
+        title="How it does in each state, on the years it never saw"
+        insight={ev.region_note}
+        badge={<SourceBadge kind="model" source="ifi" />}
+      >
+        <SortableTable
+          caption={`ROC AUC, precision and recall per state on ${ev.split.test[0]}–${ev.split.test[1]}`}
+          columns={regionColumns}
+          rows={ev.by_region}
+          rowKey={(r) => r.region}
+          initialSort={{ key: 'positives', dir: 'desc' }}
+        />
+        <p className="card-footnote" style={{ marginTop: 'var(--space-3)' }}>
+          A dash means unavailable: too few floods in the test years to score, or none at all. Precision and recall
+          are shown at the 50% cut-off and at the 25% “medium or above” cut-off.
         </p>
       </InfoCard>
 
       <InfoCard
         title="Sanity checks on known floods"
-        insight="Each month below is in the test years, scored by the model that never saw it."
+        insight="Each month below is in the test years, scored by the model that never saw it, and judged inside the state or states named. IFI confirms what was recorded there."
         badge={<SourceBadge kind="model" source="ifi" />}
       >
         <dl className="answers">
           {ev.backtest.map((event) => {
-            const mediumUp = event.districts.filter((d) => d.level !== 'low').length
+            const mediumUp = event.flagged_medium_up
             const verdict =
               event.expect === 'quiet'
                 ? event.flagged_high === 0
                   ? `Correctly quiet: no district rated high; mean risk ${formatProbability(event.mean_probability)}.`
                   : `False alarm in ${event.flagged_high} districts.`
-                : `${event.flagged_high} of 14 rated high or critical, ${mediumUp} medium or above; IFI recorded floods in ${event.observed_floods}.`
+                : `${event.flagged_high} of ${event.district_count} districts rated high or critical, ${mediumUp} medium or above; IFI recorded floods in ${event.observed_floods}.`
             return (
-              <div key={`${event.year}-${event.month}`}>
+              <div key={`${event.year}-${event.month}-${event.region}`}>
                 <dt>
                   {event.name}{' '}
                   <button
                     type="button"
                     className="row-button"
-                    onClick={() => onShowScenario(`${event.year}-${String(event.month).padStart(2, '0')}`)}
+                    onClick={() => onShowScenario(`${event.year}-${String(event.month).padStart(2, '0')}`, event.states[0])}
                   >
                     Show on map
                   </button>
                 </dt>
                 <dd>
                   {verdict} {event.note}
-                  {event.year === 2018 && event.month === 8 &&
-                    ' The model under-rates this month: NASA POWER’s coarse grid smooths the extreme local rainfall, and dam releases, which drove much of the flooding, are not an input.'}
+                  {event.year === 2018 && event.month === 8 && event.states.includes('Kerala') &&
+                    ' Dam releases, which drove much of the flooding, are not an input, and NASA POWER’s coarse grid smooths extreme local rainfall.'}
                 </dd>
               </div>
             )
@@ -493,14 +624,15 @@ function TransparencyBlock({ data, onShowScenario }) {
 }
 
 /**
- * Level 2: flood risk per district of Kerala, with a region check and a model
- * card. The page reads /api/flood-risk once; switching to a back-test month
- * reads /api/flood-risk/scenario/{id}.
+ * Level 2: flood risk per district of India, with a state filter, a region
+ * check and a model card. The page reads /api/flood-risk once; switching to a
+ * back-test month reads /api/flood-risk/scenario/{id}.
  */
 export default function FloodRiskView() {
   const { data, error, loading, reload } = useApi(() => api.floodRisk(), [])
   const [scenario, setScenario] = useState('current')
   const [selected, setSelected] = useState(null)
+  const [stateFilter, setStateFilter] = useState(ALL_INDIA)
   const scenarioApi = useApi(() => api.floodScenario(scenario), [scenario], { enabled: scenario !== 'current' })
 
   const view = !data ? null : scenario === 'current' ? { kind: 'current', ...data.current } : scenarioApi.data
@@ -510,8 +642,15 @@ export default function FloodRiskView() {
     if (scroll) document.getElementById('check')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const showScenario = (id) => {
+  // A back-test month is about one state, so the map opens on that state; the live view opens on all India.
+  const changeScenario = (id, state) => {
     setScenario(id)
+    const named = state ?? data?.scenarios.find((item) => item.id === id)?.states?.[0]
+    setStateFilter(id === 'current' || !named ? ALL_INDIA : named)
+  }
+
+  const showScenario = (id, state) => {
+    changeScenario(id, state)
     document.getElementById('risk-map')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
@@ -528,7 +667,7 @@ export default function FloodRiskView() {
         <span>
           <strong>River-gauge data not available for this build;</strong> risk is estimated from rainfall, soil moisture,
           elevation and historical flood frequency. This is a statistical estimate for planning, not an official warning:
-          follow IMD and KSDMA alerts.
+          follow IMD, CWC and your State Disaster Management Authority’s alerts.
         </span>
       </p>
 
@@ -547,12 +686,14 @@ export default function FloodRiskView() {
       <RiskMapBlock
         data={data}
         scenario={scenario}
-        setScenario={setScenario}
+        setScenario={changeScenario}
         view={view}
         viewLoading={scenario !== 'current' && scenarioApi.loading}
         viewError={scenario !== 'current' ? scenarioApi.error : null}
         selected={selected}
         onSelect={onSelect}
+        stateFilter={stateFilter}
+        setStateFilter={setStateFilter}
       />
       <CheckBlock
         key={selected ?? 'default'}

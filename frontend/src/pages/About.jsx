@@ -19,7 +19,7 @@ const NOT_AVAILABLE = [
   { metric: 'Urban vs rural', reason: 'No source used records it.' },
   { metric: 'Recovery time, response time', reason: 'Not in any source used.' },
   { metric: 'Month / season for floods', reason: 'Their only source (EM-DAT via OWID) has no event dates.' },
-  { metric: 'Point locations for floods', reason: 'The Dartmouth Flood Observatory archive is gone (HTTP 410), so EM-DAT flood impact is country-level. The Kerala flood model uses the India Flood Inventory instead.' },
+  { metric: 'Point locations for floods', reason: 'The Dartmouth Flood Observatory archive is gone (HTTP 410), so EM-DAT flood impact is country-level. The district flood model uses the India Flood Inventory instead.' },
 ]
 
 /** Data sources, their coverage, what each feeds, and what is not available. */

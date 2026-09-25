@@ -9,7 +9,7 @@ Rebuild everything with `make data` (`python -m backend.data_pipeline`), and
 print the known-event checks with `make verify`.
 
 Level 2 (risk prediction) and Level 3 (preparedness and response) use further
-sources, described at the end of this file: Kerala flood risk, the
+sources, described at the end of this file: flood risk for Indian districts, the
 earthquake and cyclone hazard index for Indian states, and the recommendation
 rules.
 
@@ -204,10 +204,10 @@ well-known disasters beside the public figures. The test suite
 | Urban vs rural | no source records it |
 | Recovery time, rebuilding progress, response time | not in any source used. What EM-DAT does record is shown on each disaster page's Recovery & resilience block: reconstruction *cost* (only 9 to 16 records per type report it) and deaths per 1,000 affected and damage as a share of GDP by decade |
 | Month / season for flood | the only source has no event dates |
-| Point locations for flood | Dartmouth Flood Observatory archive returns HTTP 410 Gone, so EM-DAT flood impact is country-level; the Kerala flood model uses the India Flood Inventory instead |
+| Point locations for flood | Dartmouth Flood Observatory archive returns HTTP 410 Gone, so EM-DAT flood impact is country-level; the district flood model uses the India Flood Inventory instead |
 | Per-country event counts | OWID publishes event counts at world level only; "countries affected" counts countries with at least one record |
 
-## Kerala flood risk (Level 2) and the response formula (Level 3)
+## Flood risk for Indian districts (Level 2) and the response formula (Level 3)
 
 Built by `backend/flood_pipeline.py` (fetch → clean → features, outputs in
 `backend/data/clean/flood/`, committed) and used by
@@ -220,17 +220,23 @@ days with `make flood-current`; print the evaluation with `make flood-report`.
 | # | Source | Fetched from | Used for |
 |---|---|---|---|
 | 8 | **India Flood Inventory (IFI) v3.0**, HydroSense Lab, IIT Delhi | `raw.githubusercontent.com/hydrosenselab/India-Flood-Inventory/main/v3.0/India_Flood_Inventory_v3.csv` | the training label; district flood history |
-| 9 | **NASA POWER** daily point API (MERRA-2 based) | `power.larc.nasa.gov/api/temporal/daily/point`, `PRECTOTCORR`, `GWETROOT`, community AG, 1981 → yesterday | rainfall and soil-wetness features, the current 30-day window |
+| 9 | **NASA POWER** daily point API (MERRA-2 based) | `power.larc.nasa.gov/api/temporal/daily/point`, `PRECTOTCORR`, `GWETROOT`, community AG, 1981 → yesterday; one request per 0.5° × 0.625° grid cell holding a district centre (577 cells), throttled and retried, cached in `data/raw/flood/power/` | rainfall and soil-wetness features, the current 30-day window |
 | 10 | Elevation: **Open-Elevation**, fallback **Open-Meteo elevation API** (Copernicus GLO-90 DEM) | `api.open-elevation.com/api/v1/lookup`, `api.open-meteo.com/v1/elevation` | mean elevation and low-lying share per district |
-| 11 | **geoBoundaries** IND ADM2 (ODbL) | `github.com/wmgeolab/geoBoundaries/…/geoBoundaries-IND-ADM2_simplified.geojson` | district polygons (map, elevation sampling, centres) |
-| 12 | **Census of India 2011** district table | GitHub mirror `nishusharma1608/India-Census-2011-Analysis/india-districts-census-2011.csv` | population and households |
-| 13 | **Kerala flood dataset** (IMD subdivision rainfall + FLOODS flag) | GitHub mirror `amandp13/Flood-Prediction-Model/kerala.csv` | independent check only (see below) |
+| 11 | **geoBoundaries** IND ADM2 and ADM1 (ODbL) | `github.com/wmgeolab/geoBoundaries/…/geoBoundaries-IND-ADM2_simplified.geojson`, `…ADM1…` | district polygons (map, elevation sampling, centres, 734 districts) and, from ADM1, each district's state |
+| 12 | **Census of India 2011** district table | GitHub mirror `nishusharma1608/India-Census-2011-Analysis/india-districts-census-2011.csv` | population and households (640 districts) |
+| 13 | **Kerala flood dataset** (IMD subdivision rainfall + FLOODS flag) | GitHub mirror `amandp13/Flood-Prediction-Model/kerala.csv` | independent check only, Kerala (see below) |
 
 Which elevation source answered is recorded in `meta.json`
-(`elevation_source`). On the build day (25 Sep 2026) Open-Elevation's TLS
-certificate had expired, so **Open-Meteo (Copernicus GLO-90)** supplied all 655
-sample points. The census table was checked: the 14 districts sum to Kerala's
-published 2011 total of 33,406,061, and the pipeline fails if they do not.
+(`elevation_source`): on the all-India build (25 Sep 2026) **Open-Elevation**
+answered all 17,488 sample points. The census table was checked: the 14 Kerala
+districts sum to the published 2011 total of 33,406,061 (the test fails if they
+do not), and the 638 matched districts sum to 1,209,503,540, under India's
+1,210,854,977.
+
+Build in parts with `python -m backend.flood_pipeline --states Kerala,Assam`:
+the caches (NASA POWER cells, elevation points) fill for those states and the
+outputs go to `backend/data/clean/flood/partial/`, which the app never reads.
+The default run, all India, writes the committed files.
 
 **River gauge levels are not used.** No free, documented, no-key river-gauge
 source was integrated in the time available, and none is estimated. The Flood
@@ -257,37 +263,71 @@ checks instead:
 
 * **IFI dates.** IFI mostly writes `dd-mm-yyyy` but some ambiguous dates are
   month-first. The main August 2018 Kerala event is stored as 08-01-2018 to
-  30-08-2018 with a 30-day duration (1–30 August), and the 8–11 August 2019
-  events read as 8 September, 8 October and 8 November. IFI's event
-  ids are numbered in date order within a year, so each start date takes the
-  earliest reading on or after the previous event's start, and each end date
-  the reading that best matches the recorded duration. Tested in
-  `backend/tests/test_flood_risk.py`.
-* **District matching.** IFI lists districts by name; all 14 Kerala names match
-  geoBoundaries and the census exactly. A multi-district event counts for every
-  district it lists, and its single death toll is not split between them.
+  30-08-2018 with a 30-day duration (1–30 August), and the 7–11 August 2019
+  events read as 8 September, 8 October and 8 November. IFI's event ids are
+  numbered in date order within a year and, in the all-India file, within each
+  run of one state's events. Each run's start dates are chosen together:
+  day-first unless that would put an event before the one numbered ahead of it,
+  then the month-first reading. Each end date takes the reading that best matches
+  the recorded duration. An earlier rule (earliest reading after the previous
+  event) was right for Kerala but dated Chennai's 1–3 December 2015 flood as 12
+  January to 12 March. Tested in `backend/tests/test_flood_risk.py`.
+* **District matching** (`backend/district_names.py`). IFI lists districts as
+  free text in modern spellings (Belagavi, Kalaburagi), sometimes garbled ("Uttar
+  Kashia Kannada", "Purba Purba Medinipur"); geoBoundaries and the census use
+  older ones (Belgaum, Gulbarga); the census files Telangana under Andhra
+  Pradesh. A name is matched inside its own state, or the states sharing a moved
+  border, by normalised spelling, then `district_aliases.csv`, then a close
+  spelling that is unique in the state. For IFI only, a name that is unique in the
+  whole country is accepted when the event's State field omits its state, and two
+  districts run together ("Kollam Kozhikode") are split when both halves match.
+  Everything else is reported in `unmatched_names.csv` with a `kind`:
+  `unmatched` (18: 16 IFI, 2 census, 2.5% of districts), `not_a_district`
+  (prose such as "Parts of Sikkim", and towns), `no_polygon` (real districts
+  geoBoundaries does not draw, such as Muzaffarabad) and `no_census_row`
+  (districts created after 2011). Two census rows that share one polygon, or one
+  census district split in two (Karbi Anglong, Jaintia Hills), are not assigned
+  to either. A test fails if `unmatched` reaches 5% of districts.
+* **Districts and names.** Districts are the 734 geoBoundaries polygons (its
+  "DATA NOT AVAILABLE" placeholder in Ladakh is dropped). ADM2 carries no state,
+  so each district's centre is placed in the ADM1 polygons; Yanam, a Puducherry
+  enclave that the simplified Andhra Pradesh polygon covers, is set by hand. A name
+  used by two districts carries its state: `Bilaspur (Chhattisgarh)`.
+* **Population.** A district with no census row has an empty population, never a
+  guess (96 districts). The response formula shows those lines as unavailable
+  and leaves them out of totals. A district that kept its name after losing
+  territory keeps its 2011 population, which then covers the larger area.
+* **Weather grid.** Each district takes the NASA POWER series of the MERRA-2 grid
+  cell (0.5° × 0.625°) holding its centre; districts in one cell share it. Lakshadweep
+  has no soil-wetness value, so it is left unscored.
 * **Label.** A district-month is positive when an IFI event listing the district
-  overlaps the month (start ≤ month end and end ≥ month start). 29% of the
-  2,408 district-months are positive.
-* **Season normal.** 1991–2020 (WMO standard period), for the same calendar
-  dates as the window being scored.
-* **Flood history** uses only IFI seasons before the scored year (at most
-  2023, IFI's last year), so no training row sees its own label.
-* **Elevation.** A 0.07° grid (about 7.7 km) inside each district polygon,
-  655 points in all; the mean is the feature, the share of points below 10 m
-  is "low-lying land" (used by Level 3 for boats).
+  overlaps the month (start ≤ month end and end ≥ month start), for all twelve
+  months. 5.0% of the 378,744 district-months are positive. IFI events with no
+  district listed (60) or no date (20) cannot be placed and are skipped.
+* **Season normal.** 1991–2020 (WMO standard period), the mean of the month's
+  rainfall over those years; rainfall as a percentage of it is capped at 1,000% so
+  near-dry months do not produce five-digit values.
+* **Flood history** is the share of the previous 10 years, before the scored year
+  (at most 2023, IFI's last), with a recorded flood, so no training row sees its
+  own label.
+* **Elevation.** A regular grid of points inside each district polygon, spaced
+  0.07° (about 7.7 km) or wider so no district has more than about 25 points:
+  17,488 in all. The mean is the feature; the share of points below 10 m is
+  "low-lying land" (used by Level 3 for boats).
 * **Current window.** The latest 30 days of POWER data (about 4 days behind real
   time), compared with the 1991–2020 normal for the same dates.
 
 ### Model, metrics and limits
 
 See `docs/PLAN.md` §2 for the metrics table and back-tests; the page's
-"Model transparency" block shows the same numbers from the API. Stated
-limits: no river gauges, no dam releases (a major cause of the August 2018
-flooding, which the model under-rates), no rainfall forecast, no slope, soil or
-land use. IFI records more events in recent years (38% of test rows against
-26% of training rows), so at the 50% cut-off the model under-calls; the 25%
-"medium or above" cut-off is the one to act on.
+"Model transparency" block shows the same numbers from the API, including
+ROC-AUC, precision and recall for each state. Stated limits: no river gauges, no
+dam releases (a major cause of the August 2018 Kerala flooding), no rainfall
+forecast, no slope, soil or land use, no calendar-month input, and grid cells of
+about 55 x 62 km, so nearby districts share weather. IFI records more events in
+recent years (6.6% of test rows against 4.4% of training rows), so at the 50%
+cut-off the model under-calls; the 25% "medium or above" cut-off is the one to
+act on, and it still catches only about one recorded flood month in five.
 
 ### Level 3 allocation formula
 
@@ -306,7 +346,7 @@ order       = risk level, then people, then share of past monsoons with a deadly
 The homeless share is computed at request time from the Level 1 store over the
 EM-DAT India flood records that report both figures (4.0% over 30 records,
 1928–2025). Not included, and said on the page: existing shelter capacity,
-stock and teams already deployed, road access, population change since 2011.
+stock and teams already deployed, road access, population change since 2011. A district with no census row (96 of 734, created after 2011) gets no resource lines: they are shown as unavailable and left out of the totals.
 The pages label the result a decision-support estimate, not a dispatch order.
 
 ## Earthquake and cyclone hazard index (Level 2), Indian states

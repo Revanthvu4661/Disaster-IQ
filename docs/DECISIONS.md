@@ -176,3 +176,35 @@ cyclone shelters). Exposure shares are smaller for earthquake and cyclone than f
 flood because their regions are whole states. The rules are general practice and
 say to confirm against NDMA and State Disaster Management Authority guidance.
 
+## D34 — The flood model covers all Indian districts, and never estimates what a source lacks
+
+The Kerala-only model was extended to every district in geoBoundaries (734). Choices:
+
+* **Matching.** IFI, the 2011 census and geoBoundaries spell districts differently
+  and draw state borders at different dates. Names are matched inside the state
+  (or the state it shares a moved border with) by normalised spelling, then a
+  hand-kept alias file, then a close spelling that is unique in the state.
+  What still fails is written to `unmatched_names.csv`, not guessed: 18 names
+  (2.5% of districts). Descriptions such as "Parts of Sikkim" and towns are
+  listed as `not_a_district`, districts geoBoundaries does not draw as
+  `no_polygon`.
+* **Population.** 96 districts created after 2011 have no census row. Their
+  population is left empty and the Level 3 resource lines for them show
+  *unavailable*, and are left out of totals.
+* **All twelve months.** June–September only would miss the northeast-monsoon
+  floods. The label is unchanged (IFI lists the district and overlaps the month).
+* **IFI dates.** Extending to all India exposed that the Kerala-only date repair
+  (earliest reading after the previous event) mis-dated events elsewhere, for
+  example Chennai's 1–3 December 2015 flood as 12 January to 12 March. IFI's event
+  numbers run in date order inside one state's block of a year, so the repair now
+  chooses each block's dates together: day-first unless that breaks the order.
+* **Weather grid.** One NASA POWER request per MERRA-2 cell (0.5° × 0.625°) that
+  holds a district centre, 577 cells for 734 districts. Districts in one cell share
+  a rainfall series.
+* **Region feature.** One state dummy in the logistic regression. It shifts the
+  log-odds relative to the other inputs.
+* **What it does not do well.** The model is only about 0.03 ROC-AUC better than a
+  district-and-month flood-rate baseline, and it misses the northeast-monsoon
+  floods. A calendar-month input is the obvious next step; it was not part of this
+  change. Lakshadweep is not scored because NASA POWER has no soil-wetness value
+  there.

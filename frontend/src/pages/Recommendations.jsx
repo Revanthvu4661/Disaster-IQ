@@ -38,6 +38,9 @@ const SECTIONS = [
 ]
 
 const HORIZONS = [3, 7, 14]
+
+/** A district with no Census 2011 population has no resource lines: say so rather than show a blank. */
+const orNA = (value, format) => (value === null || value === undefined ? 'Unavailable' : format(value))
 const BASIS_LABEL = { standard: 'Standard', data: 'Data', assumption: 'Assumption', 'standard + assumption': 'Standard + assumption' }
 const TIER_SHORT = { 1: 'P1', 2: 'P2', 3: 'P3', 4: 'Monitor' }
 const TIER_LEVEL = { 1: 'critical', 2: 'high', 3: 'medium', 4: 'low' }
@@ -107,7 +110,7 @@ function PrepRankingBlock({ kind, plan, selected, onSelect }) {
     },
     { key: 'tier', label: 'Preparedness priority', numeric: true, defaultDir: 'asc', render: (row) => <TierPill tier={row.tier} label={row.preparedness_label} /> },
     { key: 'probability', label: 'Risk', numeric: true, render: (row) => <RiskPill level={row.level} probability={row.probability} /> },
-    { key: 'population', label: 'Population (2011)', numeric: true, render: (row) => formatLakh(row.population) },
+    { key: 'population', label: 'Population (2011)', numeric: true, render: (row) => orNA(row.population, formatLakh) },
     { key: 'actions', label: 'Actions', numeric: true, sortValue: (row) => row.actions.length, render: (row) => row.actions.length || '—' },
   ]
   return (
@@ -171,7 +174,7 @@ function PrepActionsBlock({ kind, region }) {
         <div className="detail-head" style={{ '--level': levelVar(region.level) }}>
           <RiskPill level={region.level} probability={region.probability} />
           <span className="text-sm secondary">
-            {formatLakh(region.population)} people
+            {region.population === null ? 'Population unavailable (no Census 2011 row)' : `${formatLakh(region.population)} people`}
             {region.low_lying_pct !== null && region.low_lying_pct !== undefined && ` · ${region.low_lying_pct.toFixed(1)}% of land below 10 m`}
           </span>
         </div>
@@ -230,12 +233,12 @@ function RespRankingBlock({ kind, plan, selected, onSelect, onReplay }) {
     },
     { key: 'tier', label: 'Priority', numeric: true, defaultDir: 'asc', render: (row) => <TierPill tier={row.tier} label={row.response_label} /> },
     { key: 'probability', label: 'Risk', numeric: true, render: (row) => <RiskPill level={row.level} probability={row.probability} /> },
-    { key: 'people', label: kind === 'cyclone' ? 'To evacuate' : 'People', numeric: true, sortValue: (row) => row.resources.people, render: (row) => formatIndian(row.resources.people) },
+    { key: 'people', label: kind === 'cyclone' ? 'To evacuate' : 'People', numeric: true, sortValue: (row) => row.resources.people, render: (row) => orNA(row.resources.people, formatIndian) },
     { key: extra.key, label: extra.label, numeric: true, sortValue: (row) => row.resources[extra.key], render: (row) => formatIndian(row.resources[extra.key]) },
-    { key: 'medical', label: 'Medical teams', numeric: true, sortValue: (row) => row.resources.medical_teams, render: (row) => formatIndian(row.resources.medical_teams) },
-    { key: 'food', label: 'Food rations', numeric: true, sortValue: (row) => row.resources.food_rations, render: (row) => formatLakh(row.resources.food_rations) },
-    { key: 'water', label: 'Water (L)', numeric: true, sortValue: (row) => row.resources.water_litres, render: (row) => formatLakh(row.resources.water_litres) },
-    { key: 'shelter', label: 'Shelter places', numeric: true, sortValue: (row) => row.resources.shelter_places, render: (row) => formatIndian(row.resources.shelter_places) },
+    { key: 'medical', label: 'Medical teams', numeric: true, sortValue: (row) => row.resources.medical_teams, render: (row) => orNA(row.resources.medical_teams, formatIndian) },
+    { key: 'food', label: 'Food rations', numeric: true, sortValue: (row) => row.resources.food_rations, render: (row) => orNA(row.resources.food_rations, formatLakh) },
+    { key: 'water', label: 'Water (L)', numeric: true, sortValue: (row) => row.resources.water_litres, render: (row) => orNA(row.resources.water_litres, formatLakh) },
+    { key: 'shelter', label: 'Shelter places', numeric: true, sortValue: (row) => row.resources.shelter_places, render: (row) => orNA(row.resources.shelter_places, formatIndian) },
   ]
   return (
     <Block
@@ -314,6 +317,14 @@ function detailLines(kind, row, plan) {
     { label: 'Shelter places', value: formatIndian(r.shelter_places), icon: Home,
       how: `${formatIndian(r.shelter_m2)} m² at 3.5 m² a person${kind === 'flood' ? `; ${formatIndian(r.long_stay_places)} long-stay at the EM-DAT homeless share (${formatPercent(plan.homeless_share.value, 1)})` : ''}` },
   )
+  if (r.people === null) {
+    // No Census 2011 population (a district created since): every line is unavailable, never estimated.
+    return lines.map((line) => ({
+      ...line,
+      value: 'Unavailable',
+      how: 'This district has no Census 2011 population, so this line cannot be calculated and is not estimated.',
+    }))
+  }
   return lines
 }
 
@@ -328,7 +339,9 @@ function RespDetailBlock({ kind, plan, region }) {
       >
         <div className="detail-head" style={{ '--level': levelVar(region.level) }}>
           <RiskPill level={region.level} probability={region.probability} />
-          <span className="text-sm secondary">{formatLakh(region.population)} people</span>
+          <span className="text-sm secondary">
+            {region.population === null ? 'Population unavailable (no Census 2011 row)' : `${formatLakh(region.population)} people`}
+          </span>
         </div>
         {region.observed !== null && region.observed !== undefined && (
           <p className="text-sm secondary" style={{ marginTop: 'var(--space-2)' }}>
@@ -526,7 +539,7 @@ export default function Recommendations() {
     <div className="stack disaster-page" style={{ '--dt': disasterVar(hazard) }}>
       <DisasterHeader
         type={{ id: hazard, icon: LifeBuoy, label: 'Preparedness & Response Recommendations', definition: HEADER[hazard] }}
-        eyebrow={`Level 3 · Recommendation · ${hazard === 'flood' ? 'Kerala districts' : 'Indian states'}`}
+        eyebrow={`Level 3 · Recommendation · ${hazard === 'flood' ? 'Indian districts' : 'Indian states'}`}
         badges={
           <>
             <SourceBadge kind="formula" source="census2011" />

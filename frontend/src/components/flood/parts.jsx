@@ -71,6 +71,7 @@ export function FactorBars({ factors, format }) {
 
 /** Feature value in words, for tables and the factor bars. */
 export function formatFeature(key, value) {
+  if (key === 'state') return typeof value === 'string' ? value : '—'
   if (typeof value !== 'number') return '—'
   switch (key) {
     case 'rain_pct_normal':
@@ -82,7 +83,7 @@ export function formatFeature(key, value) {
     case 'elevation_m':
       return `${Math.round(value)} m`
     case 'prior_flood_rate':
-      return `${Math.round(value * 100)}% of past seasons`
+      return `${Math.round(value * 100)}% of past years`
     default:
       return String(value)
   }

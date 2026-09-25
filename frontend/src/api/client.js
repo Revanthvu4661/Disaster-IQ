@@ -75,7 +75,7 @@ export const api = {
     request(`/live/events${query({ type, refresh: refresh || undefined })}`),
   liveSummary: () => request('/live/summary'),
 
-  // Level 2: flood risk model for the districts of Kerala
+  // Level 2: flood risk model for the districts of India
   floodRisk: () => request('/flood-risk'),
   floodScenario: (id) => request(`/flood-risk/scenario/${encodeURIComponent(id)}`),
   floodScore: (params) => request(`/flood-risk/score${query(params)}`),

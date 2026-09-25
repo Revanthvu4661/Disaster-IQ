@@ -27,7 +27,7 @@ export const SOURCES = {
     url: 'https://www.ncei.noaa.gov/products/international-best-track-archive',
   },
 
-  // Level 2 (flood risk) and Level 3 (resource allocation), Kerala districts.
+  // Level 2 (flood risk) and Level 3 (resource allocation), Indian districts.
   ifi: {
     short: 'India Flood Inventory',
     long: 'India Flood Inventory v3.0 (IIT Delhi HydroSense Lab): flood events 1967-2023 compiled from IMD reports, with the districts each event touched and recorded deaths. The flood label the model is trained on.',
@@ -35,17 +35,17 @@ export const SOURCES = {
   },
   nasa_power: {
     short: 'NASA POWER',
-    long: 'NASA POWER daily point data (MERRA-2 based): precipitation and root-zone soil wetness at each district centre, 1981 to about 4 days ago.',
+    long: 'NASA POWER daily point data (MERRA-2 based): precipitation and root-zone soil wetness at the 0.5° × 0.625° grid cell holding each district centre (districts in one cell share a series), 1981 to about 4 days ago.',
     url: 'https://power.larc.nasa.gov/',
   },
   elevation: {
     short: 'Copernicus DEM',
-    long: 'Mean elevation from 655 points sampled inside the districts, via the Open-Meteo elevation API (Copernicus GLO-90). Open-Elevation was tried first but its TLS certificate had expired.',
+    long: 'Mean elevation from 17,488 points sampled inside the districts (at most about 25 per district), from Open-Elevation, with the Open-Meteo elevation API (Copernicus GLO-90) as the fallback.',
     url: 'https://open-meteo.com/en/docs/elevation-api',
   },
   census2011: {
     short: 'Census 2011',
-    long: 'Census of India 2011 district population and households (the 14 districts sum to Kerala’s 33,406,061).',
+    long: 'Census of India 2011 district population and households. Districts created after 2011 have no census row, so their population is unavailable, not estimated.',
     url: 'https://censusindia.gov.in/',
   },
   kerala_imd: {
@@ -55,7 +55,7 @@ export const SOURCES = {
   },
   geoboundaries: {
     short: 'geoBoundaries',
-    long: 'geoBoundaries India district (ADM2) boundaries, ODbL. Used for the district map and elevation sampling.',
+    long: 'geoBoundaries India district (ADM2) and state (ADM1) boundaries, ODbL. Used for the district map, the state of each district and elevation sampling.',
     url: 'https://www.geoboundaries.org/',
   },
 }

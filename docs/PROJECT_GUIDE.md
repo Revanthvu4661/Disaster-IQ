@@ -75,11 +75,11 @@ feeds (section 3.2) are called while the app is running.
 | **Cyclone tracks** | **NOAA IBTrACS v04r01** | Every tropical storm since 1980: 6-hourly positions and wind speed (4,031 storms in the cleaned table; North Indian Ocean tracks used for the risk index) | `ncei.noaa.gov/.../ibtracs.since1980.list.v04r01.csv` |
 | **Country shapes** | **Natural Earth** (50 m and 110 m) | Country outlines and centre points for maps | Natural Earth admin-0 GeoJSON |
 | **Exchange rate** | **World Bank WDI**, series `PA.NUS.FCRF` (from IMF) | Rupees per US$ by year, to show money in ₹ | `api.worldbank.org/v2/country/IND/indicator/PA.NUS.FCRF` |
-| **Kerala flood events** | **India Flood Inventory v3.0** (IIT Delhi HydroSense Lab, from IMD reports) | Flood events 1967–2023 with the districts they touched and deaths. This is the flood model's **training label** | `github.com/hydrosenselab/India-Flood-Inventory` |
-| **Rainfall and soil moisture** | **NASA POWER** daily point API | Precipitation and root-zone soil wetness at each Kerala district centre, 1981 to a few days ago | `power.larc.nasa.gov/api/temporal/daily/point` |
-| **Elevation** | **Open-Meteo elevation API** (Copernicus GLO-90 DEM). Open-Elevation was tried first but its security certificate had expired | Mean elevation and low-lying land share per district (655 sample points) | `api.open-meteo.com/v1/elevation` |
-| **District and state boundaries** | **geoBoundaries** (ODbL) | 14 Kerala district polygons and 36 Indian state and union-territory polygons | `github.com/wmgeolab/geoBoundaries` |
-| **Population** | **Census of India 2011**, district table | Population and households; summed to states (checked against India's 1,210,854,977) and Kerala (33,406,061) | GitHub mirror `nishusharma1608/India-Census-2011-Analysis` |
+| **Indian flood events** | **India Flood Inventory v3.0** (IIT Delhi HydroSense Lab, from IMD reports) | Flood events 1967–2023 with the districts they touched and deaths. This is the flood model's **training label** | `github.com/hydrosenselab/India-Flood-Inventory` |
+| **Rainfall and soil moisture** | **NASA POWER** daily point API | Precipitation and root-zone soil wetness at the 0.5° × 0.625° grid cell holding each district centre (577 cells for 734 districts), 1981 to a few days ago | `power.larc.nasa.gov/api/temporal/daily/point` |
+| **Elevation** | **Open-Elevation**, with the **Open-Meteo elevation API** (Copernicus GLO-90 DEM) as fallback; the build records which answered | Mean elevation and low-lying land share per district (17,488 sample points) | `api.open-elevation.com`, `api.open-meteo.com/v1/elevation` |
+| **District and state boundaries** | **geoBoundaries** (ODbL) | 734 Indian district polygons (each given its state by placing its centre in the state polygons) and 36 state and union-territory polygons | `github.com/wmgeolab/geoBoundaries` |
+| **Population** | **Census of India 2011**, district table | Population and households; summed to states (checked against India's 1,210,854,977) and Kerala (33,406,061). 96 districts created after 2011 have no census row: their population is unavailable, never estimated | GitHub mirror `nishusharma1608/India-Census-2011-Analysis` |
 | **Kerala rainfall + flood flag** | **IMD** subdivision data, via the public "Kerala flood dataset" | Yearly rainfall 1901–2018 with a yes/no flood flag. Used only as an independent **check** (see 5.1) | GitHub mirror `amandp13/Flood-Prediction-Model` |
 
 Humanitarian planning standards used in the recommendations: the **Sphere
@@ -129,8 +129,8 @@ loaded by the browser. MapTiler or CARTO are used instead if you set a key.
 | `GET /api/disasters/{earthquake\|flood\|cyclone}` | The eight analysis blocks for one type, including recovery and resilience |
 | `GET /api/history/map?decade=&types=` | Historical map layers for one decade |
 | `GET /api/live/events`, `/api/live/summary` | Merged live events and their feed status |
-| `GET /api/flood-risk` | Flood model card, test metrics, back-tests, current risk per Kerala district |
-| `GET /api/flood-risk/scenario/{id}` | The latest 30 days, or a past month replayed (`2018-08`, `2019-08`, `2013-06`, `2018-09`) |
+| `GET /api/flood-risk` | Flood model card, test metrics (overall and per state), back-tests, current risk per district |
+| `GET /api/flood-risk/scenario/{id}` | The latest 30 days, or a past month replayed (`2018-08`, `2019-08`, `2013-06`, `2018-09`, `2015-12`, `2022-06`, `2014-08`) |
 | `GET /api/flood-risk/score?...` | Score a district or hand-entered conditions, with each factor's contribution |
 | `GET /api/hazard-risk/{earthquake\|cyclone}` | Risk index per Indian state, method and cut-offs |
 | `GET /api/recommendations/{hazard}?days=&scenario=` | Preparedness actions and response resources per region |
@@ -144,31 +144,49 @@ Interactive documentation is generated automatically at `/docs` on the API.
 All three hazards use the same four levels (**Low, Medium, High, Critical**), the
 same map and table, but each states its own method.
 
-### 5.1 Flood: a trained machine-learning model (Kerala, 14 districts)
+### 5.1 Flood: a trained machine-learning model (all Indian districts)
 
-- **Model:** logistic regression (scikit-learn). A random forest was tried and was
-  not better, so the simpler, explainable model is used.
-- **What it predicts:** the probability that a flood is recorded in a district in
-  a 30-day window of the monsoon (June–September).
-- **Training data:** 2,408 district-months, 1981–2023. The **label** (flood or not)
-  comes from the India Flood Inventory.
-- **Inputs (5):** rainfall as a percentage of normal; heaviest 3-day rainfall; soil
-  wetness in the week before (NASA POWER); mean elevation; the district's flood
-  history over the previous 10 seasons.
-- **Tested honestly:** trained on 1981–2012, scored on 2013–2023, which it never
-  saw. ROC-AUC **0.79**; at the "medium or above" cut-off it catches 79% of
-  recorded floods with 57% precision. Baselines (history only, district averages,
-  "always no flood") are shown alongside.
-- **Known events, out of sample:** August 2019, 12 of 14 districts high or critical
-  (all 14 flooded); June 2013, 11 flagged; the quiet September 2018, none flagged.
-  August 2018 is under-rated (dam releases are not an input), and the page says so.
+- **Model:** logistic regression (scikit-learn). A random forest was tried; it ranks
+  months about equally (ROC-AUC 0.790 against 0.788) and cannot be explained input
+  by input, so the logistic regression is served.
+- **What it predicts:** the probability that a flood is recorded in a district in a
+  calendar month. All twelve months are used, so northeast-monsoon floods (Tamil
+  Nadu, coastal Andhra Pradesh, October–December) count as well as June–September.
+- **Training data:** 377,495 district-months (733 districts × 1981–2023 × 12), of
+  which 5% are floods. The **label** comes from the India Flood Inventory.
+- **Inputs (5 + a region):** rainfall as a percentage of normal (capped at 1,000%);
+  heaviest 3-day rainfall; soil wetness in the week before (NASA POWER); mean
+  elevation; the district's flood history over the previous 10 years; and the
+  district's **state**, as one 0/1 column per state, so each state has its own
+  baseline. The state baselines are relative to the other inputs, so a dry state can
+  have a high one.
+- **Tested honestly:** trained on 1981–2012, scored on 2013–2023, which it never saw.
+  ROC-AUC **0.788** overall (the earlier Kerala-only figure is not comparable). The
+  page also shows ROC-AUC, precision and recall **per state**: AUC ranges from
+  about 0.65 (Gujarat, Rajasthan, Punjab) to 0.93 (Meghalaya) among states with at
+  least 20 test-period floods, and states with fewer get no AUC. At the "medium or
+  above" (25%) cut-off the model catches 22% of recorded flood months with 35%
+  precision, so it is a ranking aid, not a detector.
+- **What the numbers say:** the model beats a district-and-month flood-rate baseline
+  (ROC-AUC 0.762) by only about 0.03 and flood history alone (0.702) by 0.09.
+  Rainfall as a percentage of normal adds almost nothing once the heaviest 3-day
+  rainfall is known. There is no calendar-month input, and the model largely misses
+  the northeast-monsoon floods of Tamil Nadu (December 2015: IFI records floods in 24
+  of 42 districts; the model rates 6 medium or above).
+- **Known events, out of sample:** Kerala August 2018 (12 of 14 districts high or
+  critical, all flooded), August 2019 (9 high, 13 medium or above, all flooded) and
+  June 2013 (4 high, 10 medium or above, 11 flooded); Uttarakhand June 2013 (8 of 13
+  high, but IFI lists floods in only 4); Tamil Nadu December 2015 (see above); Assam
+  June 2022 (24 of 33 high, 32 flooded). Two quiet months, Kerala September 2018 and
+  Punjab August 2014, have no flood in IFI and none flagged high.
 - **Why not the "Kerala flood dataset" as the label:** it is one row per year for
   the whole state, and its flood flag is almost exactly a cut-off on annual rainfall
   (every "no" year at most 2,931 mm, every "yes" year at least 2,923 mm). A model
-  trained on it would only relearn that line. It is used as a **check** instead:
-  the model's statewide risk separates that dataset's flood years with AUC 0.89.
-- **Explained, not a black box:** every score shows how much each input raised or
-  lowered the risk.
+  trained on it would only relearn that line. It is used as a **check** instead
+  (Kerala only): the model's statewide risk separates that dataset's flood years with
+  AUC 0.89.
+- **Explained, not a black box:** every score shows how much each input, and the
+  state baseline, raised or lowered the risk.
 - **Not included:** river-gauge levels (no free source was integrated), dam
   releases, rainfall forecasts. The page says this in a banner.
 
@@ -261,7 +279,8 @@ analysis, correlation, and **recovery and resilience**.
 backend/
   main.py                 FastAPI app and start-up
   data_pipeline.py        downloads and cleans EM-DAT, USGS, IBTrACS, boundaries, FX
-  flood_pipeline.py       Kerala: flood inventory, NASA POWER, elevation, census
+  flood_pipeline.py       India: flood inventory, NASA POWER, elevation, census
+  district_names.py       district and state name matching across sources
   hazard_pipeline.py      Indian states: earthquake and cyclone counts
   live_feeds.py           USGS / GDACS / NASA EONET, merged and cached
   services/               history.py (analytics), flood_risk.py (model),
@@ -292,11 +311,13 @@ cd frontend && npm run dev                          # UI on http://localhost:517
 
 ## 11. Known limitations
 
-- The flood model covers **Kerala only**; earthquake and cyclone risk cover
+- The flood model covers **every Indian district** (Lakshadweep is not scored: NASA
+  POWER has no soil-wetness value there); earthquake and cyclone risk cover
   **Indian states** (state-sized regions, so a single event affects only part of
   one).
 - Flood "current" risk uses NASA POWER data about 4 days behind real time and does
   not use a rainfall forecast.
-- Population is Census 2011.
+- Population is Census 2011. Districts created since have none, so their resource
+  lines show *unavailable*.
 - The free hosting tier sleeps after about 15 minutes idle; the first request
   afterwards can take a minute.

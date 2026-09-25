@@ -29,7 +29,7 @@ data-refresh:
 verify:
 	$(PY) -m backend.data_pipeline --verify
 
-# Level 2/3 (Kerala flood risk): fetch and build features; refresh the latest
+# Level 2/3 (flood risk for every Indian district): fetch and build features; refresh the latest
 # NASA POWER days only; print the model evaluation.
 flood-data:
 	$(PY) -m backend.flood_pipeline

@@ -1,0 +1,227 @@
+source,state,name,events,kind
+census,Meghalaya,Jaintia Hills,,unmatched
+census,Assam,Karbi Anglong,,unmatched
+ifi,Andhra Pradesh,Ntr,1,no_polygon
+ifi,Andhra Pradesh,Palnadu,1,no_polygon
+ifi,Haryana,Charki Dadri,8,no_polygon
+ifi,Jammu and Kashmir,Mirpur,13,no_polygon
+ifi,Jammu and Kashmir,Muzaffarabad,13,no_polygon
+ifi,Kerala,Charki Dadri,1,no_polygon
+ifi,Madhya Pradesh,Charki Dadri,1,no_polygon
+ifi,Odisha,Charki Dadri,1,no_polygon
+ifi,Andhra Pradesh,Most of the districts,1,not_a_district
+ifi,Andhra Pradesh,Parts of Andhra Pradesh,1,not_a_district
+ifi,Andhra Pradesh,Some parts,1,not_a_district
+ifi,Andhra Pradesh,coastal districts of Andhra Pradesh,1,not_a_district
+ifi,Andhra Pradesh,several other district (Andhra Pradesh),1,not_a_district
+ifi,Arunachal Pradesh,6 districts,1,not_a_district
+ifi,Arunachal Pradesh,Itanagar,20,not_a_district
+ifi,Arunachal Pradesh,Many parts,1,not_a_district
+ifi,Arunachal Pradesh,Most Upper Lower Subansiri,1,not_a_district
+ifi,Arunachal Pradesh,Pak,3,not_a_district
+ifi,Assam,14 districts of Assam,1,not_a_district
+ifi,Assam,21 districts of Assam,1,not_a_district
+ifi,Assam,Silchar,2,not_a_district
+ifi,Assam,South Assam,1,not_a_district
+ifi,Chhattisgarh,Jagdalpur,1,not_a_district
+ifi,Chhattisgarh,Many parts,1,not_a_district
+ifi,Chhattisgarh,neighborhood,1,not_a_district
+ifi,Daman and Diu,Goa,4,not_a_district
+ifi,Goa,Some parts,1,not_a_district
+ifi,Gujarat,Many parts,2,not_a_district
+ifi,Gujarat,Most of the districts,4,not_a_district
+ifi,Gujarat,Northern parts,1,not_a_district
+ifi,Gujarat,Palampur,1,not_a_district
+ifi,Gujarat,Some parts,1,not_a_district
+ifi,Haryana,Some parts,1,not_a_district
+ifi,Himachal Pradesh,Manali,6,not_a_district
+ifi,Himachal Pradesh,Parts of Himachal Pradesh,4,not_a_district
+ifi,Himachal Pradesh,Parts of Lahul,1,not_a_district
+ifi,Himachal Pradesh,Spitti,1,not_a_district
+ifi,Himachal Pradesh,adjoining areas,1,not_a_district
+ifi,Jammu and Kashmir,Different parts of Jammu,1,not_a_district
+ifi,Jammu and Kashmir,Hilly areas,1,not_a_district
+ifi,Jammu and Kashmir,Jhelum,1,not_a_district
+ifi,Jammu and Kashmir,Kashmir,2,not_a_district
+ifi,Jammu and Kashmir,Kashmir Valley,4,not_a_district
+ifi,Jammu and Kashmir,Kashmir valley,2,not_a_district
+ifi,Jammu and Kashmir,Parts of Jammu,1,not_a_district
+ifi,Jammu and Kashmir,South Kashmir,1,not_a_district
+ifi,Jharkhand,East West Singhbhum,1,not_a_district
+ifi,Jharkhand,Heavy rains Hazaribagh,1,not_a_district
+ifi,Jharkhand,Parts of Jharkhand,1,not_a_district
+ifi,Karnataka,Chikodi,1,not_a_district
+ifi,Karnataka,Mudigere,1,not_a_district
+ifi,Karnataka,Parts of Karnataka,2,not_a_district
+ifi,Karnataka,Rural,1,not_a_district
+ifi,Karnataka,Urban,1,not_a_district
+ifi,Kerala,Kochi,1,not_a_district
+ifi,Kerala,Southern parts,1,not_a_district
+ifi,Madhya Pradesh,Chhatisgarh,1,not_a_district
+ifi,Madhya Pradesh,Jagdalpur,2,not_a_district
+ifi,Madhya Pradesh,Many parts,1,not_a_district
+ifi,Madhya Pradesh,West Madhya Pradesh,1,not_a_district
+ifi,Madras,Suburbans,1,not_a_district
+ifi,Maharashtra,Few districts,1,not_a_district
+ifi,Maharashtra,Ghat area,1,not_a_district
+ifi,Maharashtra,Marathwada,2,not_a_district
+ifi,Maharashtra,Parts of Maharashtra,2,not_a_district
+ifi,Maharashtra,South Gujarat,1,not_a_district
+ifi,Manipur,3 out of 8 districts,1,not_a_district
+ifi,Meghalaya,Parts of Meghalaya,4,not_a_district
+ifi,Meghalaya,West East Jaintia Hills,5,not_a_district
+ifi,Nagaland,Parts of Nagaland,1,not_a_district
+ifi,Nagaland,Some parts,1,not_a_district
+ifi,Nagaland,various parts of Nagaland,1,not_a_district
+ifi,Odisha,11 districts,1,not_a_district
+ifi,Odisha,14 districts,1,not_a_district
+ifi,Odisha,19 districts of Orissa,1,not_a_district
+ifi,Odisha,Bhubaneshwar,1,not_a_district
+ifi,Odisha,Many parts of the State,1,not_a_district
+ifi,Odisha,Parts of Orissa,1,not_a_district
+ifi,Punjab,Many parts,1,not_a_district
+ifi,Punjab,Many parts of the State,1,not_a_district
+ifi,Punjab,Some districts of Punjab,1,not_a_district
+ifi,Rajasthan,26 districts of Rajasthan,1,not_a_district
+ifi,Rajasthan,Parts of Rajasthan,1,not_a_district
+ifi,Rajasthan,Some parts,1,not_a_district
+ifi,Sikkim,Parts of Sikkim,4,not_a_district
+ifi,Tamil Nadu,Districts of Cauvery delta,1,not_a_district
+ifi,Tamil Nadu,Districts of Cauvery delta zone,1,not_a_district
+ifi,Tamil Nadu,Many districts of Tamil Nadu.,2,not_a_district
+ifi,Tamil Nadu,Many parts,1,not_a_district
+ifi,Tamil Nadu,Many parts of Tamil Nadu.,1,not_a_district
+ifi,Tamil Nadu,Nagarkoil,1,not_a_district
+ifi,Telangana,Parts of Telangana,2,not_a_district
+ifi,Tripura,Tripura,2,not_a_district
+ifi,Uttar Pradesh,29 districts affected,1,not_a_district
+ifi,Uttar Pradesh,Central Part of Uttar Kashi Pradesh,1,not_a_district
+ifi,Uttar Pradesh,Khurja,1,not_a_district
+ifi,Uttar Pradesh,Many districts of Uttar Kashi Pradesh,2,not_a_district
+ifi,Uttar Pradesh,Many parts,2,not_a_district
+ifi,Uttar Pradesh,Most parts,1,not_a_district
+ifi,Uttar Pradesh,Parts of East U.P.,1,not_a_district
+ifi,Uttar Pradesh,Parts of Uttar Pradesh,3,not_a_district
+ifi,Uttarakhand,Entire village,1,not_a_district
+ifi,Uttarakhand,Parts of Uttar Kashiakhand,3,not_a_district
+ifi,West Bengal,Greater Kolkata area,1,not_a_district
+ifi,West Bengal,Many districts of South Bengal,1,not_a_district
+ifi,West Bengal,North Bengal,4,not_a_district
+ifi,West Bengal,Northern parts,1,not_a_district
+ifi,West Bengal,Parts of West Bengal,2,not_a_district
+ifi,West Bengal,Siliguri,2,not_a_district
+ifi,West Bengal,Southern parts,1,not_a_district
+ifi,West Bengal,West Purba Purba Medinipur,1,not_a_district
+ifi,West Bengal,neighbourhood,2,not_a_district
+ifi,Assam,Sivasagar amd Sonitpur,1,unmatched
+ifi,Bihar,Santal Pargan,1,unmatched
+ifi,Jammu and Kashmir,Chumanung,1,unmatched
+ifi,Karnataka,BagalkoteeBijapur,1,unmatched
+ifi,Karnataka,Davangereï¿½ï¿½ï¿½ï¿½,1,unmatched
+ifi,Karnataka,Rugi,1,unmatched
+ifi,Kerala,Ernakulam ant Thiruvananthapuram,1,unmatched
+ifi,Kerala,Malikkeri,1,unmatched
+ifi,Madhya Pradesh,Jawad,1,unmatched
+ifi,Maharashtra,Ramagiri,1,unmatched
+ifi,Rajasthan,Bilaspur,1,unmatched
+ifi,Uttar Pradesh,Akharpur,1,unmatched
+ifi,Uttar Pradesh,East Uttar Kashi Pradesh,6,unmatched
+ifi,West Bengal,Mangalbari,1,unmatched
+ifi,West Bengal,North westduar,6,unmatched
+ifi,West Bengal,North westdusar,1,unmatched
+geoboundaries,Gujarat,Chhota Udaipur,,no_census_row
+geoboundaries,Gujarat,Batod,,no_census_row
+geoboundaries,Gujarat,Aravali,,no_census_row
+geoboundaries,Gujarat,Gir Somnath,,no_census_row
+geoboundaries,Gujarat,Devbhumi Dwarka,,no_census_row
+geoboundaries,Gujarat,Mahisagar,,no_census_row
+geoboundaries,Gujarat,Morbi,,no_census_row
+geoboundaries,Arunachal Pradesh,Longding,,no_census_row
+geoboundaries,Arunachal Pradesh,Siang,,no_census_row
+geoboundaries,Assam,Karbi Anglong East,,no_census_row
+geoboundaries,Manipur,Kangpokpi,,no_census_row
+geoboundaries,Tripura,Khowai,,no_census_row
+geoboundaries,Tripura,Sipahijula,,no_census_row
+geoboundaries,Tripura,Unokoti,,no_census_row
+geoboundaries,Tripura,Gomati,,no_census_row
+geoboundaries,Meghalaya,South West Khasi Hills,,no_census_row
+geoboundaries,Meghalaya,South West Garo Hills,,no_census_row
+geoboundaries,Meghalaya,East Jaintia Hills,,no_census_row
+geoboundaries,Meghalaya,West Jaintia Hills,,no_census_row
+geoboundaries,Meghalaya,North Garo Hills,,no_census_row
+geoboundaries,Chhattisgarh,Bemetra,,no_census_row
+geoboundaries,Chhattisgarh,Mungeli,,no_census_row
+geoboundaries,Chhattisgarh,Gariaband,,no_census_row
+geoboundaries,Chhattisgarh,Sukma,,no_census_row
+geoboundaries,Chhattisgarh,Balrampur,,no_census_row
+geoboundaries,Chhattisgarh,Kondagaon,,no_census_row
+geoboundaries,Chhattisgarh,Surajpur,,no_census_row
+geoboundaries,Chhattisgarh,Baloda Bazar,,no_census_row
+geoboundaries,Chhattisgarh,Balod,,no_census_row
+geoboundaries,Punjab,Pathankot,,no_census_row
+geoboundaries,Punjab,Fazilka,,no_census_row
+geoboundaries,Maharashtra,Palghar,,no_census_row
+geoboundaries,Uttar Pradesh,Sambhal,,no_census_row
+geoboundaries,Uttar Pradesh,Hapur,,no_census_row
+geoboundaries,Uttar Pradesh,Samli,,no_census_row
+geoboundaries,Uttar Pradesh,Amethi,,no_census_row
+geoboundaries,Telangana,Jangaon,,no_census_row
+geoboundaries,Telangana,Bhadradri,,no_census_row
+geoboundaries,Telangana,Mancherial,,no_census_row
+geoboundaries,Telangana,Nagarkurnool,,no_census_row
+geoboundaries,Telangana,Komaram Bheem,,no_census_row
+geoboundaries,Telangana,Nirmal,,no_census_row
+geoboundaries,Telangana,Kamareddy,,no_census_row
+geoboundaries,Telangana,Jagtial,,no_census_row
+geoboundaries,Telangana,Jayashankar,,no_census_row
+geoboundaries,Telangana,Peddapalli,,no_census_row
+geoboundaries,Telangana,Rajanna Sircilla,,no_census_row
+geoboundaries,Telangana,Sangareddy,,no_census_row
+geoboundaries,Telangana,Siddipet,,no_census_row
+geoboundaries,Telangana,Mahabubabad,,no_census_row
+geoboundaries,Telangana,Warangal (R),,no_census_row
+geoboundaries,Telangana,Suryapet,,no_census_row
+geoboundaries,Telangana,Yadadri Bhongiri,,no_census_row
+geoboundaries,Telangana,Medchal,,no_census_row
+geoboundaries,Telangana,Vikarabad,,no_census_row
+geoboundaries,Telangana,Jogulamba,,no_census_row
+geoboundaries,Telangana,Wanaparthy,,no_census_row
+geoboundaries,Arunachal Pradesh,Namsai,,no_census_row
+geoboundaries,Arunachal Pradesh,Kra Daadi,,no_census_row
+geoboundaries,Assam,Charaideo,,no_census_row
+geoboundaries,Assam,Majuli,,no_census_row
+geoboundaries,Assam,Biswanath,,no_census_row
+geoboundaries,Assam,Hojai,,no_census_row
+geoboundaries,Assam,Karbi Anglong West,,no_census_row
+geoboundaries,Assam,South Salmara-Mankachar,,no_census_row
+geoboundaries,Madhya Pradesh,Agar,,no_census_row
+geoboundaries,Manipur,Pherzawl,,no_census_row
+geoboundaries,Manipur,Noney,,no_census_row
+geoboundaries,Manipur,Tengnoupal,,no_census_row
+geoboundaries,Manipur,Kamjong,,no_census_row
+geoboundaries,Manipur,Kakching,,no_census_row
+geoboundaries,Manipur,Jiribam,,no_census_row
+geoboundaries,Delhi,South East,,no_census_row
+geoboundaries,Delhi,Shahdara,,no_census_row
+geoboundaries,West Bengal,Alipurduar,,no_census_row
+geoboundaries,West Bengal,Jhargram,,no_census_row
+geoboundaries,West Bengal,Paschim Barddhaman,,no_census_row
+geoboundaries,West Bengal,Kalimpong,,no_census_row
+geoboundaries,Telangana,Narayanpet,,no_census_row
+geoboundaries,Telangana,Mulugu,,no_census_row
+geoboundaries,Madhya Pradesh,Niwari,,no_census_row
+geoboundaries,Arunachal Pradesh,Pakke Kessang,,no_census_row
+geoboundaries,Arunachal Pradesh,Kamle,,no_census_row
+geoboundaries,Arunachal Pradesh,Shi Yomi,,no_census_row
+geoboundaries,Arunachal Pradesh,Leparada,,no_census_row
+geoboundaries,Arunachal Pradesh,Lower Siang,,no_census_row
+geoboundaries,Mizoram,Hnahthial,,no_census_row
+geoboundaries,Mizoram,Saitual,,no_census_row
+geoboundaries,Mizoram,Khawzawl,,no_census_row
+geoboundaries,Tamil Nadu,Tirupathur,,no_census_row
+geoboundaries,Tamil Nadu,Ranipet,,no_census_row
+geoboundaries,Tamil Nadu,Chengalputtu,,no_census_row
+geoboundaries,Tamil Nadu,Kallakurichi,,no_census_row
+geoboundaries,Tamil Nadu,Mayiladuthurai,,no_census_row
+geoboundaries,Tamil Nadu,Tenkasi,,no_census_row
+geoboundaries,Chhattisgarh,Gaurella Pendra Marwahi,,no_census_row
