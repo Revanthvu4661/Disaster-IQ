@@ -14,7 +14,7 @@ import { SectionHeading } from '../components/DisasterHeader'
 import { InfoCard } from '../components/history/Block'
 import { YearBars } from '../components/charts/LazyCharts'
 import { SeverityTable } from './disaster/PlaceBlocks'
-import { ErrorState, PageHeader, Skeleton, SkeletonCard } from '../components/ui'
+import { ErrorState, Skeleton, SkeletonCard } from '../components/ui'
 import {
   formatCompact1,
   formatDecade,
@@ -25,6 +25,9 @@ import {
 } from '../lib/format'
 import { maxBy, movingAverage, trendStats, trendWords } from '../lib/history'
 import { CurrencyNote, Inr } from '../components/Inr'
+import { sourceStatusText } from '../components/live/SourceStrip'
+import { CardMotif, sourceHazard, sourceServes } from '../components/hazard/OverviewParts'
+import '../styles/hazard-themes.css'
 
 const TYPES_BY_ID = Object.fromEntries(DISASTER_TYPES.map((type) => [type.id, type]))
 const nounOf = (row) => TYPES_BY_ID[row.id].noun[1]
@@ -47,9 +50,11 @@ function DisasterCard({ type, row, layer, liveLoading }) {
     <Link
       to={type.path}
       className="disaster-card"
+      data-hazard={type.id}
       style={{ '--dt': disasterVar(type.id) }}
       aria-label={`${type.label}: open page`}
     >
+      <CardMotif hazard={type.id} />
       <div className="disaster-card-top">
         <span className="disaster-card-icon" aria-hidden="true">
           <Icon size={18} />
@@ -85,6 +90,99 @@ function DisasterCard({ type, row, layer, liveLoading }) {
   )
 }
 
+/**
+ * The live phrase with its number set apart for display: "13 earthquakes"
+ * reads the same, only the figure is larger. A down layer keeps its sentence.
+ */
+function LiveCount({ type, layer }) {
+  const phrase = livePhrase(type, layer)
+  const normal = layer && layer.status !== 'unavailable' && !(isIncomplete(layer) && layer.count === 0)
+  if (!normal) return <strong>{phrase}</strong>
+  const [singular, pluralNoun] = type.noun
+  return (
+    <strong className="live-count">
+      <span className="live-count-n">{formatNumber(layer.count)}</span>{' '}
+      <span className="live-count-noun">{layer.count === 1 ? singular : pluralNoun}</span>
+    </strong>
+  )
+}
+
+/**
+ * Feed status for the Overview: one segment per live source, tinted toward
+ * the hazard it is most associated with. The words are the World Map's
+ * ("96 records", "temporarily unavailable"); what each feed serves comes from
+ * the live layers.
+ */
+function StatusStrip({ summary }) {
+  const { data, loading } = summary
+  return (
+    <ul className="ov-status" aria-label="Live feed status">
+      {loading && !data && <li className="ov-status-seg">Checking live feeds…</li>}
+      {data?.sources.map((source) => (
+        <li
+          key={source.id}
+          className={`ov-status-seg is-${source.status}`}
+          data-hazard={sourceHazard(source.id)}
+        >
+          <span className="ov-status-dot" aria-hidden="true" />
+          <strong>{source.name}</strong>
+          <span className="ov-status-serves">{sourceServes(source.id, data.layers)}</span>
+          <span className="ov-status-text">{sourceStatusText(source)}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/**
+ * Hero: the page's title as the eyebrow, the three hazard words large, the
+ * page's description, and records / span / types from the real coverage
+ * (dashes until the data arrives).
+ */
+function OverviewHero({ coverage }) {
+  const tiles = [
+    ['Records', coverage ? formatCompact1(coverage.records) : null],
+    ['Span', coverage ? `${coverage.first_year}–${coverage.last_year}` : null],
+    ['Types', formatNumber(DISASTER_TYPES.length)],
+  ]
+  return (
+    <header className="ov-hero">
+      <div className="ov-hero-text">
+        <p className="eyebrow">Three disasters, one view</p>
+        <h1 className="ov-title">
+          <span data-hazard="earthquake">
+            Earth<span className="ov-title-accent">quake</span>
+          </span>
+          <span className="ov-title-sep" aria-hidden="true">
+            ·
+          </span>
+          <span data-hazard="flood" className="ov-title-accent">
+            Flood
+          </span>
+          <span className="ov-title-sep" aria-hidden="true">
+            ·
+          </span>
+          <span data-hazard="cyclone" className="ov-title-accent">
+            Cyclone
+          </span>
+        </h1>
+        <p className="ov-lead">
+          What earthquakes, floods and cyclones have cost in lives and money since 1900, recorded by EM-DAT, USGS and
+          NOAA, next to what the live feeds report right now.
+        </p>
+      </div>
+      <dl className="hz-readouts ov-stats" aria-label="Coverage">
+        {tiles.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value ?? '—'}</dd>
+          </div>
+        ))}
+      </dl>
+    </header>
+  )
+}
+
 function LiveStrip({ summary }) {
   const { data, loading, error } = summary
   return (
@@ -117,13 +215,16 @@ function LiveStrip({ summary }) {
             return (
               <li
                 key={type.id}
+                data-hazard={type.id}
                 style={{ '--dt': disasterVar(type.id) }}
                 className={down || isIncomplete(layer) ? 'is-down' : ''}
               >
                 <Link to="/map" className="live-strip-item">
-                  <Icon size={15} aria-hidden="true" />
+                  <span className="live-strip-tile" aria-hidden="true">
+                    <Icon size={15} />
+                  </span>
                   <span>
-                    <strong>{livePhrase(type, layer)}</strong>
+                    <LiveCount type={type} layer={layer} />
                     {isIncomplete(layer) && layer.count > 0 && <span className="muted"> · incomplete</span>}
                   </span>
                 </Link>
@@ -148,7 +249,8 @@ function ComparisonTable({ rows, note, coverage }) {
         const type = getDisasterType(row.id)
         const Icon = type.icon
         return (
-          <Link to={type.path} className="type-cell" style={{ '--dt': disasterVar(row.id) }}>
+          <Link to={type.path} className="type-cell" data-hazard={row.id} style={{ '--dt': disasterVar(row.id) }}>
+            <span className="type-dot" aria-hidden="true" />
             <Icon size={14} aria-hidden="true" />
             {type.label}
           </Link>
@@ -287,14 +389,14 @@ function SourcesPanel({ coverage }) {
         </Link>
       }
     >
-      <ul className="source-list">
+      <dl className="source-dl">
         {rows.map(([id, text]) => (
-          <li key={id}>
-            <strong>{SOURCES[id].short}</strong>
-            <span className="text-sm secondary">{text}</span>
-          </li>
+          <div key={id}>
+            <dt>{SOURCES[id].short}</dt>
+            <dd className="text-sm secondary">{text}</dd>
+          </div>
         ))}
-      </ul>
+      </dl>
     </InfoCard>
   )
 }
@@ -303,16 +405,20 @@ export default function Overview() {
   const { data, error, loading, reload } = useApi(() => api.disasterOverview(), [])
   const summary = useLiveSummary()
 
+  // Every state shares this wrapper with the strip and hero first, so they stay
+  // mounted when the data arrives. `data-hazard="overview"` selects the
+  // blended theme in styles/hazard-themes.css.
   const header = (
-    <PageHeader
-      title="Three disasters, one view"
-      description="What earthquakes, floods and cyclones have cost in lives and money since 1900, recorded by EM-DAT, USGS and NOAA, next to what the live feeds report right now."
-    />
+    <>
+      <StatusStrip summary={summary} />
+      <OverviewHero coverage={data?.coverage} />
+    </>
   )
+  const rootProps = { className: 'stack hazard-page overview-page', 'data-hazard': 'overview' }
 
   if (loading) {
     return (
-      <div className="stack">
+      <div {...rootProps}>
         {header}
         <div className="grid grid-disasters">
           {DISASTER_TYPES.map((type) => (
@@ -326,7 +432,7 @@ export default function Overview() {
 
   if (error) {
     return (
-      <div className="stack">
+      <div {...rootProps}>
         {header}
         <ErrorState message={error} onRetry={reload} />
       </div>
@@ -337,7 +443,7 @@ export default function Overview() {
   const { coverage } = data
 
   return (
-    <div className="stack">
+    <div {...rootProps}>
       {header}
       <p className="callout callout-coverage">
         <History size={16} aria-hidden="true" />

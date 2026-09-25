@@ -213,7 +213,18 @@ export function SeverityTable({ rows, showType = false, types, caption }) {
   const columns = [
     { key: 'rank', label: '#', numeric: true, defaultDir: 'asc' },
     ...(showType
-      ? [{ key: 'type', label: 'Type', render: (row) => types?.[row.type]?.label ?? row.type }]
+      ? [
+          {
+            key: 'type',
+            label: 'Type',
+            // A bordered tag in the hazard's colour; the label text stays, so type never rests on colour.
+            render: (row) => (
+              <span className="type-tag" data-hazard={row.type}>
+                {types?.[row.type]?.label ?? row.type}
+              </span>
+            ),
+          },
+        ]
       : []),
     { key: 'country', label: 'Country' },
     { key: 'year', label: 'Year', numeric: true },

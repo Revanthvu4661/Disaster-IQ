@@ -312,6 +312,10 @@
   --focus: var(--hz-accent-2);
   --grid-line: var(--hz-grid);
   --dt: var(--hz-accent-ink);
+  color: var(--hz-text);
+}
+/* A single-hazard page draws every type colour in its own accent. */
+.hazard-page:not(.overview-page) {
   --dt-earthquake: var(--hz-accent-ink);
   --dt-flood: var(--hz-accent-ink);
   --dt-cyclone: var(--hz-accent-ink);
@@ -321,7 +325,102 @@
   --dt-earthquake-line: color-mix(in srgb, var(--hz-accent) 40%, transparent);
   --dt-flood-line: color-mix(in srgb, var(--hz-accent) 40%, transparent);
   --dt-cyclone-line: color-mix(in srgb, var(--hz-accent) 40%, transparent);
-  color: var(--hz-text);
 }
+/* On the Overview, an element marked with one hazard (a card, a table dot)
+   takes that hazard's own colours from its block above. */
+.overview-page [data-hazard] { --dt: var(--hz-accent-ink); }
 /* In light themes the focus ring uses the darker accent, so it stays visible on pale surfaces. */
 :root[data-theme="light"] .hazard-page { --focus: var(--hz-accent-ink); }
+
+/* ── Overview: command center blending all three hazards ──────────────────
+   Declared last so it wins on the app shell, which also matches the
+   per-hazard :has() selectors through the cards inside the Overview. The
+   page's own accent is neutral; hazard colours come only from elements
+   marked with data-hazard="earthquake|flood|cyclone". */
+
+[data-hazard="overview"],
+.app-shell:has([data-hazard="overview"]) {
+  --hz-bg: #0c0c10;
+  --hz-hero: #0f0f14;
+  --hz-surface: #13131a;
+  --hz-surface-2: #0e0e13;
+  --hz-raised: #1b1b24;
+  --hz-current: #1d1d27;
+  --hz-tile: #1b1b24;
+  --hz-border: #25252f;
+  --hz-border-strong: #34343f;
+  --hz-grid: #1d1d26;
+  --hz-crack: #2a2a35;
+  --hz-text: #eeedf3;
+  --hz-text-strong: #ffffff;
+  --hz-text-2: #c9c8d3;
+  --hz-muted: #a3a2b0;
+  --hz-dim: #6b6a78;
+  --hz-accent: #d6d9e3;
+  --hz-accent-2: #ffffff;
+  --hz-accent-ink: #d6d9e3;
+  --hz-accent-fill: #e6e7ee;
+  --hz-on-accent: #0c0c10;
+  --hz-alert: #ff5a4a;
+  --hz-warn: #ffc24d;
+  --hz-warn-bg: #16130c;
+  --hz-warn-box: #3a2f12;
+  --hz-warn-line: #6b5220;
+  --hz-live: #7ee2a8;
+  --hz-live-bg: #0f2419;
+  --hz-live-line: #1f5b3a;
+  --hz-band: linear-gradient(90deg, #ff6a2b, #ff5a4a 22%, #2ea3c9 50%, #7fd4e8 62%, #7c5cff 82%, #b39cff);
+  --hz-hero-bg:
+    radial-gradient(ellipse at 8% 0%, rgba(255, 106, 43, 0.2), transparent 45%),
+    radial-gradient(ellipse at 45% 115%, rgba(46, 163, 201, 0.16), transparent 50%),
+    radial-gradient(ellipse at 95% 10%, rgba(124, 92, 255, 0.2), transparent 50%),
+    #0f0f14;
+  --hz-font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --hz-font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --hz-display-weight: 800;
+  --hz-display-case: uppercase;
+  --hz-display-tracking: 0.01em;
+  --hz-display-settings: normal;
+  --hz-title-size: clamp(2.75rem, 6.2vw, 5.5rem);
+  --hz-title-fit: 5.3;
+  --hz-kpi-size: clamp(2.25rem, 3.6vw, 3.5rem);
+  --hz-readout-size: 1.875rem;
+}
+:root[data-theme="light"] [data-hazard="overview"],
+:root[data-theme="light"] .app-shell:has([data-hazard="overview"]) {
+  --hz-bg: #f4f4f7;
+  --hz-hero: #fafafc;
+  --hz-surface: #ffffff;
+  --hz-surface-2: #f1f1f5;
+  --hz-raised: #e9e9ef;
+  --hz-current: #ececf3;
+  --hz-tile: #ececf3;
+  --hz-border: #dedee6;
+  --hz-border-strong: #c3c3cf;
+  --hz-grid: #e7e7ee;
+  --hz-crack: #dcdce6;
+  --hz-text: #15151c;
+  --hz-text-strong: #0a0a10;
+  --hz-text-2: #3b3b48;
+  --hz-muted: #5b5b6b;
+  --hz-dim: #858594;
+  --hz-accent: #374151;
+  --hz-accent-2: #111827;
+  --hz-accent-ink: #374151;
+  --hz-accent-fill: #1f2937;
+  --hz-on-accent: #ffffff;
+  --hz-alert: #b91c1c;
+  --hz-warn: #8a5a00;
+  --hz-warn-bg: #fff8e6;
+  --hz-warn-box: #fdecc0;
+  --hz-warn-line: #d9b45a;
+  --hz-live: #166534;
+  --hz-live-bg: #e8f7ee;
+  --hz-live-line: #86c9a0;
+  --hz-band: linear-gradient(90deg, #e0561c, #b91c1c 22%, #1b8fb5 50%, #0e7490 62%, #6d4aff 82%, #4c2fc9);
+  --hz-hero-bg:
+    radial-gradient(ellipse at 8% 0%, rgba(224, 86, 28, 0.12), transparent 45%),
+    radial-gradient(ellipse at 45% 115%, rgba(27, 143, 181, 0.1), transparent 50%),
+    radial-gradient(ellipse at 95% 10%, rgba(109, 74, 255, 0.12), transparent 50%),
+    #fafafc;
+}

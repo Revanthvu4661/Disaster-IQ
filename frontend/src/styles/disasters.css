@@ -1169,3 +1169,250 @@
   .hazard-page *::after { animation: none !important; transition: none !important; }
   .hz-ripples > span:first-child { opacity: 0.45; }
 }
+
+/* ══ overview: command center ═════════════════════════════════════════════
+   The Overview root is a .hazard-page with data-hazard="overview", so it
+   shares every rule above (cards, callouts, badges, tables). Elements marked
+   data-hazard="earthquake|flood|cyclone" inside it read that hazard's own
+   --hz-accent / --hz-tile; surfaces and text always come from the app tokens,
+   which the root has already set to the blended palette. */
+
+/* feed status strip */
+.ov-status {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.ov-status-seg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 11px 16px;
+  font-family: var(--hz-font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--hz-accent, transparent) 13%, transparent), transparent 75%);
+}
+.ov-status-seg + .ov-status-seg { border-left: 1px solid var(--border); }
+.ov-status-seg strong { color: var(--text); letter-spacing: 0.06em; }
+.ov-status-serves { color: var(--hz-accent-ink); }
+.ov-status-text { color: var(--text-muted); }
+.ov-status-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--hz-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hz-accent) 25%, transparent);
+  animation: hz-blink 1.6s ease-in-out infinite;
+}
+/* A feed that is down: hollow dot, no blink; its words say so too. */
+.ov-status-seg.is-unavailable .ov-status-dot,
+.ov-status-seg.is-disabled .ov-status-dot { background: transparent; border: 2px solid var(--hz-accent); box-shadow: none; animation: none; }
+.ov-status-seg.is-stale .ov-status-dot { background: color-mix(in srgb, var(--hz-accent) 45%, transparent); animation: none; }
+
+/* hero */
+/* Title across the full width; the description and the stat tiles share the row below. */
+.ov-hero {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 460px);
+  gap: 14px 48px;
+  align-items: end;
+  padding: 44px 44px 40px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--hz-hero-bg);
+}
+.ov-hero-text { display: contents; }
+.ov-hero .eyebrow,
+.ov-title { grid-column: 1 / -1; }
+.ov-lead { grid-column: 1; align-self: center; }
+.ov-stats { grid-column: 2; }
+.ov-title {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.28em;
+  margin-bottom: 10px;
+  font-family: var(--hz-font-display);
+  font-weight: 800;
+  /* "EARTHQUAKE · FLOOD · CYCLONE" is about 14em wide: keep it on one line when it fits. */
+  font-size: min(var(--hz-title-size), calc(100cqi / 14));
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--hz-text-strong);
+}
+.ov-title-accent { color: var(--hz-accent); }
+.ov-title-sep { font-size: 0.7em; line-height: 1; color: var(--hz-dim); }
+.ov-lead { margin: 0; max-width: 44rem; font-size: 1.1875rem; color: var(--text-secondary); }
+.ov-stats { border: 1px solid var(--hz-border-strong); border-radius: 12px; background: var(--hz-surface-2); overflow: hidden; }
+.ov-stats dd { font-size: 2.25rem; }
+
+/* section headings in display type */
+.hazard-page .section-title {
+  font-family: var(--hz-font-display);
+  font-weight: 700;
+  font-size: clamp(1.625rem, 2.6vw, 2.125rem);
+  line-height: 1.05;
+  letter-spacing: var(--hz-display-tracking);
+  color: var(--hz-text-strong);
+}
+
+/* disaster cards: hazard stripe, icon tile, faint motif */
+.overview-page .disaster-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 22px;
+  border-radius: 12px;
+  border-color: var(--border);
+  background: var(--surface);
+}
+.overview-page .disaster-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--hz-accent), var(--hz-accent-2));
+}
+.overview-page .disaster-card:hover { border-color: var(--hz-accent); }
+/* Large link targets get a heavier ring than the default, so keyboard focus is unmistakable. */
+.overview-page .disaster-card:focus-visible,
+.overview-page .live-strip-item:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.overview-page .disaster-card-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  border: 1.5px solid var(--hz-accent);
+  background: var(--hz-tile);
+  color: var(--hz-accent);
+}
+.overview-page .disaster-card-title { margin-top: var(--space-3); font-size: 1.25rem; font-weight: 700; color: var(--text); }
+.overview-page .disaster-card-value {
+  font-family: var(--hz-font-display);
+  font-weight: 800;
+  font-size: clamp(2.5rem, 3.4vw, 3.25rem);
+  line-height: 1;
+  color: var(--hz-text-strong);
+}
+.overview-page .disaster-card-unit,
+.overview-page .disaster-card-need { font-size: 0.8125rem; color: var(--text-muted); }
+.overview-page .disaster-card-need strong { color: var(--text); }
+.overview-page .disaster-card-live { font-family: var(--hz-font-mono); font-size: 12px; color: var(--text-secondary); }
+.overview-page .disaster-card-go { font-family: var(--hz-font-mono); color: var(--hz-accent-ink); }
+.card-motif {
+  position: absolute;
+  right: -14px;
+  bottom: -14px;
+  z-index: -1;
+  width: 150px;
+  height: 150px;
+  opacity: 0.1;
+  color: var(--hz-accent);
+  pointer-events: none;
+}
+svg.card-motif { fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.card-motif-waves { animation: ov-drift 9s linear infinite; }
+.card-motif-cyclone svg { display: block; width: 100%; height: 100%; animation: hz-spin-ccw 24s linear infinite; }
+@keyframes ov-drift { from { transform: translateX(0); } to { transform: translateX(40px); } }
+
+/* "being monitored right now" */
+.overview-page .live-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-3); }
+.overview-page .live-strip-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+.overview-page .live-strip-item:hover { border-color: var(--hz-accent); background: var(--surface-hover); }
+.live-strip-tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  border: 1.5px solid var(--hz-accent, var(--dt));
+  background: var(--hz-tile, transparent);
+  color: var(--hz-accent, var(--dt));
+}
+.live-strip-tile svg { width: 20px; height: 20px; }
+.overview-page .live-strip-tile::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--hz-accent);
+  opacity: 0;
+  animation: ov-pulse 2.8s ease-out infinite;
+}
+@keyframes ov-pulse {
+  from { transform: scale(1); opacity: 0.6; }
+  to { transform: scale(1.35); opacity: 0; }
+}
+.overview-page .live-strip .is-down .live-strip-tile { border-style: dashed; color: var(--text-muted); border-color: var(--border-strong); }
+.overview-page .live-strip .is-down .live-strip-tile::after { display: none; }
+.live-count-n { display: block; font-family: var(--hz-font-display, inherit); font-weight: 800; font-size: 2.25rem; line-height: 1; }
+.live-count-noun { display: block; margin-top: 2px; font-size: 0.9375rem; font-weight: 500; color: var(--text-secondary); }
+
+/* comparison table dot, severity type tag */
+.type-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--hz-accent, var(--dt));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--hz-accent, var(--dt)) 25%, transparent);
+}
+.overview-page .type-cell svg { color: var(--hz-accent-ink); }
+.type-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--hz-accent, var(--text-muted)) 60%, transparent);
+  background: color-mix(in srgb, var(--hz-accent, transparent) 10%, transparent);
+  color: var(--hz-accent-ink, var(--text-secondary));
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.overview-page .type-tag { font-family: var(--hz-font-mono); font-weight: 500; }
+
+/* sources as a two-column definition list */
+.source-dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); border-top: 1px solid var(--border); }
+.source-dl > div { display: contents; }
+.source-dl dt,
+.source-dl dd { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.source-dl dt { padding-right: var(--space-6); font-weight: 600; color: var(--text); }
+.overview-page .source-dl dt { font-family: var(--hz-font-mono); font-weight: 500; letter-spacing: 0.04em; }
+.source-dl dd { margin: 0; }
+
+@media (max-width: 1023px) {
+  .ov-hero { grid-template-columns: 1fr; align-items: start; padding: 28px 24px; }
+  .ov-lead,
+  .ov-stats { grid-column: 1; }
+  .ov-title { font-size: clamp(2.25rem, 11cqi, 4rem); }
+}
+@media (max-width: 620px) {
+  .ov-hero { padding: 22px 16px; }
+  .ov-stats dd { font-size: 1.5rem; }
+  .ov-status-seg + .ov-status-seg { border-left: 0; border-top: 1px solid var(--border); }
+  .source-dl { grid-template-columns: 1fr; }
+  .source-dl dt { padding-bottom: 0; border-bottom: 0; }
+}
