@@ -26,8 +26,12 @@ import { ErrorState, SkeletonCard } from '../components/ui'
 import { RiskPill, ScenarioSwitch } from '../components/flood/parts'
 import { disasterVar } from '../config/disasterTypes'
 import { useHazard } from '../hooks/useHazard'
+import { useSectionInView } from '../hooks/useSectionInView'
+import { HazardMotif } from '../components/hazard/HazardHero'
 import { formatDay, levelLabel, levelVar } from '../lib/risk'
 import { formatIndian, formatLakh, formatPercent } from '../lib/format'
+import '../styles/hazard-themes.css'
+import '../styles/level-themes.css'
 
 const SECTIONS = [
   ['prep-ranking', 'Where to prepare first'],
@@ -36,6 +40,7 @@ const SECTIONS = [
   ['resp-detail', 'Response detail'],
   ['method', 'How it works'],
 ]
+const SECTION_IDS = SECTIONS.map(([id]) => id)
 
 const HORIZONS = [3, 7, 14]
 
@@ -447,6 +452,7 @@ function Plan({ kind }) {
   const [selected, setSelected] = useState(null)
   const scenarios = useApi(() => api.floodRisk(), [], { enabled: kind === 'flood' })
   const { data: plan, error, loading, reload } = useApi(() => api.recommendations(kind, { scenario, days }), [kind, scenario, days])
+  const inView = useSectionInView(SECTION_IDS, Boolean(plan) && !loading && !error)
 
   const scenarioList = scenarios.data?.scenarios ?? [{ id: 'current', kind: 'current' }]
   const meta = scenarioList.find((item) => item.id === scenario)
@@ -494,7 +500,7 @@ function Plan({ kind }) {
         <ol>
           {SECTIONS.map(([id, text], index) => (
             <li key={id}>
-              <a href={`#${id}`}>
+              <a href={`#${id}`} aria-current={inView === id ? 'location' : undefined}>
                 <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span> {text}
               </a>
             </li>
@@ -538,33 +544,39 @@ function Plan({ kind }) {
  * Level 3: preparedness (before) and response (during and after)
  * recommendations for earthquakes, floods and cyclones, from the Level 2 risk of
  * the selected hazard. Reads /api/recommendations/{hazard}.
+ *
+ * The root's `data-hazard` follows the selector (not the route), so the
+ * hazard theme (styles/hazard-themes.css, level-themes.css) changes with it.
  */
 export default function Recommendations() {
   const [hazard, setHazard] = useHazard()
   return (
-    <div className="stack disaster-page" style={{ '--dt': disasterVar(hazard) }}>
-      <DisasterHeader
-        type={{ id: hazard, icon: LifeBuoy, label: 'Preparedness & Response Recommendations', definition: HEADER[hazard] }}
-        eyebrow={`Level 3 · Recommendation · ${hazard === 'flood' ? 'Indian districts' : 'Indian states'}`}
-        badges={
-          <>
-            <SourceBadge kind="formula" source="census2011" />
-            <SourceBadge kind="index" detail="Level 2 risk" />
-          </>
-        }
-      />
-      <TypeSwitch value={hazard} onChange={setHazard} />
-      <LevelChain current="recommend" hazard={hazard} />
-      <p className="callout callout-warn">
-        <AlertTriangle size={16} aria-hidden="true" />
-        <span>
-          <strong>Decision-support estimate, not an authoritative dispatch order.</strong> It applies fixed rules and
-          standard planning figures to modelled risk and 2011 census population. It does not know the stock, teams or shelters
-          already in place. Confirm against NDMA, the State Disaster Management Authority and district emergency
-          operations centres before moving anything.
-        </span>
-      </p>
-      <Plan key={hazard} kind={hazard} />
+    <div className="hazard-page level-page" data-hazard={hazard}>
+      <div className="stack disaster-page" style={{ '--dt': disasterVar(hazard) }}>
+        <DisasterHeader
+          type={{ id: hazard, icon: LifeBuoy, label: 'Preparedness & Response Recommendations', definition: HEADER[hazard] }}
+          eyebrow={`Level 3 · Recommendation · ${hazard === 'flood' ? 'Indian districts' : 'Indian states'}`}
+          badges={
+            <>
+              <SourceBadge kind="formula" source="census2011" />
+              <SourceBadge kind="index" detail="Level 2 risk" />
+            </>
+          }
+          panel={<HazardMotif hazard={hazard} />}
+        />
+        <TypeSwitch value={hazard} onChange={setHazard} />
+        <LevelChain current="recommend" hazard={hazard} />
+        <p className="callout callout-warn">
+          <AlertTriangle size={16} aria-hidden="true" />
+          <span>
+            <strong>Decision-support estimate, not an authoritative dispatch order.</strong> It applies fixed rules and
+            standard planning figures to modelled risk and 2011 census population. It does not know the stock, teams or shelters
+            already in place. Confirm against NDMA, the State Disaster Management Authority and district emergency
+            operations centres before moving anything.
+          </span>
+        </p>
+        <Plan key={hazard} kind={hazard} />
+      </div>
     </div>
   )
 }

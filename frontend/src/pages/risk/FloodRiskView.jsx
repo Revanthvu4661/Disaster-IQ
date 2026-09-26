@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, Gauge, Info, RotateCcw } from 'lucide-react'
 import { api } from '../../api/client'
 import { useApi } from '../../hooks/useApi'
+import { useSectionInView } from '../../hooks/useSectionInView'
 import SourceBadge from '../../components/SourceBadge'
 import SortableTable from '../../components/SortableTable'
 import ChartCard from '../../components/ChartCard'
@@ -21,6 +22,7 @@ const SECTIONS = [
   ['check', 'Check a region'],
   ['transparency', 'Model transparency'],
 ]
+const SECTION_IDS = SECTIONS.map(([id]) => id)
 
 const TABLE_PREVIEW = 25   // rows shown before "Show all"
 
@@ -627,6 +629,7 @@ export default function FloodRiskView() {
   const [selected, setSelected] = useState(null)
   const [stateFilter, setStateFilter] = useState(ALL_INDIA)
   const scenarioApi = useApi(() => api.floodScenario(scenario), [scenario], { enabled: scenario !== 'current' })
+  const inView = useSectionInView(SECTION_IDS, Boolean(data) && !loading)
 
   const view = !data ? null : scenario === 'current' ? { kind: 'current', ...data.current } : scenarioApi.data
 
@@ -666,7 +669,7 @@ export default function FloodRiskView() {
 
   return (
     <>
-      <p className="callout">
+      <p className="callout callout-warn">
         <Info size={16} aria-hidden="true" />
         <span>
           <strong>River-gauge data not available for this build;</strong> risk is estimated from rainfall, soil moisture,
@@ -679,7 +682,7 @@ export default function FloodRiskView() {
         <ol>
           {SECTIONS.map(([id, text], index) => (
             <li key={id}>
-              <a href={`#${id}`}>
+              <a href={`#${id}`} aria-current={inView === id ? 'location' : undefined}>
                 <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span> {text}
               </a>
             </li>

@@ -1,0 +1,269 @@
+/* Level 2 (Disaster Risk Prediction) and Level 3 (Preparedness & Response)
+   in the disaster-page hazard themes. The page root is
+   `.hazard-page.level-page[data-hazard]`, and data-hazard follows the page's
+   own Earthquake / Flood / Cyclone selector, so every rule in disasters.css
+   ("hazard pages") and every --hz-* token in hazard-themes.css applies as-is.
+   This file adds no colours: it only animates the switch between the three
+   themes and fits the hero, selector and tabs to a data-dense page.
+
+   ── theme switch ─────────────────────────────────────────────────────────
+   Custom properties only interpolate when registered, and registering the
+   --hz-* tokens themselves would change them app-wide (other rules rely on
+   var(--hz-*, fallback)). So the root copies each colour token into a
+   registered --lv-* twin that transitions, and hands the animated value back
+   to its children as --hz-*. Anything mounted mid-switch inherits the
+   in-between value, so freshly loaded blocks fade along with the rest. */
+
+@property --lv-bg { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-hero { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-surface { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-surface-2 { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-raised { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-current { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-tile { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-border { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-border-strong { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-grid { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-crack { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-text { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-text-strong { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-text-2 { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-muted { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-dim { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-accent { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-accent-2 { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-accent-ink { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-accent-fill { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-on-accent { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-warn { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-warn-bg { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-warn-box { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --lv-warn-line { syntax: "<color>"; inherits: true; initial-value: transparent; }
+
+.hazard-page.level-page {
+  --lv-bg: var(--hz-bg);
+  --lv-hero: var(--hz-hero);
+  --lv-surface: var(--hz-surface);
+  --lv-surface-2: var(--hz-surface-2);
+  --lv-raised: var(--hz-raised);
+  --lv-current: var(--hz-current);
+  --lv-tile: var(--hz-tile);
+  --lv-border: var(--hz-border);
+  --lv-border-strong: var(--hz-border-strong);
+  --lv-grid: var(--hz-grid);
+  --lv-crack: var(--hz-crack);
+  --lv-text: var(--hz-text);
+  --lv-text-strong: var(--hz-text-strong);
+  --lv-text-2: var(--hz-text-2);
+  --lv-muted: var(--hz-muted);
+  --lv-dim: var(--hz-dim);
+  --lv-accent: var(--hz-accent);
+  --lv-accent-2: var(--hz-accent-2);
+  --lv-accent-ink: var(--hz-accent-ink);
+  --lv-accent-fill: var(--hz-accent-fill);
+  --lv-on-accent: var(--hz-on-accent);
+  --lv-warn: var(--hz-warn);
+  --lv-warn-bg: var(--hz-warn-bg);
+  --lv-warn-box: var(--hz-warn-box);
+  --lv-warn-line: var(--hz-warn-line);
+
+  /* The app tokens remapped by .hazard-page, re-pointed at the animated twins. */
+  --bg: var(--lv-bg);
+  --bg-elevated: var(--lv-surface);
+  --surface: var(--lv-surface);
+  --surface-2: var(--lv-surface-2);
+  --surface-hover: var(--lv-raised);
+  --border: var(--lv-border);
+  --border-strong: var(--lv-border-strong);
+  --text: var(--lv-text);
+  --text-secondary: var(--lv-text-2);
+  --text-muted: var(--lv-muted);
+  --accent: var(--lv-accent-ink);
+  --accent-hover: var(--lv-accent-2);
+  --accent-soft: color-mix(in srgb, var(--lv-accent) 16%, transparent);
+  --focus: var(--lv-accent-2);
+  --grid-line: var(--lv-grid);
+  --dt: var(--lv-accent-ink);
+  --dt-earthquake: var(--lv-accent-ink);
+  --dt-flood: var(--lv-accent-ink);
+  --dt-cyclone: var(--lv-accent-ink);
+  --dt-earthquake-soft: color-mix(in srgb, var(--lv-accent) 14%, transparent);
+  --dt-flood-soft: color-mix(in srgb, var(--lv-accent) 14%, transparent);
+  --dt-cyclone-soft: color-mix(in srgb, var(--lv-accent) 14%, transparent);
+  --dt-earthquake-line: color-mix(in srgb, var(--lv-accent) 40%, transparent);
+  --dt-flood-line: color-mix(in srgb, var(--lv-accent) 40%, transparent);
+  --dt-cyclone-line: color-mix(in srgb, var(--lv-accent) 40%, transparent);
+  color: var(--lv-text);
+
+  --lv-ease: 0.4s ease;
+  transition:
+    --lv-bg var(--lv-ease), --lv-hero var(--lv-ease), --lv-surface var(--lv-ease), --lv-surface-2 var(--lv-ease),
+    --lv-raised var(--lv-ease), --lv-current var(--lv-ease), --lv-tile var(--lv-ease), --lv-border var(--lv-ease),
+    --lv-border-strong var(--lv-ease), --lv-grid var(--lv-ease), --lv-crack var(--lv-ease), --lv-text var(--lv-ease),
+    --lv-text-strong var(--lv-ease), --lv-text-2 var(--lv-ease), --lv-muted var(--lv-ease), --lv-dim var(--lv-ease),
+    --lv-accent var(--lv-ease), --lv-accent-2 var(--lv-ease), --lv-accent-ink var(--lv-ease),
+    --lv-accent-fill var(--lv-ease), --lv-on-accent var(--lv-ease), --lv-warn var(--lv-ease),
+    --lv-warn-bg var(--lv-ease), --lv-warn-box var(--lv-ease), --lv-warn-line var(--lv-ease);
+}
+:root[data-theme="light"] .hazard-page.level-page { --focus: var(--lv-accent-ink); }
+
+.hazard-page.level-page > * {
+  --hz-bg: var(--lv-bg);
+  --hz-hero: var(--lv-hero);
+  --hz-surface: var(--lv-surface);
+  --hz-surface-2: var(--lv-surface-2);
+  --hz-raised: var(--lv-raised);
+  --hz-current: var(--lv-current);
+  --hz-tile: var(--lv-tile);
+  --hz-border: var(--lv-border);
+  --hz-border-strong: var(--lv-border-strong);
+  --hz-grid: var(--lv-grid);
+  --hz-crack: var(--lv-crack);
+  --hz-text: var(--lv-text);
+  --hz-text-strong: var(--lv-text-strong);
+  --hz-text-2: var(--lv-text-2);
+  --hz-muted: var(--lv-muted);
+  --hz-dim: var(--lv-dim);
+  --hz-accent: var(--lv-accent);
+  --hz-accent-2: var(--lv-accent-2);
+  --hz-accent-ink: var(--lv-accent-ink);
+  --hz-accent-fill: var(--lv-accent-fill);
+  --hz-on-accent: var(--lv-on-accent);
+  --hz-warn: var(--lv-warn);
+  --hz-warn-bg: var(--lv-warn-bg);
+  --hz-warn-box: var(--lv-warn-box);
+  --hz-warn-line: var(--lv-warn-line);
+}
+
+/* The backdrop behind the page fades with it. */
+.app-shell:has(.level-page) {
+  --lv-bg: var(--hz-bg);
+  --bg: var(--lv-bg);
+  transition: --lv-bg 0.4s ease;
+}
+
+/* ── hero: same layout as the disaster pages, sized for a working page ─── */
+
+.hazard-page.level-page .disaster-header {
+  --lv-tint: 16%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-4) 32px;
+  padding: 30px 36px;
+  /* A flat tint rather than the theme's gradient image, so it can fade. */
+  background:
+    radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--hz-accent) var(--lv-tint), transparent), transparent 55%),
+    var(--hz-hero);
+}
+/* Lighter in light themes, so the accent eyebrow keeps 4.5:1 even at the tint's strongest point. */
+:root[data-theme="light"] .hazard-page.level-page .disaster-header { --lv-tint: 8%; }
+.hazard-page.level-page .disaster-title-row { animation: none; }
+.hazard-page.level-page .disaster-tile { width: 64px; height: 64px; border-radius: 12px; }
+.hazard-page.level-page .disaster-tile > svg { width: 32px; height: 32px; }
+.hazard-page.level-page .disaster-header h1 {
+  /* Fit the longest word (RECOMMENDATIONS) beside the 64px tile. */
+  font-size: min(clamp(2rem, 4vw, 3.25rem), calc((100cqi - 84px) / var(--lv-title-fit)));
+  line-height: 1;
+}
+.hazard-page.level-page[data-hazard="earthquake"] { --lv-title-fit: 7.4; }
+.hazard-page.level-page[data-hazard="flood"] { --lv-title-fit: 9.4; }
+.hazard-page.level-page[data-hazard="cyclone"] { --lv-title-fit: 10.4; }
+.hazard-page.level-page .disaster-definition { font-size: 1.0625rem; max-width: 46rem; }
+
+/* The one motif: a small, quiet copy of the hazard's instrument. */
+.hz-mini {
+  width: 196px;
+  height: 64px;
+  border: 1px solid var(--hz-border-strong);
+  border-radius: 10px;
+  background: var(--hz-surface-2);
+  overflow: hidden;
+  opacity: 0.85;
+  animation: lv-fade 0.4s ease both;
+}
+.hz-mini svg { display: block; width: 100%; height: 100%; }
+@keyframes lv-fade { from { opacity: 0; } }
+
+/* ── Earthquake / Flood / Cyclone selector ───────────────────────────── */
+
+.hazard-page.level-page .type-switch {
+  gap: 4px;
+  padding: 4px;
+  border-color: var(--hz-border);
+  border-radius: 10px;
+  background: var(--hz-surface-2);
+}
+.hazard-page.level-page .type-switch-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 7px;
+  color: var(--hz-text-2);
+}
+.hazard-page.level-page .type-switch-btn svg { color: var(--hz-muted); }
+.hazard-page.level-page .type-switch-btn:hover { background: var(--hz-raised); color: var(--hz-text-strong); }
+.hazard-page.level-page .type-switch-btn[aria-pressed="true"] {
+  background: var(--hz-accent-fill);
+  color: var(--hz-on-accent);
+  box-shadow: none;
+}
+.hazard-page.level-page .type-switch-btn[aria-pressed="true"] svg { color: var(--hz-on-accent); }
+
+/* ── L1 / L2 / L3: the disaster-page cards, a little shorter ─────────── */
+
+.hazard-page.level-page .level-chain-step { min-height: 72px; }
+.hazard-page.level-page .level-chain-badge { font-size: 2.125rem; }
+
+/* ── caution notices stay amber: warning tokens, never the hazard accent ─ */
+
+.hazard-page.level-page .callout-warn {
+  border: 1px solid var(--hz-warn-line);
+  border-left: 3px solid var(--hz-warn);
+  background: var(--hz-warn-bg);
+}
+.hazard-page.level-page .callout-warn > svg { background: var(--hz-warn-box); color: var(--hz-warn); }
+.hazard-page.level-page .callout-warn strong { color: var(--hz-text-strong); }
+
+/* ── scenario and planning-horizon tabs as pills ─────────────────────── */
+
+.hazard-page.level-page .seg {
+  gap: 4px;
+  padding: 4px;
+  border-color: var(--hz-border);
+  background: var(--hz-surface-2);
+}
+.hazard-page.level-page .seg-wrap { border-radius: 14px; }
+.hazard-page.level-page .seg-btn {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-family: var(--hz-font-mono);
+  font-size: 0.78125rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--hz-text-2);
+}
+.hazard-page.level-page .seg-btn:hover:not([aria-pressed="true"]) { background: var(--hz-raised); color: var(--hz-text-strong); }
+.hazard-page.level-page .seg-btn[aria-pressed="true"] { font-weight: 600; }
+
+/* ── denser headings than the disaster pages ─────────────────────────── */
+
+.hazard-page.level-page .block-title { font-size: clamp(1.5rem, 2.4vw, 2.125rem); line-height: 1.05; }
+.hazard-page.level-page .kpi-value { font-size: calc(var(--hz-kpi-size) * 0.72); line-height: 1.05; }
+
+@media (max-width: 1023px) {
+  .hazard-page.level-page .disaster-header { grid-template-columns: minmax(0, 1fr) auto; padding: 24px; }
+}
+@media (max-width: 620px) {
+  .hazard-page.level-page .disaster-header { grid-template-columns: 1fr; padding: 20px 16px; }
+  .hazard-page.level-page .disaster-tile { width: 52px; height: 52px; }
+  .hazard-page.level-page .disaster-tile > svg { width: 26px; height: 26px; }
+  .hazard-page.level-page .disaster-header h1 { font-size: min(2rem, calc((100cqi - 66px) / var(--lv-title-fit))); }
+  .hz-mini { display: none; } /* decoration only; the hero is tall enough on a phone */
+}
+
+/* disasters.css already stops every animation inside a hazard page; the
+   theme switch itself lives on the root and the app shell. */
+@media (prefers-reduced-motion: reduce) {
+  .hazard-page.level-page,
+  .app-shell:has(.level-page) { transition: none; }
+}

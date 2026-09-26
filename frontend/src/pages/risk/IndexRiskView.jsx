@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, CheckCircle2, Info, XCircle } from 'lucide-react'
 import { api } from '../../api/client'
 import { useApi } from '../../hooks/useApi'
+import { useSectionInView } from '../../hooks/useSectionInView'
 import SourceBadge from '../../components/SourceBadge'
 import SortableTable from '../../components/SortableTable'
 import ChartCard from '../../components/ChartCard'
@@ -20,6 +21,7 @@ const SECTIONS = [
   ['check', 'Check a state'],
   ['method', 'Method and limits'],
 ]
+const SECTION_IDS = SECTIONS.map(([id]) => id)
 
 const WORDS = {
   earthquake: {
@@ -326,6 +328,7 @@ function MethodBlock({ hazard, data }) {
 export default function IndexRiskView({ hazard }) {
   const { data, error, loading, reload } = useApi(() => api.hazardRisk(hazard), [hazard])
   const [selected, setSelected] = useState(null)
+  const inView = useSectionInView(SECTION_IDS, Boolean(data) && !loading)
 
   if (error) return <ErrorState message={error} onRetry={reload} />
   if (loading || !data) return <SkeletonCard height={420} />
@@ -337,7 +340,7 @@ export default function IndexRiskView({ hazard }) {
 
   return (
     <>
-      <p className="callout">
+      <p className="callout callout-warn">
         <Info size={16} aria-hidden="true" />
         <span>
           <strong>{hazard === 'earthquake' ? 'Earthquake' : 'Cyclone'} risk here is a statistical index, not a trained model.</strong>{' '}
@@ -349,7 +352,7 @@ export default function IndexRiskView({ hazard }) {
         <ol>
           {SECTIONS.map(([id, text], index) => (
             <li key={id}>
-              <a href={`#${id}`}>
+              <a href={`#${id}`} aria-current={inView === id ? 'location' : undefined}>
                 <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span> {text}
               </a>
             </li>

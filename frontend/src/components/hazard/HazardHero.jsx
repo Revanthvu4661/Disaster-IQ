@@ -188,3 +188,19 @@ export function TileMotif({ hazard }) {
   }
   return null
 }
+
+/**
+ * A small, secondary version of the instrument for the data-dense Level 2 and
+ * Level 3 heroes: no panel chrome, no readouts. Keyed by hazard so switching
+ * the hazard redraws it (the trace draws, the water rises) instead of
+ * swapping in place.
+ */
+export function HazardMotif({ hazard }) {
+  const Instrument = INSTRUMENT[hazard]
+  if (!Instrument) return null
+  return (
+    <div key={hazard} className={`hz-mini hz-${hazard}-body`} aria-hidden="true">
+      <Instrument />
+    </div>
+  )
+}
