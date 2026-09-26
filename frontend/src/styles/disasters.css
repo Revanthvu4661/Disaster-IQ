@@ -1437,3 +1437,18 @@ svg.card-motif { fill: none; stroke: currentColor; stroke-width: 3; stroke-linec
   gap: var(--space-2) var(--space-4);
   margin-top: var(--space-3);
 }
+
+/* Search box above a table or list (components/TableSearch.jsx). Wraps on
+   narrow screens so it never crowds a card's header or export controls. */
+.table-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-2);
+}
+.table-search-box { position: relative; flex: 1 1 220px; max-width: 320px; min-width: 0; }
+.table-search-box > svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.table-search-input { width: 100%; min-height: 36px; padding-left: 30px; font-size: var(--text-sm); }
+.table-search-count:empty { display: none; }
+.table-empty { padding: var(--space-4); text-align: center; color: var(--text-muted); font-size: var(--text-sm); }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
+import { TableSearch, noResultsText, plainText, useTableSearch } from './TableSearch'
 
 /**
  * A visible data table whose headers sort it. `columns`:
@@ -10,6 +11,12 @@ import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
  * rows of the *sorted* table are shown, with a "Show all" button under it.
  * Sorting always uses every row, so "top 25 by population" is the true top
  * 25. `noun` names the rows in the button ("districts").
+ *
+ * `searchable` (default true) adds a search box above the table that filters
+ * rows by case-insensitive substring. It matches the columns in `searchKeys`,
+ * or by default every column not marked `numeric`, using each cell's raw
+ * value (or its `sortValue` when the raw field is not plain text). Pass
+ * `searchable={false}` for short tables where a search box would be noise.
  */
 export function SortableTable({
   columns,
@@ -21,17 +28,24 @@ export function SortableTable({
   maxHeight,
   preview,
   noun = 'rows',
+  searchable = true,
+  searchKeys,
 }) {
   const [sort, setSort] = useState(initialSort ?? null)
+  const searchColumns = searchKeys ? columns.filter((c) => searchKeys.includes(c.key)) : columns.filter((c) => !c.numeric)
+  const search = useTableSearch(rows, (row) =>
+    searchColumns.map((c) => plainText(row[c.key]) || plainText(c.sortValue?.(row))).join(' '),
+  )
+  const visibleRows = searchable ? search.filtered : rows
   const [expanded, setExpanded] = useState(false)
   const wrapRef = useRef(null)
   const scrollOnCollapse = useRef(false)
 
   const sorted = useMemo(() => {
-    if (!sort) return rows
+    if (!sort) return visibleRows
     const column = columns.find((c) => c.key === sort.key)
     const value = (row) => (column?.sortValue ? column.sortValue(row) : row[sort.key])
-    const out = [...rows].sort((a, b) => {
+    const out = [...visibleRows].sort((a, b) => {
       const av = value(a)
       const bv = value(b)
       if (av === bv) return 0
@@ -40,9 +54,9 @@ export function SortableTable({
       return av < bv ? -1 : 1
     })
     return sort.dir === 'desc' ? out.reverse() : out
-  }, [rows, columns, sort])
+  }, [visibleRows, columns, sort])
 
-  const limited = Boolean(preview) && rows.length > preview
+  const limited = Boolean(preview) && visibleRows.length > preview
   const shown = limited && !expanded ? sorted.slice(0, preview) : sorted
 
   const toggleExpanded = () => {
@@ -95,6 +109,13 @@ export function SortableTable({
           </tr>
         </thead>
         <tbody>
+          {searchable && search.active && shown.length === 0 && (
+            <tr>
+              <td colSpan={columns.length} className="table-empty">
+                {noResultsText(search.needle)}
+              </td>
+            </tr>
+          )}
           {shown.map((row, index) => (
             <tr key={rowKey(row, index)} style={rowStyle?.(row)}>
               {columns.map((column, columnIndex) => {
@@ -116,16 +137,30 @@ export function SortableTable({
     </div>
   )
 
-  if (!limited) return table
+  const searchBox = searchable && (
+    <TableSearch search={search} total={rows.length} label={`Search ${caption ?? 'table'}`} noun={noun} />
+  )
+
+  if (!limited) {
+    return searchBox ? (
+      <>
+        {searchBox}
+        {table}
+      </>
+    ) : (
+      table
+    )
+  }
   return (
     <>
+      {searchBox}
       {table}
       <div className="table-more">
         <span className="text-sm muted" role="status">
-          Showing {shown.length.toLocaleString()} of {rows.length.toLocaleString()} {noun}
+          Showing {shown.length.toLocaleString()} of {visibleRows.length.toLocaleString()} {noun}
         </span>
         <button type="button" className="btn" aria-expanded={expanded} onClick={toggleExpanded}>
-          {expanded ? `Show first ${preview} only` : `Show all ${rows.length.toLocaleString()} ${noun}`}
+          {expanded ? `Show first ${preview} only` : `Show all ${visibleRows.length.toLocaleString()} ${noun}`}
         </button>
       </div>
     </>

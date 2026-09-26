@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { SlidersHorizontal } from 'lucide-react'
+import { TableSearch, noResultsText, useTableSearch } from '../TableSearch'
 import {
   DEFAULT_SEVERITY_RULE,
   MAP_TYPES,
@@ -75,6 +76,13 @@ export function LiveEventsPanel({
   const id = useId()
   const now = useNow()
   const filtersActive = types.size < MAP_TYPES.length || severities.size < SEVERITY_FILTERS.length
+  // Search the cards by the text they show: type, place or title, the sub-line and storm name.
+  const search = useTableSearch(events ?? [], (event) =>
+    [mapType(event.type)?.label, eventHeadline(event), eventSubline(event), event.title, event.place, event.location, event.storm_name]
+      .filter(Boolean)
+      .join(' '),
+  )
+  const shownEvents = search.filtered
 
   // Keep the selected card in view when it is chosen on the map.
   useEffect(() => {
@@ -149,6 +157,10 @@ export function LiveEventsPanel({
         </select>
       </label>
 
+      {!loading && !failed && events.length > 0 && (
+        <TableSearch search={search} total={events.length} label="Search events by place, type or name" noun="events" />
+      )}
+
       {loading ? (
         <div className="wm-list-loading" role="status">
           <Skeleton height={72} />
@@ -164,9 +176,13 @@ export function LiveEventsPanel({
         <p className="wm-empty" role="status">
           {filteredOut ? 'No events match the selected filters.' : 'No events in this view. Zoom out to see more.'}
         </p>
+      ) : shownEvents.length === 0 ? (
+        <p className="wm-empty" role="status">
+          {noResultsText(search.needle)}
+        </p>
       ) : (
         <ul className="wm-list" ref={listRef} aria-label="Events in the map view" onKeyDown={onListKey}>
-          {events.map((event) => {
+          {shownEvents.map((event) => {
             const selected = event.id === selectedId
             const subline = eventSubline(event)
             return (

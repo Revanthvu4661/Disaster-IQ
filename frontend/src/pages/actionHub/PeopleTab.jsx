@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react'
 import { ChevronDown, ChevronUp, UserPlus, X } from 'lucide-react'
 import { InfoCard } from '../../components/history/Block'
+import { TableSearch, noResultsText, useTableSearch } from '../../components/TableSearch'
 import { useToast } from '../../context/ToastContext'
 import {
   AVAILABILITY,
@@ -179,10 +180,8 @@ function Profile({ person, tasks }) {
 export default function PeopleTab({ responders, tasks, needContext, onDismissNeed, onAssign }) {
   const [showForm, setShowForm] = useState(responders.length === 0)
   const [open, setOpen] = useState(null)
-  const [search, setSearch] = useState('')
-  const shown = responders.filter((person) =>
-    `${person.name} ${person.role} ${person.city} ${person.state}`.toLowerCase().includes(search.trim().toLowerCase()),
-  )
+  const search = useTableSearch(responders, (person) => `${person.name} ${person.role} ${person.city} ${person.state} ${person.skills ?? ''}`)
+  const shown = search.filtered
   const matches = needContext ? smartMatches(responders, tasks, needContext.need, { area: needContext.plan.area, state: needContext.plan.state }) : []
 
   return (
@@ -211,14 +210,7 @@ export default function PeopleTab({ responders, tasks, needContext, onDismissNee
       </section>
 
       <InfoCard title={`Responder directory (${responders.length})`} insight="Current assignment comes live from the tasks.">
-        <input
-          className="input ah-dir-search"
-          type="search"
-          placeholder="Search by name, role or place"
-          aria-label="Search the directory"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
+        {responders.length > 0 && <TableSearch search={search} total={responders.length} label="Search responders by name, role or place" noun="responders" />}
         {responders.length === 0 ? (
           <p className="text-sm secondary">Nobody registered yet.</p>
         ) : (
@@ -237,6 +229,13 @@ export default function PeopleTab({ responders, tasks, needContext, onDismissNee
                 </tr>
               </thead>
               <tbody>
+                {search.active && shown.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="table-empty">
+                      {noResultsText(search.needle)}
+                    </td>
+                  </tr>
+                )}
                 {shown.map((person) => {
                   const active = activeTasksFor(tasks, person.id)
                   const expanded = open === person.id

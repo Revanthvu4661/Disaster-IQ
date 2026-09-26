@@ -499,7 +499,7 @@ function TransparencyBlock({ data, onShowScenario }) {
           </div>
         </dl>
         <p className="field-label" style={{ marginTop: 'var(--space-4)' }}>Inputs and learned weights</p>
-        <SortableTable caption="Model inputs and coefficients" columns={featureColumns} rows={model.features} rowKey={(r) => r.key} />
+        <SortableTable caption="Model inputs and coefficients" columns={featureColumns} rows={model.features} rowKey={(r) => r.key} searchable={false} />
         <p className="card-footnote" style={{ marginTop: 'var(--space-3)' }}>
           Coefficients are per standard deviation, so they compare directly.
           {rainNormal && Math.abs(rainNormal.coefficient) < 0.05 && ' Rainfall against normal adds almost nothing once the heaviest 3-day rainfall is known.'}

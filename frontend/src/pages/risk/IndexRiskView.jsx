@@ -232,6 +232,7 @@ function CheckBlock({ hazard, data, selected, onSelect }) {
             <p className="field-label" style={{ marginTop: 'var(--space-4)' }}>{words.eventLabel} on record</p>
             <SortableTable
               caption={`${words.eventLabel} near ${row.region}`}
+              searchable={false}
               columns={words.eventColumns}
               rows={row.top_events}
               rowKey={(e, i) => `${e.time ?? e.season}-${e.name ?? e.place}-${i}`}
@@ -306,7 +307,7 @@ function MethodBlock({ hazard, data }) {
         insight="Each event should be found near the state it hit. This checks the catalogue and the distance calculation, not the risk level."
         badge={<SourceBadge source={words.source} />}
       >
-        <SortableTable caption="Known events" columns={checkColumns} rows={data.checks} rowKey={(c) => c.name} />
+        <SortableTable caption="Known events" columns={checkColumns} rows={data.checks} rowKey={(c) => c.name} searchable={false} />
       </InfoCard>
       <InfoCard title="What the index does not account for" badge={<SourceBadge kind="index" />}>
         <UnavailableList items={data.not_included} title="Not included" />

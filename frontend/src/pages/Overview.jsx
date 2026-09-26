@@ -291,6 +291,7 @@ function ComparisonTable({ rows, note, coverage }) {
         columns={columns}
         rows={rows}
         caption="Disaster-type comparison"
+        searchable={false}
         initialSort={{ key: 'deaths', dir: 'desc' }}
       />
       <p className="text-xs muted" style={{ marginTop: 'var(--space-2)' }}>

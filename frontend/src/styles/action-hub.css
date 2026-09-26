@@ -194,7 +194,6 @@
 .ah-register-actions p { margin: 0; }
 .ah-photo-pick { display: flex; align-items: center; gap: 8px; min-height: var(--tap-target); }
 .ah-photo-pick input { min-width: 0; font-size: var(--text-sm); color: var(--text-secondary); }
-.ah-dir-search { max-width: 360px; margin-bottom: var(--space-3); }
 .ah-directory th[scope="row"] { text-align: left; }
 .ah-row-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .ah-profile-row > td { background: var(--surface-2); }

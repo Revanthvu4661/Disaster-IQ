@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LiveEventsPanel } from './LiveEventsPanel'
 import { SourceStrip, sourceStatusText } from './SourceStrip'
@@ -56,6 +56,22 @@ function renderPanel(props = {}) {
 }
 
 describe('LiveEventsPanel', () => {
+  it('searches the event cards by place, type or name', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    const box = screen.getByRole('searchbox', { name: 'Search events by place, type or name' })
+    await user.type(box, 'papua')
+    await waitFor(() => expect(screen.queryByRole('button', { name: /Polo/ })).toBeNull())
+    expect(screen.getByRole('button', { name: /Kainantu/ })).toBeInTheDocument()
+    expect(screen.getByText('1 of 2 events')).toBeInTheDocument()
+    await user.clear(box)
+    await user.type(box, 'cyclone')
+    await waitFor(() => expect(screen.queryByRole('button', { name: /Kainantu/ })).toBeNull())
+    await user.clear(box)
+    await user.type(box, 'tsunami')
+    await waitFor(() => expect(screen.getByText('No results for “tsunami”.')).toBeInTheDocument())
+  })
+
   it('shows the live count and one card per event with type text, place and facts', () => {
     renderPanel()
     expect(screen.getByRole('heading', { name: 'Live Events' })).toBeInTheDocument()

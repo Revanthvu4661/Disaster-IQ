@@ -705,3 +705,9 @@
   .wm-geolabels,
   .wm-row { transition: none !important; }
 }
+
+/* Live Events search (components/TableSearch.jsx) in the map panel's palette. */
+.wm-panel .table-search { margin: 0 0 var(--space-2); }
+.wm-panel .table-search-box { max-width: none; }
+.wm-panel .table-search-input { background: var(--wm-card); border-color: var(--wm-border); color: var(--wm-text-strong); }
+.wm-panel .table-search-input::placeholder, .wm-panel .table-search-box > svg, .wm-panel .table-search-count { color: var(--wm-muted); }

@@ -2,6 +2,7 @@ import { useId, useRef, useState } from 'react'
 import { Download, Image as ImageIcon, Table2 } from 'lucide-react'
 import { downloadChartPng, downloadCsv } from '../lib/download'
 import { ErrorState, SkeletonCard } from './ui'
+import { TableSearch, noResultsText, plainText, useTableSearch } from './TableSearch'
 
 /**
  * Card wrapper for every chart.
@@ -37,6 +38,9 @@ export function ChartCard({
 }) {
   const bodyRef = useRef(null)
   const [tableOpen, setTableOpen] = useState(false)
+  // Search the data table while it is open; closed, the screen-reader copy keeps every row.
+  const search = useTableSearch(tableRows ?? [], (row) => (tableColumns ?? []).map((c) => plainText(row[c.key])).join(' '))
+  const dataRows = tableOpen ? search.filtered : tableRows
   const titleId = useId()
   const Heading = `h${headingLevel}`
   const tableId = useId()
@@ -116,11 +120,16 @@ export function ChartCard({
         </div>
       )}
 
+      {hasTable && tableOpen && (
+        <div style={{ marginTop: 'var(--space-3)' }}>
+          <TableSearch search={search} total={tableRows.length} label={`Search ${tableCaption ?? title}`} />
+        </div>
+      )}
       {hasTable && (
         <div
           id={tableId}
           className={tableOpen ? 'table-wrap' : 'visually-hidden'}
-          style={tableOpen ? { marginTop: 'var(--space-3)', maxHeight: 280 } : undefined}
+          style={tableOpen ? { maxHeight: 280 } : undefined}
         >
           <table className="data">
             <caption className="visually-hidden">{tableCaption ?? title}</caption>
@@ -134,7 +143,14 @@ export function ChartCard({
               </tr>
             </thead>
             <tbody>
-              {tableRows.map((row, index) => (
+              {tableOpen && search.active && dataRows.length === 0 && (
+                <tr>
+                  <td colSpan={tableColumns.length} className="table-empty">
+                    {noResultsText(search.needle)}
+                  </td>
+                </tr>
+              )}
+              {dataRows.map((row, index) => (
                 <tr key={row.id ?? row.key ?? index}>
                   {tableColumns.map((column) => (
                     <td key={column.key}>
