@@ -14,6 +14,8 @@
  * model, and never a warning.
  */
 import { distanceKm } from './cycloneZones'
+import { INDIA_DISTRICTS } from '../data/indiaDistricts'
+import { ALL_DISTRICTS, LOCATION_NAMES } from '../data/districtsByState'
 
 export const HAZARDS = ['flood', 'cyclone', 'earthquake']
 export const WEIGHTS = { frequency: 0.35, seasonal: 0.25, anomaly: 0.3, geography: 0.1 }
@@ -273,6 +275,55 @@ export function seismicSummary(seismic) {
   if (!seismic) return 'unknown'
   if (!seismic.maxMagnitude) return `no M2.5+ earthquake within ${SEISMIC_RADIUS_KM} km in 30 days`
   return `largest M${seismic.maxMagnitude.toFixed(1)}, ${seismic.distanceKm} km from the state centre (${seismic.count} events M2.5+ in 30 days)`
+}
+
+/* ── where the live readings are taken ─────────────────────────────────── */
+
+const normName = (text) =>
+  (text ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '')
+const LOCAL_DISTRICTS = new Map(INDIA_DISTRICTS.map(([district, state, lat, lon]) => [`${normName(state)}|${normName(district)}`, [lat, lon]]))
+
+/** "Kakinada, Andhra Pradesh" for a district, or just the state. */
+export const placeLabel = (state, district) => (district && district !== ALL_DISTRICTS ? `${district}, ${state}` : state)
+
+/** Open-Meteo geocoding for one name, keeping only a result inside `state`. */
+export async function geocodeInState(name, state) {
+  const params = new URLSearchParams({ name, count: 10, language: 'en', countryCode: 'IN', format: 'json' })
+  const data = await fetchJson(`https://geocoding-api.open-meteo.com/v1/search?${params}`)
+  const want = normName(state)
+  const hit = (data.results ?? []).find((place) => {
+    const admin = normName(place.admin1)
+    return admin === want || admin.includes(want.slice(0, 8)) || want.includes(admin)
+  })
+  return hit ? { lat: hit.latitude, lon: hit.longitude, name: hit.name } : null
+}
+
+/**
+ * Where to take the live weather and earthquake readings:
+ *   All Districts  the state centre (as before)
+ *   a district     its centre from data/indiaDistricts.js, else Open-Meteo
+ *                  geocoding of its name (or headquarters town) inside the
+ *                  state, else the state centre with a note.
+ * District names alone are unreliable for geocoding ("Krishna" finds a
+ * village in Uttar Pradesh), so the geocoder only ever accepts a place in the
+ * selected state.
+ */
+export async function resolveLocation({ state, district, lat, lon }) {
+  const stateCentre = { lat, lon, label: `${state} (state centre)`, source: 'state', note: null }
+  if (!district || district === ALL_DISTRICTS) return stateCentre
+  const name = LOCATION_NAMES[state]?.[district] ?? district
+  const local = LOCAL_DISTRICTS.get(`${normName(state)}|${normName(name)}`)
+  if (local) return { lat: local[0], lon: local[1], label: `${district} (district centre)`, source: 'district', note: null }
+  try {
+    const place = await geocodeInState(name, state)
+    if (place) {
+      const via = name === district ? '' : ` via ${name}`
+      return { lat: place.lat, lon: place.lon, label: `${district} (geocoded${via})`, source: 'geocoded', note: null }
+    }
+  } catch {
+    // Geocoder down: fall through to the state centre.
+  }
+  return { ...stateCentre, note: `${district} could not be located, so the state centre is used.` }
 }
 
 /* ── last good answer, per region and source ───────────────────────────── */

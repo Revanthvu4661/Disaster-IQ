@@ -20,6 +20,7 @@ import { MultiLines } from '../components/charts/LazyCharts'
 import { disasterVar, getDisasterType } from '../config/disasterTypes'
 import { formatDay, levelLabel } from '../lib/risk'
 import { formatNumber, formatRelative } from '../lib/format'
+import { ALL_DISTRICTS, districtsFor } from '../data/districtsByState'
 import {
   FORECAST_DAYS,
   HAZARDS,
@@ -31,6 +32,8 @@ import {
   fetchTemperatureNormal,
   indicatorRows,
   peakScores,
+  placeLabel,
+  resolveLocation,
   seasonFor,
   seismicSummary,
   withCache,
@@ -75,10 +78,24 @@ function InputPanel({ regions, form, setForm, onSubmit, busy }) {
       >
         <label className="pp-field">
           <span className="field-label">Region (Indian state or UT)</span>
-          <select className="select" value={form.region} onChange={(event) => setForm({ ...form, region: event.target.value })}>
+          <select
+            className="select"
+            value={form.region}
+            onChange={(event) => setForm({ ...form, region: event.target.value, district: ALL_DISTRICTS })}
+          >
             {regions.map((item) => (
               <option key={item.region} value={item.region}>
                 {item.region}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="pp-field">
+          <span className="field-label">District</span>
+          <select id="districtSelect" className="select" value={form.district} onChange={(event) => setForm({ ...form, district: event.target.value })}>
+            {districtsFor(form.region).map((name) => (
+              <option key={name} value={name}>
+                {name}
               </option>
             ))}
           </select>
@@ -370,9 +387,14 @@ function HistoryBlock({ hazards, baseline }) {
   )
 }
 
-function IndicatorsBlock({ rows, feeds }) {
+function IndicatorsBlock({ rows, feeds, location }) {
   return (
-    <Block id="pp-indicators" index={6} title="Early warning indicators" lead="Live readings at the state centre (sea surface: the open sea off its coast).">
+    <Block
+      id="pp-indicators"
+      index={6}
+      title="Early warning indicators"
+      lead={`Live readings at ${location?.label ?? 'the state centre'} (sea surface: the open sea off the state's coast).`}
+    >
       <InfoCard
         title="Current readings against their thresholds"
         insight="Critical above the threshold, Alert within 75% of it."
@@ -426,7 +448,7 @@ function IndicatorsBlock({ rows, feeds }) {
 export default function PrePrediction() {
   const regionsApi = useApi(() => api.prePredictionRegions(), [])
   const regions = regionsApi.data?.regions ?? []
-  const [form, setForm] = useState({ region: 'Odisha', type: 'all', days: 30 })
+  const [form, setForm] = useState({ region: 'Odisha', district: ALL_DISTRICTS, type: 'all', days: 30 })
   const [run, setRun] = useState(null)
   const [narrative, setNarrative] = useState({ status: 'idle' })
   const runId = useRef(0)
@@ -435,6 +457,7 @@ export default function PrePrediction() {
     setNarrative({ status: 'loading' })
     const query = {
       region: params.region,
+      district: params.district !== ALL_DISTRICTS ? params.district : undefined,
       season: seasonFor(Number(params.start.slice(5, 7))),
       days: params.days,
       precip: live.precip24h ?? undefined,
@@ -443,7 +466,7 @@ export default function PrePrediction() {
       seismic: seismicSummary(live.seismic),
     }
     let failure = null
-    const result = await withCache(params.region, `narrative:${params.days}`, () =>
+    const result = await withCache(params.cacheKey, `narrative:${params.days}`, () =>
       api.prePredictionNarrative(query).catch((error) => {
         failure = error
         throw error
@@ -459,18 +482,23 @@ export default function PrePrediction() {
     const region = regions.find((item) => item.region === form.region)
     if (!region) return
     const id = ++runId.current
-    const params = { ...form, start: localToday() }
+    const params = { ...form, start: localToday(), cacheKey: placeLabel(form.region, form.district) }
     setRun({ params, status: 'loading' })
     setNarrative({ status: 'loading' })
+
+    // History and season stay state-level; the live readings follow the district when one is chosen.
+    const location = await resolveLocation({ state: region.region, district: params.district, lat: region.lat, lon: region.lon })
+    if (id !== runId.current) return
+    const key = params.cacheKey
 
     const [baseline, forecast, normal, sst, seismic] = await Promise.all([
       withCache(region.region, `baseline:${params.days}:${params.start}`, () =>
         api.prePredictionBaseline({ region: region.region, days: params.days, start: params.start }),
       ),
-      withCache(region.region, 'forecast', () => fetchForecast(region.lat, region.lon)),
-      withCache(region.region, 'normal', () => fetchTemperatureNormal(region.lat, region.lon, params.start)),
+      withCache(key, 'forecast', () => fetchForecast(location.lat, location.lon)),
+      withCache(key, 'normal', () => fetchTemperatureNormal(location.lat, location.lon, params.start)),
       region.coastal ? withCache(region.region, 'sst', () => fetchSeaSurface(region.sea_point)) : Promise.resolve({ status: 'na', data: null }),
-      withCache(region.region, 'seismic', () => fetchSeismic(region.lat, region.lon)),
+      withCache(key, 'seismic', () => fetchSeismic(location.lat, location.lon)),
     ])
     if (id !== runId.current) return
 
@@ -497,12 +525,12 @@ export default function PrePrediction() {
     })
 
     if (!baseline.data) {
-      setRun({ params, status: 'error', error: baseline.error, feeds, indicators })
+      setRun({ params, status: 'error', error: baseline.error, feeds, indicators, location })
       setNarrative({ status: 'idle' })
       return
     }
     const rows = dailyScores(baseline.data, live, params.start, params.days)
-    setRun({ params, status: 'done', baseline: baseline.data, baselineFeed: baseline, feeds, rows, peaks: peakScores(rows), indicators })
+    setRun({ params, status: 'done', baseline: baseline.data, baselineFeed: baseline, feeds, rows, peaks: peakScores(rows), indicators, location })
     askNarrative(params, live, id)
   }
 
@@ -564,22 +592,29 @@ export default function PrePrediction() {
       {run?.status === 'error' && (
         <>
           <ErrorState message={`The historical inputs could not be loaded: ${run.error}`} onRetry={generate} />
-          <IndicatorsBlock rows={run.indicators} feeds={run.feeds} />
+          <IndicatorsBlock rows={run.indicators} feeds={run.feeds} location={run.location} />
         </>
       )}
 
       {run?.status === 'done' && (
         <>
           <p className="text-sm secondary pp-showing">
-            Showing <strong>{run.params.region}</strong>, {run.params.type === 'all' ? 'all hazards' : getDisasterType(run.params.type).shortLabel.toLowerCase()},{' '}
+            Showing <strong>{placeLabel(run.params.region, run.params.district)}</strong>, {run.params.type === 'all' ? 'all hazards' : getDisasterType(run.params.type).shortLabel.toLowerCase()},{' '}
             {run.params.days} days from {formatDay(run.params.start)} ({seasonFor(Number(run.params.start.slice(5, 7)))}).
             {run.baselineFeed.status === 'cached' && ' Historical inputs from this browser’s cache.'}
+            {run.params.district !== ALL_DISTRICTS && (
+              <>
+                {' '}
+                Live weather and earthquakes at {run.location.label}; history, season and geography are for the whole state.
+              </>
+            )}
+            {run.location.note && <span className="pp-feed pp-feed-cached"> {run.location.note}</span>}
           </p>
           <RiskCards hazards={hazards} peaks={run.peaks} days={run.params.days} feeds={run.feeds} />
           <TrendBlock hazards={hazards} rows={run.rows} days={run.params.days} />
           <NarrativeBlock narrative={narrative} onRetry={() => askNarrative(run.params, { ...run.feeds.forecast.data, seismic: run.feeds.seismic.data }, runId.current)} />
           <HistoryBlock hazards={hazards} baseline={run.baseline} />
-          <IndicatorsBlock rows={run.indicators} feeds={run.feeds} />
+          <IndicatorsBlock rows={run.indicators} feeds={run.feeds} location={run.location} />
         </>
       )}
     </div>

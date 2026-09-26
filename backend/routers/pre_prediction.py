@@ -37,11 +37,13 @@ def narrative(
     wind: float | None = None,
     soil: float | None = None,
     seismic: str = "",
+    district: str | None = Query(None, max_length=80, description="Optional district within the state"),
 ) -> dict[str, Any]:
     """Gemini's analyst narrative for these readings. The prompt is built here, never sent by the page."""
     if days not in (7, 30, 90):
         raise HTTPException(status_code=400, detail="days must be 7, 30 or 90.")
     try:
-        return pre_prediction.narrative(region, season[:40], days, precip, wind, soil, seismic[:120])
+        return pre_prediction.narrative(region, season[:40], days, precip, wind, soil, seismic[:120],
+                                        district=(district or '').strip() or None)
     except pre_prediction.NarrativeUnavailable as error:
         raise HTTPException(status_code=error.status, detail=str(error)) from error

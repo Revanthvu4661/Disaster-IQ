@@ -253,7 +253,7 @@ def baseline(region: str, start: date, days: int) -> dict[str, Any]:
 # ── Gemini narrative ─────────────────────────────────────────────────────
 
 PROMPT = (
-    "You are a disaster risk analyst. Region: {region}, Season: {season}, Forecast: {days} days, "
+    "You are a disaster risk analyst. Region: {place}, India, Season: {season}, Forecast: {days} days, "
     "Weather: Precipitation={precip}mm Wind={wind}km/h Soil Moisture={soil}, Seismic: {seismic}. "
     "Respond ONLY in this JSON: {{ overall_risk, most_likely_disaster, risk_factors: [], "
     "estimated_affected_population, confidence, narrative, immediate_actions: [] }}"
@@ -279,8 +279,9 @@ def _fmt(value: float | None, digits: int = 1) -> str:
 
 
 def build_prompt(region: str, season: str, days: int, precip: float | None, wind: float | None,
-                 soil: float | None, seismic: str) -> str:
-    return PROMPT.format(region=region, season=season, days=days, precip=_fmt(precip), wind=_fmt(wind),
+                 soil: float | None, seismic: str, district: str | None = None) -> str:
+    place = f"{district}, {region}" if district else region
+    return PROMPT.format(place=place, season=season, days=days, precip=_fmt(precip), wind=_fmt(wind),
                          soil=_fmt(soil, 3), seismic=seismic or "none recorded")
 
 
@@ -311,14 +312,15 @@ def _parse(text: str) -> dict[str, Any]:
 
 
 def narrative(region: str, season: str, days: int, precip: float | None, wind: float | None,
-              soil: float | None, seismic: str, client: httpx.Client | None = None) -> dict[str, Any]:
+              soil: float | None, seismic: str, client: httpx.Client | None = None,
+              district: str | None = None) -> dict[str, Any]:
     """Ask Gemini for the analyst narrative. Answers are cached for 30 minutes per input."""
     settings = get_settings()
     if not settings.gemini_api_key:
         raise NarrativeUnavailable("The AI narrative is not configured: set GEMINI_API_KEY in backend/.env.")
     if region not in load_tables().regions.index:
         raise ValueError(f"Unknown region '{region}'.")
-    prompt = build_prompt(region, season, days, precip, wind, soil, seismic)
+    prompt = build_prompt(region, season, days, precip, wind, soil, seismic, district)
     key = (settings.gemini_model, prompt)
     with _cache_lock:
         hit = _cache.get(key)

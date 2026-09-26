@@ -76,11 +76,17 @@ def test_narrative_builds_the_prompt_and_reads_the_json(monkeypatch):
     client = httpx.Client(transport=httpx.MockTransport(handler))
     result = pp.narrative("Odisha", "Southwest monsoon", 30, 120.5, 42.0, 0.41, "M4.6 180 km away", client=client)
     assert seen["key"] == "test-key"
-    assert "Region: Odisha, Season: Southwest monsoon, Forecast: 30 days" in seen["prompt"]
+    assert "Region: Odisha, India, Season: Southwest monsoon, Forecast: 30 days" in seen["prompt"]
     assert "Precipitation=120.5mm Wind=42.0km/h Soil Moisture=0.410, Seismic: M4.6 180 km away" in seen["prompt"]
     assert result["most_likely_disaster"] == "Flood"
     assert result["risk_factors"] == ["Heavy rain", "Saturated soil"]
     pp._cache.clear()
+
+
+def test_prompt_names_the_district_when_one_is_chosen():
+    prompt = pp.build_prompt("Andhra Pradesh", "Post-monsoon", 7, 12.0, 30.0, 0.3, "none", district="Kakinada")
+    assert "Region: Kakinada, Andhra Pradesh, India, Season: Post-monsoon" in prompt
+    assert "Region: Goa, India," in pp.build_prompt("Goa", "Winter", 7, None, None, None, "")
 
 
 def test_narrative_reports_a_bad_answer(monkeypatch):

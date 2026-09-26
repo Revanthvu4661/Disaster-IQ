@@ -126,3 +126,50 @@ describe('withCache', () => {
     expect(failed).toMatchObject({ status: 'failed', data: null, error: 'offline' })
   })
 })
+
+describe('district location', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('lists districts for every state and UT, "All Districts" first, without duplicates', async () => {
+    const { districtsByState, districtsFor, ALL_DISTRICTS } = await import('../data/districtsByState')
+    const { INDIA_STATES } = await import('./actionHub')
+    expect(Object.keys(districtsByState).sort()).toEqual([...INDIA_STATES].sort())
+    Object.values(districtsByState).forEach((list) => {
+      expect(list[0]).toBe(ALL_DISTRICTS)
+      expect(new Set(list).size).toBe(list.length)
+    })
+    expect(districtsFor('Atlantis')).toEqual([ALL_DISTRICTS])
+  })
+
+  it('uses the state centre for All Districts and a district centre when known', async () => {
+    const { resolveLocation } = await import('./prePrediction')
+    const all = await resolveLocation({ state: 'Odisha', district: 'All Districts', lat: 20.5, lon: 84.4 })
+    expect(all).toMatchObject({ lat: 20.5, lon: 84.4, source: 'state', note: null })
+    const puri = await resolveLocation({ state: 'Odisha', district: 'Puri', lat: 20.5, lon: 84.4 })
+    expect(puri.source).toBe('district')
+    expect(puri.lat).toBeCloseTo(19.83, 1)
+    // A renamed district goes through its census spelling (Kutch → Kachchh).
+    expect((await resolveLocation({ state: 'Gujarat', district: 'Kutch', lat: 0, lon: 0 })).source).toBe('district')
+  })
+
+  it('geocodes a new district inside its state only, and falls back to the state centre', async () => {
+    const { resolveLocation } = await import('./prePrediction')
+    const fetchMock = vi.fn(async (url) => {
+      const name = new URL(url).searchParams.get('name')
+      const results =
+        name === 'Vijayawada'
+          ? [
+              { name: 'Vijayawada', admin1: 'Uttar Pradesh', latitude: 1, longitude: 1 },
+              { name: 'Vijayawada', admin1: 'Andhra Pradesh', latitude: 16.5, longitude: 80.6 },
+            ]
+          : [{ name, admin1: 'Uttar Pradesh', latitude: 27, longitude: 79 }]
+      return { ok: true, json: async () => ({ results }) }
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const ntr = await resolveLocation({ state: 'Andhra Pradesh', district: 'NTR', lat: 15.9, lon: 79.6 })
+    expect(ntr).toMatchObject({ lat: 16.5, lon: 80.6, source: 'geocoded', label: 'NTR (geocoded via Vijayawada)' })
+    const lost = await resolveLocation({ state: 'Andhra Pradesh', district: 'Nowhere', lat: 15.9, lon: 79.6 })
+    expect(lost).toMatchObject({ lat: 15.9, lon: 79.6, source: 'state' })
+    expect(lost.note).toMatch(/could not be located/)
+  })
+})
