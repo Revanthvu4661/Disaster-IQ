@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DisasterIQ Pitch</title>
+<meta name="description" content="DisasterIQ: disaster analytics, prediction and coordination for India. From prediction to action." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg-2: #0e1324;
+    --bg-3: #121830;
+    --card: rgba(255, 255, 255, 0.045);
+    --card-line: rgba(255, 255, 255, 0.1);
+    --text: #eef1f8;
+    --text-2: #b9c0d4;
+    --muted: #8a93ab;
+    --red: #ef4444;
+    --red-ink: #f87171;
+    --indigo: #6366f1;
+    --indigo-ink: #a5b4fc;
+    --green: #22c55e;
+    --green-ink: #4ade80;
+    --amber: #f59e0b;
+    --radius: 16px;
+    --max: 1120px;
+    --display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--indigo-ink); outline-offset: 3px; border-radius: 6px; }
+  .wrap { width: min(var(--max), 100% - 32px); margin: 0 auto; }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ── nav ─────────────────────────────────────────── */
+  .nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10, 14, 26, 0.78);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--card-line);
+  }
+  .nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 1.1rem; text-decoration: none; }
+  .brand-mark { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: linear-gradient(135deg, var(--red), var(--indigo)); font-size: 15px; }
+  .nav ul { list-style: none; display: flex; gap: 4px; margin: 0; padding: 0; overflow-x: auto; scrollbar-width: none; }
+  .nav ul::-webkit-scrollbar { display: none; }
+  .nav a.link { display: block; padding: 8px 12px; border-radius: 999px; font-size: 0.875rem; font-weight: 500; color: var(--text-2); text-decoration: none; white-space: nowrap; }
+  .nav a.link:hover, .nav a.link[aria-current="true"] { color: var(--text); background: rgba(255, 255, 255, 0.07); }
+
+  /* ── sections ────────────────────────────────────── */
+  section.block { padding: 104px 0; position: relative; }
+  section.block:nth-of-type(even) { background: var(--bg-2); }
+  .num { font-family: var(--display); font-weight: 700; font-size: clamp(3.5rem, 9vw, 6.5rem); line-height: 0.9; letter-spacing: -0.04em;
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.9), rgba(239, 68, 68, 0.1)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .kicker { margin: 6px 0 10px; font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--red-ink); }
+  h2 { margin: 0 0 18px; font-family: var(--display); font-weight: 700; font-size: clamp(1.9rem, 4.2vw, 3rem); line-height: 1.08; letter-spacing: -0.02em; }
+  .lead { max-width: 62ch; margin: 0 0 40px; font-size: 1.125rem; color: var(--text-2); }
+  .glass {
+    background: var(--card);
+    border: 1px solid var(--card-line);
+    border-radius: var(--radius);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  }
+  .grid { display: grid; gap: 18px; }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .note { font-size: 0.8125rem; color: var(--muted); }
+
+  /* reveal on scroll */
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ── 1 hero ──────────────────────────────────────── */
+  .hero { min-height: calc(100vh - 60px); display: grid; align-items: center; padding: 80px 0 64px; overflow: hidden; position: relative; }
+  .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .hero::before {
+    content: ""; position: absolute; inset: -20%;
+    background:
+      radial-gradient(40% 40% at 20% 30%, rgba(239, 68, 68, 0.22), transparent 70%),
+      radial-gradient(40% 40% at 80% 70%, rgba(99, 102, 241, 0.25), transparent 70%);
+    animation: pulse 12s ease-in-out infinite alternate;
+  }
+  @keyframes pulse { from { transform: scale(1) rotate(0deg); } to { transform: scale(1.12) rotate(4deg); } }
+  .hero .wrap { position: relative; z-index: 1; }
+  .badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; font-size: 0.8125rem; font-weight: 600; color: var(--text-2); background: var(--card); border: 1px solid var(--card-line); }
+  .badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2); }
+  .hero h1 { margin: 22px 0 8px; font-family: var(--display); font-weight: 700; font-size: clamp(3.2rem, 11vw, 7.5rem); line-height: 0.95; letter-spacing: -0.045em; }
+  .hero h1 span { background: linear-gradient(90deg, #fff 20%, var(--indigo-ink)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .tagline { margin: 0 0 24px; font-family: var(--display); font-size: clamp(1.35rem, 3.4vw, 2.25rem); font-weight: 600; color: var(--red-ink); }
+  .event { margin: 0 0 6px; font-size: 1.0625rem; color: var(--text); }
+  .event-theme { margin: 0 0 36px; color: var(--text-2); }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: 12px; font-weight: 600; text-decoration: none; border: 1px solid var(--card-line); background: var(--card); color: var(--text); transition: transform 0.2s ease, background 0.2s ease; }
+  .btn:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.09); }
+  .btn-red { background: var(--red); border-color: var(--red); color: #fff; }
+  .btn-red:hover { background: #dc2626; }
+
+  /* ── 2 problem ───────────────────────────────────── */
+  .statement { margin: 0 0 48px; font-family: var(--display); font-weight: 700; font-size: clamp(1.7rem, 4.4vw, 3.1rem); line-height: 1.15; letter-spacing: -0.02em; }
+  .statement span { display: block; }
+  .statement .dim { color: var(--muted); }
+  .statement .hot { color: var(--red-ink); }
+  .card { padding: 26px; }
+  .card .ico { font-size: 2rem; line-height: 1; }
+  .card h3 { margin: 14px 0 8px; font-family: var(--display); font-size: 1.25rem; line-height: 1.25; }
+  .card p { margin: 0; color: var(--text-2); }
+
+  /* ── 3 pipeline ──────────────────────────────────── */
+  .definition { padding: 28px 30px; margin-bottom: 40px; font-size: clamp(1.1rem, 2.4vw, 1.4rem); line-height: 1.55; border-left: 4px solid var(--indigo); }
+  .definition strong { color: var(--indigo-ink); }
+  .pipeline { list-style: none; margin: 0; padding: 8px 0 20px; display: flex; gap: 0; overflow-x: auto; scroll-snap-type: x proximity; }
+  .pipeline li { flex: 0 0 auto; display: flex; align-items: center; scroll-snap-align: start; }
+  .step { width: 118px; padding: 16px 10px; text-align: center; border-radius: 14px; background: var(--card); border: 1px solid var(--card-line); }
+  .step b { display: block; font-size: 1.8rem; line-height: 1.2; }
+  .step span { display: block; margin-top: 6px; font-size: 0.8125rem; font-weight: 600; color: var(--text-2); }
+  .arrow { width: 34px; height: 2px; margin: 0 4px; background: linear-gradient(90deg, var(--red), var(--indigo)); position: relative; overflow: hidden; }
+  .arrow::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, #fff, transparent); animation: flow 2.2s linear infinite; }
+  @keyframes flow { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+  .pipeline li:last-child .arrow { display: none; }
+  .pipeline .step.lit { border-color: rgba(99, 102, 241, 0.7); box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), 0 0 24px rgba(99, 102, 241, 0.25); }
+
+  /* ── 4 features ──────────────────────────────────── */
+  .features { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
+  .feature { padding: 22px; display: flex; flex-direction: column; gap: 8px; transition: transform 0.25s ease, border-color 0.25s ease; }
+  .feature:hover { transform: translateY(-4px); border-color: rgba(99, 102, 241, 0.5); }
+  .feature .top { display: flex; align-items: center; justify-content: space-between; }
+  .feature .ico { font-size: 1.8rem; }
+  .feature .idx { font-family: var(--display); font-weight: 700; color: var(--muted); }
+  .feature h3 { margin: 4px 0 0; font-family: var(--display); font-size: 1.125rem; }
+  .feature p { margin: 0; font-size: 0.9375rem; color: var(--text-2); }
+  .feature .tag { align-self: flex-start; margin-top: auto; padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; color: var(--indigo-ink); background: rgba(99, 102, 241, 0.14); border: 1px solid rgba(99, 102, 241, 0.35); }
+  .feature.star { border-color: rgba(239, 68, 68, 0.55); background: linear-gradient(160deg, rgba(239, 68, 68, 0.12), rgba(255, 255, 255, 0.03)); }
+  .feature.star .tag { color: var(--red-ink); background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.4); }
+
+  /* ── 5 action hub ────────────────────────────────── */
+  .hub { background: radial-gradient(60% 50% at 80% 10%, rgba(239, 68, 68, 0.14), transparent 70%), radial-gradient(60% 60% at 0% 100%, rgba(99, 102, 241, 0.16), transparent 70%), var(--bg-3) !important; }
+  .hub-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 40px; align-items: start; }
+  .timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+  .timeline::before { content: ""; position: absolute; left: 19px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(180deg, var(--red), var(--indigo)); }
+  .timeline li { position: relative; display: flex; align-items: center; gap: 16px; padding: 8px 0; }
+  .timeline .node { flex: 0 0 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 1.05rem; background: var(--bg); border: 2px solid var(--indigo); z-index: 1; }
+  .timeline li:first-child .node, .timeline li.peak .node { border-color: var(--red); box-shadow: 0 0 18px rgba(239, 68, 68, 0.45); }
+  .timeline .label { font-weight: 600; }
+  .timeline .sub { display: block; font-size: 0.8125rem; font-weight: 400; color: var(--muted); }
+  .timeline li.peak .label { font-family: var(--display); font-size: 1.25rem; color: var(--red-ink); letter-spacing: 0.04em; }
+  .mock { padding: 26px; }
+  .mock-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 18px; }
+  .mock-head h3 { margin: 0; font-family: var(--display); font-size: 1.25rem; }
+  .mock-overall { font-family: var(--display); font-size: 2.6rem; font-weight: 700; line-height: 1; color: var(--amber); }
+  .bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+  .bars li { display: grid; grid-template-columns: 100px 1fr 44px; align-items: center; gap: 12px; font-size: 0.9375rem; }
+  .bar { height: 12px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 6px; background: linear-gradient(90deg, var(--indigo), var(--green)); transition: width 1.4s cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .bars b { text-align: right; font-variant-numeric: tabular-nums; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .chip { padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; border: 1px solid currentColor; }
+  .chip.c1 { color: #94a3b8; } .chip.c2 { color: #93c5fd; } .chip.c3 { color: #60a5fa; } .chip.c4 { color: #818cf8; } .chip.c5 { color: var(--green-ink); }
+  .match { margin-top: 18px; padding: 18px 20px; }
+  .match h4 { margin: 0 0 10px; font-size: 0.9375rem; }
+  .match ol { margin: 0; padding-left: 20px; font-size: 0.875rem; color: var(--text-2); display: flex; flex-direction: column; gap: 4px; }
+  .match strong { color: var(--text); }
+
+  /* ── 6 tech ──────────────────────────────────────── */
+  .col h3 { margin: 0 0 16px; font-family: var(--display); font-size: 1.25rem; display: flex; align-items: center; gap: 10px; }
+  .col h3::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--dot, var(--indigo)); }
+  .tech { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .tech li { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; }
+  .tech .ico { flex: 0 0 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; font-size: 1.25rem; background: rgba(255, 255, 255, 0.06); }
+  .tech strong { display: block; font-size: 0.9375rem; }
+  .tech span { font-size: 0.8125rem; color: var(--muted); }
+
+  /* ── 7 stats ─────────────────────────────────────── */
+  .stats { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .stat { padding: 26px 20px; text-align: center; }
+  .stat .val { font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem, 5vw, 3.4rem); line-height: 1; letter-spacing: -0.03em; background: linear-gradient(180deg, #fff, var(--indigo-ink)); -webkit-background-clip: text; background-clip: text; color: transparent; font-variant-numeric: tabular-nums; }
+  .stat .lbl { margin-top: 10px; font-size: 0.875rem; font-weight: 600; color: var(--text-2); }
+  .stat .sub { margin-top: 4px; font-size: 0.75rem; color: var(--muted); }
+
+  /* ── 8 comparison ────────────────────────────────── */
+  .table-wrap { overflow-x: auto; }
+  table.compare { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 520px; }
+  .compare th, .compare td { padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--card-line); }
+  .compare thead th { font-size: 0.8125rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .compare thead th:last-child { color: var(--red-ink); }
+  .compare td:not(:first-child), .compare th:not(:first-child) { text-align: center; width: 24%; }
+  .compare tbody tr.only { background: linear-gradient(90deg, rgba(239, 68, 68, 0.08), rgba(34, 197, 94, 0.06)); }
+  .compare tbody tr.only td:first-child::after { content: "Closes the loop"; margin-left: 10px; padding: 2px 8px; border-radius: 999px; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.04em; color: var(--red-ink); border: 1px solid rgba(239, 68, 68, 0.45); vertical-align: 2px; }
+  .yes { color: var(--green-ink); font-weight: 700; }
+  .no { color: var(--red-ink); font-weight: 700; }
+  .some { color: var(--amber); font-weight: 600; font-size: 0.875rem; }
+
+  /* ── 9 team ──────────────────────────────────────── */
+  .team { grid-template-columns: repeat(auto-fit, minmax(260px, 340px)); justify-content: center; }
+  .member { padding: 30px 24px; text-align: center; }
+  .avatar { width: 96px; height: 96px; margin: 0 auto 16px; border-radius: 50%; display: grid; place-items: center; font-family: var(--display); font-size: 2rem; font-weight: 700; color: #fff; background: linear-gradient(135deg, var(--red), var(--indigo)); box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06); }
+  .member h3 { margin: 0; font-family: var(--display); font-size: 1.25rem; }
+  .member p { margin: 6px 0 0; color: var(--indigo-ink); font-weight: 600; font-size: 0.9375rem; }
+  .center { text-align: center; }
+  .center .lead { margin-left: auto; margin-right: auto; }
+
+  /* ── 10 footer ───────────────────────────────────── */
+  footer { padding: 72px 0 96px; border-top: 1px solid var(--card-line); background: #070a13; text-align: center; }
+  footer h2 { font-size: clamp(1.6rem, 3.6vw, 2.4rem); margin-bottom: 6px; }
+  footer .tagline { font-size: 1.25rem; margin-bottom: 24px; }
+  footer .sources { margin: 0 auto 30px; max-width: 70ch; color: var(--text-2); }
+  footer .actions { justify-content: center; }
+
+  /* floating back button */
+  .back {
+    position: fixed; right: 20px; bottom: 20px; z-index: 60;
+    display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 999px;
+    font-weight: 600; font-size: 0.9375rem; text-decoration: none; color: #fff;
+    background: linear-gradient(135deg, var(--red), var(--indigo));
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  }
+  .back:hover { filter: brightness(1.1); }
+
+  @media (max-width: 860px) {
+    section.block { padding: 72px 0; }
+    .hub-grid { grid-template-columns: 1fr; }
+    .nav .brand-text { display: none; }
+    .bars li { grid-template-columns: 84px 1fr 40px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .hero::before, .arrow::after { animation: none; }
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .bar i, .feature, .btn { transition: none; }
+  }
+
+  /* ── print: white page, black text, everything visible ── */
+  @media print {
+    :root { --text: #000; --text-2: #222; --muted: #444; --card-line: #bbb; --red-ink: #b91c1c; --indigo-ink: #3730a3; --green-ink: #15803d; }
+    html { scroll-behavior: auto; }
+    body { background: #fff; color: #000; font-size: 11pt; }
+    .nav, .back, .hero canvas, .actions, .hero::before { display: none !important; }
+    section.block, .hub, footer { background: #fff !important; padding: 28px 0; page-break-inside: avoid; break-inside: avoid-page; }
+    .hero { min-height: auto; padding: 24px 0; }
+    .hero h1 span, .stat .val, .num { background: none !important; -webkit-background-clip: initial; background-clip: initial; color: #000 !important; }
+    .num { font-size: 2.6rem; }
+    .glass, .step, .feature, .card, .stat, .mock { background: #fff !important; border: 1px solid #bbb !important; box-shadow: none !important; backdrop-filter: none !important; break-inside: avoid; }
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .arrow::after { display: none; }
+    .arrow { background: #999; }
+    .bar { background: #e5e5e5; }
+    .bar i { background: #333 !important; transition: none; }
+    .pipeline { flex-wrap: wrap; overflow: visible; row-gap: 10px; }
+    .timeline::before { background: #999; }
+    .timeline .node { background: #fff; }
+    .compare tbody tr.only { background: #f5f5f5; }
+    .avatar { background: #ddd; color: #000; }
+    a { text-decoration: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="Pitch sections">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true">🌐</span><span class="brand-text">DisasterIQ</span></a>
+    <ul>
+      <li><a class="link" href="#problem">Problem</a></li>
+      <li><a class="link" href="#solution">Solution</a></li>
+      <li><a class="link" href="#features">Features</a></li>
+      <li><a class="link" href="#tech">Tech Stack</a></li>
+      <li><a class="link" href="#team">Team</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="top">
+
+  <!-- 1 · hero -->
+  <header class="hero">
+    <canvas id="particles" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <span class="badge"><span class="dot" aria-hidden="true"></span> DataQuest 2026 · ACM / VFSTR CSE Department</span>
+      <h1><span>DisasterIQ</span></h1>
+      <p class="tagline">&ldquo;From Prediction to Action&rdquo;</p>
+      <p class="event">Developed for <strong>DataQuest 2026</strong> — ACM / VFSTR CSE Department</p>
+      <p class="event-theme">Theme: Disaster Management Analytics &amp; Prediction System</p>
+      <div class="actions">
+        <a class="btn btn-red" id="demo-hero" href="./">View Live Demo →</a>
+        <a class="btn" href="#problem">Scroll to Explore ↓</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2 · problem -->
+  <section class="block" id="problem" aria-labelledby="problem-title">
+    <div class="wrap">
+      <div class="num reveal" aria-hidden="true">01</div>
+      <p class="kicker">The problem</p>
+      <h2 id="problem-title" class="statement reveal">
+        <span>Every year, disasters kill thousands.</span>
+        <span class="dim">Not because we can&rsquo;t predict them.</span>
+        <span class="hot">Because we don&rsquo;t know what to do next.</span>
+      </h2>
+      <div class="grid g3">
+        <article class="glass card reveal">
+          <div class="ico" aria-hidden="true">⚠️</div>
+          <h3>Warnings exist, coordination doesn&rsquo;t</h3>
+          <p>Alerts are issued, but no structured response follows: who moves what, where, by when.</p>
+        </article>
+        <article class="glass card reveal">
+          <div class="ico" aria-hidden="true">📊</div>
+          <h3>Data is available, insights aren&rsquo;t</h3>
+          <p>Decades of disaster records and live feeds sit in separate places, unused when decisions are made.</p>
+        </article>
+        <article class="glass card reveal">
+          <div class="ico" aria-hidden="true">👥</div>
+          <h3>People want to help, no system connects them</h3>
+          <p>Volunteers, transporters and NGOs go unmatched to the needs that matter most.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · solution -->
+  <section class="block" id="solution" aria-labelledby="solution-title">
+    <div class="wrap">
+      <div class="num reveal" aria-hidden="true">02</div>
+      <p class="kicker">What is DisasterIQ</p>
+      <h2 id="solution-title">One platform, from data to done.</h2>
+      <p class="glass definition reveal">
+        DisasterIQ is a <strong>Disaster Management Analytics + Prediction + Coordination</strong> platform that turns raw
+        disaster data into structured, trackable emergency response — for earthquakes, floods and cyclones in India.
+      </p>
+      <ol class="pipeline reveal" id="pipeline" aria-label="The DisasterIQ flow">
+        <li><div class="step"><b aria-hidden="true">🛰️</b><span>Live Data</span></div><i class="arrow" aria-hidden="true"></i></li>
+        <li><div class="step"><b aria-hidden="true">🔮</b><span>Prediction</span></div><i class="arrow" aria-hidden="true"></i></li>
+        <li><div class="step"><b aria-hidden="true">🗺️</b><span>Risk Map</span></div><i class="arrow" aria-hidden="true"></i></li>
+        <li><div class="step"><b aria-hidden="true">⚠️</b><span>Alert</span></div><i class="arrow" aria-hidden="true"></i></li>
+        <li><div class="step"><b aria-hidden="true">📋</b><span>Action Plan</span></div><i class="arrow" aria-hidden="true"></i></li>
+        <li><div class="step"><b aria-hidden="true">👷</b><span>People</span></div><i class="arrow" aria-hidden="true"></i></li>
+        <li><div class="step"><b aria-hidden="true">🤝</b><span>Matching</span></div><i class="arrow" aria-hidden="true"></i></li>
+        <li><div class="step"><b aria-hidden="true">✅</b><span>Verified</span></div><i class="arrow" aria-hidden="true"></i></li>
+        <li><div class="step"><b aria-hidden="true">📊</b><span>Readiness Score</span></div><i class="arrow" aria-hidden="true"></i></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 4 · features -->
+  <section class="block" id="features" aria-labelledby="features-title">
+    <div class="wrap">
+      <div class="num reveal" aria-hidden="true">03</div>
+      <p class="kicker">Key features</p>
+      <h2 id="features-title">Nine tabs, one workflow.</h2>
+      <p class="lead">Analyze the past, predict the risk, plan the response and coordinate the people who deliver it.</p>
+      <div class="grid features">
+        <article class="glass feature reveal"><div class="top"><span class="ico" aria-hidden="true">🌐</span><span class="idx">01</span></div><h3>Overview</h3><p>The three disasters compared: deaths, people affected and economic loss, with a live status strip.</p><span class="tag">EM-DAT · live feeds</span></article>
+        <article class="glass feature reveal"><div class="top"><span class="ico" aria-hidden="true">🏔️</span><span class="idx">02</span></div><h3>Earthquake</h3><p>Human and economic impact, trends, severity and recovery, with USGS M6+ epicentres and a live USGS card.</p><span class="tag">EM-DAT · USGS</span></article>
+        <article class="glass feature reveal"><div class="top"><span class="ico" aria-hidden="true">🌊</span><span class="idx">03</span></div><h3>Flood</h3><p>Flood history: impact, frequency, seasonality, geography and recovery, plus live GDACS and NASA EONET events.</p><span class="tag">EM-DAT · GDACS</span></article>
+        <article class="glass feature reveal"><div class="top"><span class="ico" aria-hidden="true">🌀</span><span class="idx">04</span></div><h3>Cyclone / Hurricane</h3><p>Storm history with NOAA IBTrACS tracks, and the Indian districts inside each active storm&rsquo;s impact rings.</p><span class="tag">IBTrACS · live</span></article>
+        <article class="glass feature reveal"><div class="top"><span class="ico" aria-hidden="true">🗺️</span><span class="idx">05</span></div><h3>World Map</h3><p>Live events on a satellite map, cyclone tracks and 50–500 km impact-zone rings, and history by decade.</p><span class="tag">USGS · GDACS · EONET</span></article>
+        <article class="glass feature reveal"><div class="top"><span class="ico" aria-hidden="true">🔮</span><span class="idx">06</span></div><h3>Pre-Prediction</h3><p>A 7/30/90-day outlook for any state or district: history, season and live weather, with a Gemini analyst narrative.</p><span class="tag">Open-Meteo · Gemini</span></article>
+        <article class="glass feature reveal"><div class="top"><span class="ico" aria-hidden="true">🛡️</span><span class="idx">07</span></div><h3>Disaster Risk Prediction</h3><p>A flood model scoring 733 districts (ROC-AUC 0.788 on 2013–2023), and earthquake and cyclone risk indices for 36 states and UTs.</p><span class="tag">scikit-learn · NASA POWER</span></article>
+        <article class="glass feature reveal"><div class="top"><span class="ico" aria-hidden="true">📋</span><span class="idx">08</span></div><h3>Preparedness &amp; Response</h3><p>Rule-based preparedness actions and formula-based resource estimates: boats, medical teams, food, water and shelter.</p><span class="tag">Sphere · WHO standards</span></article>
+        <article class="glass feature star reveal"><div class="top"><span class="ico" aria-hidden="true">🚨</span><span class="idx">09</span></div><h3>Action Hub</h3><p>AI needs lists, a responder registry, Smart Match, task tracking to delivery, and a live readiness score.</p><span class="tag">Highlight · Firebase live</span></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · action hub -->
+  <section class="block hub" id="action-hub" aria-labelledby="hub-title">
+    <div class="wrap">
+      <div class="num reveal" aria-hidden="true">04</div>
+      <p class="kicker">The Action Hub</p>
+      <h2 id="hub-title">Where prediction becomes action.</h2>
+      <p class="lead">The coordination loop that most dashboards stop short of: every step is recorded and every open screen updates live.</p>
+      <div class="hub-grid">
+        <ol class="timeline reveal" aria-label="The coordination loop">
+          <li><span class="node" aria-hidden="true">🧠</span><span class="label">DisasterIQ</span></li>
+          <li><span class="node" aria-hidden="true">📡</span><span class="label">Detects risk<span class="sub">Level 2 flood model and hazard indices</span></span></li>
+          <li><span class="node" aria-hidden="true">📍</span><span class="label">Identifies vulnerable areas<span class="sub">high and critical districts and states</span></span></li>
+          <li><span class="node" aria-hidden="true">✨</span><span class="label">Gemini AI creates the action plan<span class="sub">a needs list sized to the population</span></span></li>
+          <li><span class="node" aria-hidden="true">🔎</span><span class="label">Finds available responders<span class="sub">Smart Match: availability, location, role, workload</span></span></li>
+          <li><span class="node" aria-hidden="true">📨</span><span class="label">Assigns tasks<span class="sub">numbered from #1001</span></span></li>
+          <li class="peak"><span class="node" aria-hidden="true">🙌</span><span class="label">PEOPLE ACT</span></li>
+          <li><span class="node" aria-hidden="true">📱</span><span class="label">People update the app<span class="sub">status, photo proof, location, notes</span></span></li>
+          <li><span class="node" aria-hidden="true">✅</span><span class="label">DisasterIQ tracks completion</span></li>
+          <li><span class="node" aria-hidden="true">📊</span><span class="label">Readiness score updates</span></li>
+        </ol>
+        <div>
+          <div class="glass mock reveal" id="readiness">
+            <div class="mock-head">
+              <h3>Kakinada — Overall Preparedness</h3>
+              <span class="mock-overall"><span data-count="72">0</span>%</span>
+            </div>
+            <ul class="bars">
+              <li><span>Medicines</span><span class="bar"><i data-w="82"></i></span><b>82%</b></li>
+              <li><span>Water</span><span class="bar"><i data-w="70"></i></span><b>70%</b></li>
+              <li><span>Shelters</span><span class="bar"><i data-w="60"></i></span><b>60%</b></li>
+              <li><span>Transport</span><span class="bar"><i data-w="85"></i></span><b>85%</b></li>
+              <li><span>Volunteers</span><span class="bar"><i data-w="75"></i></span><b>75%</b></li>
+            </ul>
+            <div class="chips" aria-label="How a need's preparedness moves">
+              <span class="chip c1">Assigned 10%</span><span class="chip c2">Accepted 25%</span><span class="chip c3">Collected 50%</span><span class="chip c4">In transit 75%</span><span class="chip c5">Delivered 100%</span>
+            </div>
+            <p class="note" style="margin: 14px 0 0">Illustrative example. In the app, each need&rsquo;s preparedness is the furthest its task has got, and an area&rsquo;s score is the average of its needs.</p>
+          </div>
+          <div class="glass match reveal">
+            <h4>🧠 Smart Match — best matches for &ldquo;Move medical supplies&rdquo;</h4>
+            <ol>
+              <li><strong>Suresh Rao</strong> — Transporter — Kakinada — available now — 0 active tasks</li>
+              <li><strong>Ravi Kumar</strong> — Volunteer — Kakinada — available now — 1 active task</li>
+              <li><strong>NGO HelpIndia</strong> — NGO — Visakhapatnam — in 2 hrs — 0 active tasks</li>
+            </ol>
+            <p class="note" style="margin: 10px 0 0">Scored: available now +3, same district +3 (same state +1), role fits the need +2, −1 per active task. Example names.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · tech -->
+  <section class="block" id="tech" aria-labelledby="tech-title">
+    <div class="wrap">
+      <div class="num reveal" aria-hidden="true">05</div>
+      <p class="kicker">Tech stack</p>
+      <h2 id="tech-title">Built on open data and a modern stack.</h2>
+      <p class="lead">Every number traces to a public source; anything a source does not record is shown as unavailable, never estimated.</p>
+      <div class="grid g2">
+        <div class="col reveal" style="--dot: var(--red)">
+          <h3>Data &amp; APIs</h3>
+          <ul class="tech">
+            <li class="glass"><span class="ico" aria-hidden="true">📚</span><div><strong>EM-DAT via Our World in Data</strong><span>Historical impact: deaths, affected, economic loss</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🏔️</span><div><strong>USGS</strong><span>Earthquake catalogue (M6+ since 1900) and live feed</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🌀</span><div><strong>NOAA IBTrACS</strong><span>Cyclone best tracks since 1980</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🌊</span><div><strong>India Flood Inventory (IIT Delhi)</strong><span>Flood events 1967–2023 by district, the flood model&rsquo;s label</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🛰️</span><div><strong>NASA POWER · NASA EONET</strong><span>Rainfall and soil moisture since 1981; live natural events</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🚨</span><div><strong>GDACS</strong><span>Global disaster alerts and cyclone tracks</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🌦️</span><div><strong>Open-Meteo</strong><span>Live forecast, temperature normals, sea surface, geocoding</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">✨</span><div><strong>Google Gemini 2.5 Flash</strong><span>Risk narratives and action-plan needs lists</span></div></li>
+          </ul>
+        </div>
+        <div class="col reveal" style="--dot: var(--indigo)">
+          <h3>Platform</h3>
+          <ul class="tech">
+            <li class="glass"><span class="ico" aria-hidden="true">⚛️</span><div><strong>React 19 + Vite</strong><span>Single-page app, code-split per tab</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">📈</span><div><strong>Recharts</strong><span>Every chart, with a data table and CSV export</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🗺️</span><div><strong>Leaflet</strong><span>Satellite world map, district risk map, impact rings</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🐍</span><div><strong>FastAPI (Python)</strong><span>Analytics, risk and recommendation APIs; Gemini key stays server-side</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🧮</span><div><strong>pandas + scikit-learn</strong><span>Data pipeline and the district flood model</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🔥</span><div><strong>Firebase Cloud Firestore</strong><span>Live Action Hub data: responders, plans, tasks, updates</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">🧪</span><div><strong>Vitest + pytest</strong><span>Automated tests on both frontend and backend</span></div></li>
+            <li class="glass"><span class="ico" aria-hidden="true">☁️</span><div><strong>Render</strong><span>Hosting for the web app and the API</span></div></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · stats -->
+  <section class="block" id="stats" aria-labelledby="stats-title">
+    <div class="wrap">
+      <div class="num reveal" aria-hidden="true">06</div>
+      <p class="kicker">By the numbers</p>
+      <h2 id="stats-title">Real data, real coverage.</h2>
+      <div class="grid stats">
+        <div class="glass stat reveal"><div class="val"><span data-count="3">0</span></div><div class="lbl">Disaster types</div><div class="sub">earthquake · flood · cyclone</div></div>
+        <div class="glass stat reveal"><div class="val"><span data-count="9">0</span></div><div class="lbl">Tabs</div><div class="sub">analyze → predict → act</div></div>
+        <div class="glass stat reveal"><div class="val"><span data-count="49357">0</span></div><div class="lbl">Historical records</div><div class="sub">EM-DAT, USGS, IBTrACS, flood inventory</div></div>
+        <div class="glass stat reveal"><div class="val"><span data-count="6">0</span></div><div class="lbl">Live services</div><div class="sub">USGS · GDACS · EONET · Open-Meteo · Gemini · Firebase</div></div>
+        <div class="glass stat reveal"><div class="val"><span data-count="36">0</span></div><div class="lbl">States &amp; UTs</div><div class="sub">762 districts in the outlook</div></div>
+        <div class="glass stat reveal"><div class="val"><span data-count="733">0</span></div><div class="lbl">Districts scored</div><div class="sub">by the flood risk model</div></div>
+        <div class="glass stat reveal"><div class="val"><span data-count="1">0</span></div><div class="lbl">Unified platform</div><div class="sub">from prediction to action</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · different -->
+  <section class="block" id="different" aria-labelledby="different-title">
+    <div class="wrap">
+      <div class="num reveal" aria-hidden="true">07</div>
+      <p class="kicker">What makes us different</p>
+      <h2 id="different-title">Most tools stop at the alert. We keep going.</h2>
+      <div class="glass table-wrap reveal">
+        <table class="compare">
+          <caption class="visually-hidden">DisasterIQ compared with a typical analytics or alerting dashboard</caption>
+          <thead>
+            <tr><th scope="col">Feature</th><th scope="col">Typical dashboard</th><th scope="col">DisasterIQ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Disaster prediction</td><td><span class="yes" aria-label="Yes">✓</span></td><td><span class="yes" aria-label="Yes">✓</span></td></tr>
+            <tr><td>Live data feed</td><td><span class="yes" aria-label="Yes">✓</span></td><td><span class="yes" aria-label="Yes">✓</span></td></tr>
+            <tr><td>District-level risk</td><td><span class="some">Varies</span></td><td><span class="yes" aria-label="Yes">✓</span></td></tr>
+            <tr class="only"><td>AI-generated action plan</td><td><span class="no" aria-label="No">✗</span></td><td><span class="yes" aria-label="Yes">✓</span></td></tr>
+            <tr class="only"><td>People &amp; resource matching</td><td><span class="no" aria-label="No">✗</span></td><td><span class="yes" aria-label="Yes">✓</span></td></tr>
+            <tr class="only"><td>Task assignment &amp; tracking</td><td><span class="no" aria-label="No">✗</span></td><td><span class="yes" aria-label="Yes">✓</span></td></tr>
+            <tr class="only"><td>Preparedness score</td><td><span class="no" aria-label="No">✗</span></td><td><span class="yes" aria-label="Yes">✓</span></td></tr>
+            <tr class="only"><td>End-to-end coordination</td><td><span class="no" aria-label="No">✗</span></td><td><span class="yes" aria-label="Yes">✓</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note" style="margin-top: 14px">Compared with a typical analytics or alerting dashboard; national agencies such as IMD issue district-level warnings.</p>
+    </div>
+  </section>
+
+  <!-- 9 · team -->
+  <section class="block center" id="team" aria-labelledby="team-title">
+    <div class="wrap">
+      <div class="num reveal" aria-hidden="true">08</div>
+      <p class="kicker">Team</p>
+      <h2 id="team-title">Team DisasterIQ</h2>
+      <p class="lead">DataQuest 2026 — VFSTR Guntur<br />Built with ❤️ for disaster preparedness and community safety.</p>
+      <div class="grid team">
+        <article class="glass member reveal">
+          <div class="avatar" aria-hidden="true">A</div>
+          <h3>Team Member Name</h3>
+          <p>Full Stack &amp; AI Integration</p>
+        </article>
+        <article class="glass member reveal">
+          <div class="avatar" aria-hidden="true">B</div>
+          <h3>Team Member Name</h3>
+          <p>Data Analytics &amp; Visualization</p>
+        </article>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 10 · footer -->
+<footer>
+  <div class="wrap">
+    <h2>DisasterIQ — DataQuest 2026</h2>
+    <p class="tagline">&ldquo;From Prediction to Action&rdquo;</p>
+    <p class="sources">Data sources: EM-DAT · USGS · NOAA IBTrACS · India Flood Inventory · NASA POWER · NASA EONET · GDACS · Open-Meteo · Google Gemini</p>
+    <div class="actions">
+      <a class="btn" href="https://github.com/Revanthvu4661/Disaster-IQ" target="_blank" rel="noopener noreferrer">🔗 GitHub Repository</a>
+      <a class="btn btn-red" id="demo-footer" href="./">▶️ Live Demo</a>
+    </div>
+  </div>
+</footer>
+
+<a class="back" href="./">← Back to DisasterIQ</a>
+
+<script>
+  (() => {
+    // The live demo is the app this page is served with: set a full URL here
+    // to point the buttons elsewhere (for example when opening the file directly).
+    const LIVE_DEMO_URL = './';
+    document.querySelectorAll('#demo-hero, #demo-footer').forEach((a) => (a.href = LIVE_DEMO_URL));
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const fmt = new Intl.NumberFormat('en-IN');
+
+    function countUp(el) {
+      const target = Number(el.dataset.count);
+      if (reduce || target <= 1) { el.textContent = fmt.format(target); return; }
+      const start = performance.now();
+      const dur = 1600;
+      const tick = (now) => {
+        const t = Math.min(1, (now - start) / dur);
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = fmt.format(Math.round(target * eased));
+        if (t < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
+
+    // Reveal, counters and bars when they scroll into view.
+    const show = (el) => {
+      el.classList.add('in');
+      el.querySelectorAll('[data-count]').forEach(countUp);
+      el.querySelectorAll('[data-w]').forEach((bar) => (bar.style.width = bar.dataset.w + '%'));
+      if (el.id === 'pipeline') lightPipeline(el);
+    };
+    const targets = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window && !reduce) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) { show(entry.target); io.unobserve(entry.target); }
+        });
+      }, { threshold: 0.2 });
+      targets.forEach((el) => io.observe(el));
+    } else {
+      targets.forEach(show);
+    }
+
+    // The pipeline lights up step by step, once.
+    function lightPipeline(list) {
+      const steps = list.querySelectorAll('.step');
+      if (reduce) { steps.forEach((s) => s.classList.add('lit')); return; }
+      steps.forEach((step, i) => setTimeout(() => step.classList.add('lit'), 180 * i));
+    }
+
+    // Print: show every counter and bar at its final value.
+    window.addEventListener('beforeprint', () => targets.forEach(show));
+
+    // Mark the nav link of the section in view.
+    const links = [...document.querySelectorAll('.nav a.link')];
+    const sections = links.map((a) => document.querySelector(a.getAttribute('href')));
+    if ('IntersectionObserver' in window) {
+      const nav = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          links.forEach((a) => a.removeAttribute('aria-current'));
+          links[sections.indexOf(entry.target)]?.setAttribute('aria-current', 'true');
+        });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      sections.forEach((s) => s && nav.observe(s));
+    }
+
+    // Hero particles: a slow drifting field, skipped for reduced motion.
+    const canvas = document.getElementById('particles');
+    if (!canvas || reduce) return;
+    const ctx = canvas.getContext('2d');
+    let w, h, dots, raf;
+    const colors = ['rgba(239,68,68,', 'rgba(99,102,241,', 'rgba(165,180,252,'];
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = canvas.clientWidth; h = canvas.clientHeight;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const n = Math.round(Math.min(90, (w * h) / 16000));
+      dots = Array.from({ length: n }, () => ({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.25, vy: (Math.random() - 0.5) * 0.25,
+        r: Math.random() * 1.8 + 0.6, c: colors[Math.floor(Math.random() * colors.length)],
+      }));
+    }
+    function frame() {
+      ctx.clearRect(0, 0, w, h);
+      for (const d of dots) {
+        d.x += d.vx; d.y += d.vy;
+        if (d.x < 0 || d.x > w) d.vx *= -1;
+        if (d.y < 0 || d.y > h) d.vy *= -1;
+        ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx.fillStyle = d.c + '0.7)'; ctx.fill();
+      }
+      for (let i = 0; i < dots.length; i++) {
+        for (let j = i + 1; j < dots.length; j++) {
+          const a = dots[i], b = dots[j];
+          const dist = Math.hypot(a.x - b.x, a.y - b.y);
+          if (dist < 110) {
+            ctx.strokeStyle = 'rgba(165,180,252,' + (0.12 * (1 - dist / 110)) + ')';
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+          }
+        }
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    resize(); frame();
+    window.addEventListener('resize', () => { cancelAnimationFrame(raf); resize(); frame(); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) cancelAnimationFrame(raf); else frame();
+    });
+  })();
+</script>
+</body>
+</html>
