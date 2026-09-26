@@ -529,6 +529,15 @@
 .live-now-list li:first-child { border-top: 0; }
 .live-now-place { font-size: var(--text-sm); font-weight: 600; }
 
+/* Cyclone page: Indian districts inside the live impact rings. */
+.zone-summary { display: flex; flex-direction: column; gap: var(--space-2); margin: var(--space-2) 0 var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border); }
+.zone-summary-title { margin: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text); }
+.zone-summary-name { margin: 0 0 4px; font-size: var(--text-sm); font-weight: 600; }
+.zone-summary-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.zone-summary-list li { display: flex; flex-direction: column; gap: 2px; color: var(--text-secondary); }
+.zone-summary-zone { display: inline-flex; align-items: center; gap: 8px; font-size: var(--text-xs); font-weight: 700; color: var(--text); }
+.zone-swatch { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 1px var(--border-strong); }
+
 /* ── world map ────────────────────────────────────────────────────────── */
 
 .layer-toggles { display: flex; flex-wrap: wrap; gap: var(--space-2); }

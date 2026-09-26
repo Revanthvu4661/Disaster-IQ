@@ -1,5 +1,5 @@
-import { memo, useEffect, useRef, useState } from 'react'
-import { CircleMarker, MapContainer, Marker, Pane, Polyline, Popup, ScaleControl, TileLayer, Tooltip, useMap } from 'react-leaflet'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { CircleMarker, MapContainer, Marker, Pane, Polygon, Polyline, Popup, ScaleControl, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import MarkerClusterGroup from 'react-leaflet-cluster'
 import 'leaflet/dist/leaflet.css'
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css'
@@ -13,10 +13,11 @@ import {
   eventTime,
   mapType,
 } from '../../lib/liveEvents'
+import { CYCLONE_ZONES, districtLabel, districtsByZone, zoneRange, zoneRing } from '../../lib/cycloneZones'
 import { MAX_ZOOM, worldBasemap } from '../map/BaseTiles'
 import { BoundsWatcher, MAP_LIMITS, SizeWatcher } from '../map/mapBehaviour'
 import { clusterIcon, eventIcon } from '../map/eventIcons'
-import { GeoLabels, LayersMenu, MapLegend, PlateBoundaries, ZoomLocateControls } from '../map/worldOverlays'
+import { GeoLabels, LayersMenu, MapLegend, PlateBoundaries, ZoneLegend, ZoomLocateControls } from '../map/worldOverlays'
 import { SeverityPill, TypeIcon } from './parts'
 
 const WORLD_CENTER = [20, 10]
@@ -281,6 +282,72 @@ const CycloneTracks = memo(function CycloneTracks({ events }) {
   )
 })
 
+/** Districts listed in a zone popup before "and N more". */
+const ZONE_POPUP_LIMIT = 12
+
+/** Popup for one ring: which zone, how far, and the Indian districts whose centroid falls inside it. */
+export function ZonePopup({ event, zone }) {
+  const districts = useMemo(
+    () => districtsByZone(event.latitude, event.longitude)[zone.id],
+    [event.latitude, event.longitude, zone.id],
+  )
+  const shown = districts.slice(0, ZONE_POPUP_LIMIT)
+  return (
+    <div className="wm-popup-card wm-zone-popup">
+      <p className="wm-zone-title">
+        <span className="wm-zone-swatch" style={{ background: zone.color }} aria-hidden="true" />
+        {zone.name}: {zone.label}
+      </p>
+      <p className="wm-popup-sub">
+        {zoneRange(zone)} from the centre of {event.storm_name ?? event.title}
+      </p>
+      <p className="wm-zone-head">Indian districts in this zone</p>
+      {districts.length === 0 ? (
+        <p className="wm-popup-sub">None: no Indian district centre lies in this ring.</p>
+      ) : (
+        <ul className="wm-zone-list">
+          {shown.map((item) => (
+            <li key={`${item.state}:${item.district}`}>
+              <span>{districtLabel(item)}</span>
+              <span className="wm-zone-km">{item.km} km</span>
+            </li>
+          ))}
+          {districts.length > shown.length && <li className="wm-zone-more">and {districts.length - shown.length} more</li>}
+        </ul>
+      )}
+      <p className="wm-popup-track">Fixed distances from the storm centre, not its forecast wind radii. Districts are placed by their centre point.</p>
+    </div>
+  )
+}
+
+/**
+ * Four impact rings around every cyclone, outermost first, in a pane below
+ * the tracks and markers. Each ring is a band (a polygon with a hole), so a
+ * click always lands on exactly one zone.
+ */
+const CycloneZones = memo(function CycloneZones({ events }) {
+  const storms = events.filter((event) => event.type === 'cyclone')
+  if (storms.length === 0) return null
+  return (
+    <Pane name="wm-zones" style={{ zIndex: 405 }}>
+      {storms.flatMap((event) =>
+        [...CYCLONE_ZONES].reverse().map((zone) => (
+          <Polygon
+            key={`${event.id}:${zone.id}`}
+            positions={zoneRing(event.latitude, event.longitude, zone)}
+            pathOptions={{ color: zone.color, weight: 1, opacity: 0.55, fillColor: zone.color, fillOpacity: zone.opacity }}
+            bubblingMouseEvents={false}
+          >
+            <Popup className="wm-popup" maxWidth={300} minWidth={240}>
+              <ZonePopup event={event} zone={zone} />
+            </Popup>
+          </Polygon>
+        )),
+      )}
+    </Pane>
+  )
+})
+
 /** Imagery (or the dark canvas) plus the borders-and-places reference layer. */
 function Basemap({ basemap, labels }) {
   const config = worldBasemap(basemap)
@@ -315,12 +382,12 @@ function Basemap({ basemap, labels }) {
   )
 }
 
-export const DEFAULT_MAP_SETTINGS = { basemap: 'satellite', plates: true, labels: true }
+export const DEFAULT_MAP_SETTINGS = { basemap: 'satellite', plates: true, labels: true, zones: true }
 
 /**
  * Live World Map: satellite basemap, animated markers by type and severity,
- * clusters that split at zoom 5, plate boundaries, cyclone tracks, and the
- * zoom / locate / legend / layers controls.
+ * clusters that split at zoom 5, plate boundaries, cyclone tracks and impact
+ * rings, and the zoom / locate / legend / layers controls.
  *
  * Markers are not in the tab order: the Live Events list next to the map is
  * the keyboard path to every event (a row opens the same popup).
@@ -345,6 +412,7 @@ export function LiveEventMap({
   const [me, setMe] = useState(null)
   const clusterRef = useRef(null)
   const markerRefs = useRef(new Map())
+  const showZones = settings.zones !== false && events.some((event) => event.type === 'cyclone')
 
   return (
     <div className="wm-map-shell" role="region" aria-label={label}>
@@ -372,6 +440,7 @@ export function LiveEventMap({
         {onBoundsChange && <BoundsWatcher onChange={onBoundsChange} />}
         <FitToEvents events={events} fitKey={fitKey} />
         <FocusOn focus={focus} clusterRef={clusterRef} markerRefs={markerRefs} />
+        {showZones && <CycloneZones events={events} />}
         <CycloneTracks events={events} />
         <MarkerClusterGroup
           ref={clusterRef}
@@ -399,6 +468,7 @@ export function LiveEventMap({
       <div className="wm-vignette" aria-hidden="true" />
       <ZoomLocateControls map={map} onLocated={setMe} />
       <MapLegend />
+      {showZones && <ZoneLegend />}
       {onSettingsChange && (
         <LayersMenu
           settings={settings}

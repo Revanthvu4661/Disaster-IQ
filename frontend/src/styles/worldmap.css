@@ -286,6 +286,61 @@
 .wm-check-note { margin-left: auto; font-size: 11px; color: var(--wm-muted); white-space: nowrap; }
 .wm-plate-swatch { display: inline-block; width: 20px; border-top: 2px dashed #ff5a4f; }
 
+/* ── cyclone impact zones ─────────────────────────────────────────────── */
+
+/* Sits above the layers button; the open layers panel (z-index 1001) covers it. */
+.wm-zone-legend {
+  position: absolute;
+  right: 12px;
+  bottom: 80px;
+  z-index: 1000;
+  padding: 8px 12px 10px;
+  border-radius: 10px;
+  background: rgba(11, 17, 32, 0.88);
+  border: 1px solid #1e2a44;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  color: #e2e8f0;
+}
+.wm-zone-legend-title {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9aa8c1;
+}
+.wm-zone-legend ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.wm-zone-legend li { display: flex; align-items: center; gap: 8px; font-size: 12px; white-space: nowrap; }
+.wm-zone-legend .wm-zone-km { margin-left: auto; padding-left: 10px; color: #9aa8c1; }
+.wm-zone-swatch {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.wm-zone-title { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 700; font-size: var(--text-sm); }
+.wm-zone-head {
+  margin: 10px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9aa8c1;
+}
+.wm-zone-list { list-style: none; margin: 0; padding: 0; max-height: 180px; overflow-y: auto; font-size: 12px; }
+.wm-zone-list li { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
+.wm-zone-list .wm-zone-km,
+.wm-zone-more { color: #9aa8c1; white-space: nowrap; }
+
+@media (max-width: 899px) {
+  .wm-zone-legend { bottom: 128px; padding: 6px 10px 8px; }
+  .wm-zone-legend .wm-zone-km { display: none; }
+}
+
 /* ── continent and ocean labels ───────────────────────────────────────── */
 
 .wm-geolabels { transition: opacity 0.4s var(--ease); }

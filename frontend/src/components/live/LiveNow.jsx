@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { downSources, isIncomplete, useLiveEvents } from '../../hooks/useLive'
 import SourceBadge from '../SourceBadge'
+import CycloneZoneSummary from './CycloneZoneSummary'
 import { ErrorState, Skeleton } from '../ui'
 import { formatRelative, plural } from '../../lib/format'
 import { severityShort, shortPlace } from '../../lib/liveEvents'
@@ -55,6 +56,7 @@ export function LiveNow({ type, headingLevel = 3 }) {
           ))}
         </ul>
       )}
+      {type.id === 'cyclone' && data && layer?.status !== 'unavailable' && <CycloneZoneSummary events={data.events ?? []} />}
       <Link to="/map" className="text-link">
         See all live events on the World Map
         <ArrowRight size={14} aria-hidden="true" />

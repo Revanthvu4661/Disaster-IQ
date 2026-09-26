@@ -9,6 +9,7 @@ import L from 'leaflet'
 import { GeoJSON, Marker, Pane, useMap, useMapEvents } from 'react-leaflet'
 import { Crosshair, Layers, Minus, Plus, X } from 'lucide-react'
 import { MAP_TYPES } from '../../lib/liveEvents'
+import { CYCLONE_ZONES, zoneRange } from '../../lib/cycloneZones'
 import { TypeIcon } from '../live/parts'
 import { WORLD_BASEMAPS } from './BaseTiles'
 
@@ -196,6 +197,24 @@ export function MapLegend() {
   )
 }
 
+/** Bottom-right key to the four cyclone impact rings. */
+export function ZoneLegend() {
+  return (
+    <div className="wm-zone-legend" role="group" aria-label="Cyclone impact zones">
+      <p className="wm-zone-legend-title">Cyclone impact zones</p>
+      <ul>
+        {CYCLONE_ZONES.map((zone) => (
+          <li key={zone.id}>
+            <span className="wm-zone-swatch" style={{ background: zone.color }} aria-hidden="true" />
+            <span>{zone.label}</span>
+            <span className="wm-zone-km">{zoneRange(zone)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 /* ── layers menu ──────────────────────────────────────────────────────── */
 
 /**
@@ -279,6 +298,11 @@ export function LayersMenu({ settings, onChange, types, onToggleType, typeNotes 
               <input type="checkbox" checked={settings.plates} onChange={() => onChange({ plates: !settings.plates })} />
               <span className="wm-plate-swatch" aria-hidden="true" />
               Plate boundaries
+            </label>
+            <label className="wm-check">
+              <input type="checkbox" checked={settings.zones !== false} onChange={() => onChange({ zones: settings.zones === false })} />
+              Cyclone impact zones
+              <span className="wm-check-note">0–500 km rings</span>
             </label>
             <label className="wm-check">
               <input type="checkbox" checked={settings.labels} onChange={() => onChange({ labels: !settings.labels })} />

@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '../../context/ThemeContext'
-import { DEFAULT_MAP_SETTINGS, EventPopup, LiveEventMap, fillZoom, tooltipText } from './LiveEventMap'
+import { DEFAULT_MAP_SETTINGS, EventPopup, LiveEventMap, ZonePopup, fillZoom, tooltipText } from './LiveEventMap'
+import { CYCLONE_ZONES } from '../../lib/cycloneZones'
 import { MAP_TYPE_IDS } from '../../lib/liveEvents'
 
 const time = new Date(Date.now() - 3 * 3600_000).toISOString()
@@ -126,6 +127,21 @@ describe('LiveEventMap', () => {
     expect(within(legend).getByText('Flood')).toBeInTheDocument()
   })
 
+  it('shows the cyclone impact-zone legend when a cyclone is on the map, and hides it with the layer off', () => {
+    const { unmount } = renderMap()
+    const legend = screen.getByRole('group', { name: 'Cyclone impact zones' })
+    expect(within(legend).getByText('Red Alert — Direct Impact')).toBeInTheDocument()
+    expect(within(legend).getByText('Blue Advisory')).toBeInTheDocument()
+    expect(within(legend).getByText('300–500 km')).toBeInTheDocument()
+    unmount()
+    render(
+      <ThemeProvider>
+        <LiveEventMap events={[QUAKE]} settings={DEFAULT_MAP_SETTINGS} types={new Set(MAP_TYPE_IDS)} />
+      </ThemeProvider>,
+    )
+    expect(screen.queryByRole('group', { name: 'Cyclone impact zones' })).toBeNull()
+  })
+
   it('opens the layers menu with basemaps and toggles, and closes on Escape', async () => {
     const user = userEvent.setup()
     const onSettingsChange = vi.fn()
@@ -145,5 +161,20 @@ describe('LiveEventMap', () => {
     await user.keyboard('{Escape}')
     expect(screen.queryByRole('group', { name: 'Map layers' })).toBeNull()
     expect(button).toHaveFocus()
+  })
+})
+
+describe('ZonePopup', () => {
+  it('names the zone, its range and the Indian districts inside it', () => {
+    const odisha = { ...STORM, storm_name: 'TEST-26', latitude: 19.8, longitude: 86.0 }
+    render(<ZonePopup event={odisha} zone={CYCLONE_ZONES[0]} />)
+    expect(screen.getByText(/Danger: Red Alert — Direct Impact/)).toBeInTheDocument()
+    expect(screen.getByText('0–50 km from the centre of TEST-26')).toBeInTheDocument()
+    expect(screen.getByText('Puri, Odisha')).toBeInTheDocument()
+  })
+
+  it('says so when no Indian district is in the ring', () => {
+    render(<ZonePopup event={STORM} zone={CYCLONE_ZONES[3]} />)
+    expect(screen.getByText(/no Indian district centre lies in this ring/)).toBeInTheDocument()
   })
 })
