@@ -56,7 +56,6 @@ function RiskMapBlock({
   setStateFilter,
 }) {
   const [query, setQuery] = useState('')
-  const [showAll, setShowAll] = useState(false)
   const meta = data.scenarios.find((item) => item.id === scenario)
   const backtest = view?.kind === 'backtest'
   const states = stateOptions(data.current.districts)
@@ -65,7 +64,6 @@ function RiskMapBlock({
   const needle = query.trim().toLowerCase()
   const matching = needle ? inRegion.filter((d) => d.district.toLowerCase().includes(needle)) : inRegion
   const byRisk = [...matching].sort((a, b) => b.probability - a.probability)
-  const tableRows = showAll ? byRisk : byRisk.slice(0, TABLE_PREVIEW)
 
   // Typing a district's exact name selects it and zooms to its state.
   const search = (value) => {
@@ -196,24 +194,19 @@ function RiskMapBlock({
       {view && !viewLoading && !viewError && (
         <InfoCard
           title={`${region}: every district, highest risk first`}
-          insight={`${tableRows.length} of ${matching.length} districts shown, highest risk first. Sort by any column. “Why?” opens the district in the check below with each input’s contribution.`}
+          insight={`${matching.length} districts, highest risk first; the first ${Math.min(TABLE_PREVIEW, matching.length)} are shown until you ask for all. Sort by any column (it sorts every district, not just those shown). “Why?” opens the district in the check below with each input’s contribution.`}
           badge={<SourceBadge kind="model" source={['nasa_power', 'ifi', 'elevation']} />}
         >
           <SortableTable
             caption={`Predicted flood risk by district, ${region}`}
             columns={columns}
-            rows={tableRows}
+            rows={byRisk}
+            preview={TABLE_PREVIEW}
+            noun="districts"
             rowKey={(row) => row.district}
             initialSort={{ key: 'probability', dir: 'desc' }}
             rowStyle={(row) => (row.district === selected ? { background: 'var(--surface-hover)' } : undefined)}
           />
-          {matching.length > TABLE_PREVIEW && (
-            <p style={{ marginTop: 'var(--space-3)', textAlign: 'center' }}>
-              <button type="button" className="btn" onClick={() => setShowAll((value) => !value)}>
-                {showAll ? `Show top ${TABLE_PREVIEW} only` : `Show all ${matching.length} districts`}
-              </button>
-            </p>
-          )}
         </InfoCard>
       )}
     </Block>

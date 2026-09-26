@@ -1416,3 +1416,15 @@ svg.card-motif { fill: none; stroke: currentColor; stroke-width: 3; stroke-linec
   .source-dl { grid-template-columns: 1fr; }
   .source-dl dt { padding-bottom: 0; border-bottom: 0; }
 }
+
+/* "Showing 25 of 640 districts · Show all" under a shortened table */
+/* Scrolling back to a collapsed table stops below the sticky top bar. */
+.table-wrap { scroll-margin-top: calc(var(--topbar-height) + var(--space-4)); }
+.table-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-3);
+}

@@ -5,6 +5,7 @@ import { GLYPHS } from '../map/eventIcons'
 import KpiCard from '../KpiCard'
 import { heroStats } from '../../lib/heroStats'
 import { getDisasterType } from '../../config/disasterTypes'
+import DisasterPage from '../../pages/DisasterPage'
 
 vi.mock('../../hooks/useApi', () => ({
   useApi: () => ({ data: null, error: null, loading: true, reload: () => {} }),
@@ -101,8 +102,7 @@ describe('KpiCard theme hooks', () => {
 })
 
 describe('DisasterPage theme root', () => {
-  it('sets data-hazard from the page type, so each tab gets its own theme', async () => {
-    const { default: DisasterPage } = await import('../../pages/DisasterPage')
+  it('sets data-hazard from the page type, so each tab gets its own theme', () => {
     const { container, rerender } = render(<DisasterPage id="earthquake" />)
     const root = () => container.querySelector('.hazard-page')
     expect(root()).toHaveAttribute('data-hazard', 'earthquake')

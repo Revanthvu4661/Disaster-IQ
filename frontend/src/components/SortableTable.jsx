@@ -1,10 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 
 /**
  * A visible data table whose headers sort it. `columns`:
  * [{ key, label, render?, sortValue?, numeric?, defaultDir? }]. Sorting is
  * announced through `aria-sort` on the active header.
+ *
+ * `preview` (a row count) shortens a long table: only the first `preview`
+ * rows of the *sorted* table are shown, with a "Show all" button under it.
+ * Sorting always uses every row, so "top 25 by population" is the true top
+ * 25. `noun` names the rows in the button ("districts").
  */
 export function SortableTable({
   columns,
@@ -14,8 +19,13 @@ export function SortableTable({
   rowKey = (row, index) => row.id ?? row.key ?? index,
   rowStyle,
   maxHeight,
+  preview,
+  noun = 'rows',
 }) {
   const [sort, setSort] = useState(initialSort ?? null)
+  const [expanded, setExpanded] = useState(false)
+  const wrapRef = useRef(null)
+  const scrollOnCollapse = useRef(false)
 
   const sorted = useMemo(() => {
     if (!sort) return rows
@@ -32,6 +42,26 @@ export function SortableTable({
     return sort.dir === 'desc' ? out.reverse() : out
   }, [rows, columns, sort])
 
+  const limited = Boolean(preview) && rows.length > preview
+  const shown = limited && !expanded ? sorted.slice(0, preview) : sorted
+
+  const toggleExpanded = () => {
+    scrollOnCollapse.current = expanded
+    setExpanded((value) => !value)
+  }
+
+  // Collapsing from the bottom of a long list would leave the reader far below
+  // the table, so bring its top back into view once the shorter table has
+  // rendered (scrolling earlier is cancelled by the height change).
+  useEffect(() => {
+    if (expanded || !scrollOnCollapse.current) return
+    scrollOnCollapse.current = false
+    const element = wrapRef.current
+    if (!element?.scrollIntoView) return
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    element.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' })
+  }, [expanded])
+
   const toggle = (column) =>
     setSort((current) =>
       current?.key === column.key
@@ -39,8 +69,8 @@ export function SortableTable({
         : { key: column.key, dir: column.defaultDir ?? (column.numeric ? 'desc' : 'asc') },
     )
 
-  return (
-    <div className="table-wrap" style={maxHeight ? { maxHeight } : undefined}>
+  const table = (
+    <div className="table-wrap" ref={wrapRef} style={maxHeight ? { maxHeight } : undefined}>
       <table className="data sortable">
         {caption && <caption className="visually-hidden">{caption}</caption>}
         <thead>
@@ -65,7 +95,7 @@ export function SortableTable({
           </tr>
         </thead>
         <tbody>
-          {sorted.map((row, index) => (
+          {shown.map((row, index) => (
             <tr key={rowKey(row, index)} style={rowStyle?.(row)}>
               {columns.map((column, columnIndex) => {
                 const content = column.render ? column.render(row) : row[column.key]
@@ -84,6 +114,21 @@ export function SortableTable({
         </tbody>
       </table>
     </div>
+  )
+
+  if (!limited) return table
+  return (
+    <>
+      {table}
+      <div className="table-more">
+        <span className="text-sm muted" role="status">
+          Showing {shown.length.toLocaleString()} of {rows.length.toLocaleString()} {noun}
+        </span>
+        <button type="button" className="btn" aria-expanded={expanded} onClick={toggleExpanded}>
+          {expanded ? `Show first ${preview} only` : `Show all ${rows.length.toLocaleString()} ${noun}`}
+        </button>
+      </div>
+    </>
   )
 }
 

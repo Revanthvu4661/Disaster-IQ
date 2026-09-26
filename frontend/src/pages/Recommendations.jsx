@@ -43,6 +43,8 @@ const HORIZONS = [3, 7, 14]
 const orNA = (value, format) => (value === null || value === undefined ? 'Unavailable' : format(value))
 const BASIS_LABEL = { standard: 'Standard', data: 'Data', assumption: 'Assumption', 'standard + assumption': 'Standard + assumption' }
 const TIER_SHORT = { 1: 'P1', 2: 'P2', 3: 'P3', 4: 'Monitor' }
+/** Rows shown in the long ranking tables before "Show all". */
+const TABLE_PREVIEW = 25
 const TIER_LEVEL = { 1: 'critical', 2: 'high', 3: 'medium', 4: 'low' }
 
 const NOUN = { earthquake: 'earthquake', flood: 'flood', cyclone: 'cyclone' }
@@ -139,6 +141,8 @@ function PrepRankingBlock({ kind, plan, selected, onSelect }) {
           caption={`Preparedness priority by ${area}`}
           columns={columns}
           rows={plan.regions}
+          preview={TABLE_PREVIEW}
+          noun={area === 'district' ? 'districts' : 'states and UTs'}
           rowKey={(row) => row.region}
           initialSort={{ key: 'rank', dir: 'asc' }}
           rowStyle={(row) => (row.region === selected ? { background: 'var(--surface-hover)' } : undefined)}
@@ -281,6 +285,8 @@ function RespRankingBlock({ kind, plan, selected, onSelect, onReplay }) {
           caption="Resource estimate in priority order"
           columns={columns}
           rows={plan.regions}
+          preview={TABLE_PREVIEW}
+          noun={AREA_WORD[kind] === 'district' ? 'districts' : 'states and UTs'}
           rowKey={(row) => row.region}
           initialSort={{ key: 'rank', dir: 'asc' }}
           rowStyle={(row) => (row.region === selected ? { background: 'var(--surface-hover)' } : undefined)}

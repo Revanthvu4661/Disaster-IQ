@@ -34,6 +34,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.js'],
+    // jsdom + user-event tests can take several seconds on a busy machine
+    // (e.g. with on-access virus scanning); 5 s turned slowness into failures.
+    testTimeout: 15000,
     css: true,
     coverage: { reporter: ['text', 'html'], include: ['src/**/*.{js,jsx}'] },
   },

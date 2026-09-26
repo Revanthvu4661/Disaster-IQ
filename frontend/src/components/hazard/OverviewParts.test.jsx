@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { CardMotif, sourceHazard, sourceServes } from './OverviewParts'
 import { GLYPHS } from '../map/eventIcons'
+import Overview from '../../pages/Overview'
 
 const LAYERS = {
   earthquake: { status: 'ok', count: 97, sources: [{ id: 'usgs' }, { id: 'gdacs' }] },
@@ -52,14 +53,14 @@ describe('Overview helpers', () => {
 })
 
 describe('Overview page theme', () => {
-  const renderOverview = async () => {
-    const { default: Overview } = await import('../../pages/Overview')
-    return render(
+  // The page is imported at the top (vi.mock is hoisted above it), so loading
+  // it never counts against a test's time limit.
+  const renderOverview = async () =>
+    render(
       <MemoryRouter>
         <Overview />
       </MemoryRouter>,
     )
-  }
 
   it('uses the blended overview theme on its root', async () => {
     const { container } = await renderOverview()
