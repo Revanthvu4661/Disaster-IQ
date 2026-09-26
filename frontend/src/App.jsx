@@ -15,6 +15,7 @@ const WorldMap = lazy(() => import('./pages/WorldMap'))
 const PrePrediction = lazy(() => import('./pages/PrePrediction'))
 const DisasterRisk = lazy(() => import('./pages/DisasterRisk'))
 const Recommendations = lazy(() => import('./pages/Recommendations'))
+const ActionHub = lazy(() => import('./pages/ActionHub'))
 const About = lazy(() => import('./pages/About'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
@@ -195,6 +196,7 @@ export default function App() {
               <Route path="/pre-prediction" element={<PrePrediction />} />
               <Route path="/risk" element={<DisasterRisk />} />
               <Route path="/preparedness" element={<Recommendations />} />
+              <Route path="/action-hub" element={<ActionHub />} />
               <Route path="/about" element={<About />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

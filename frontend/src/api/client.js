@@ -91,4 +91,9 @@ export const api = {
   prePredictionRegions: () => request('/pre-prediction/regions'),
   prePredictionBaseline: ({ region, days, start }) => request(`/pre-prediction/baseline${query({ region, days, start })}`),
   prePredictionNarrative: (params) => request(`/pre-prediction/narrative${query(params)}`, { timeoutMs: 75_000 }),
+
+  // Action Hub: high-risk areas and a needs list per area (tasks and people live in Firestore)
+  actionHubRiskAreas: () => request('/action-hub/risk-areas'),
+  actionHubNeeds: ({ area, state, hazard, level, population }) =>
+    request(`/action-hub/needs${query({ area, state, hazard, level, population })}`, { timeoutMs: 75_000 }),
 }

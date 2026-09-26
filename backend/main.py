@@ -26,7 +26,16 @@ from fastapi.responses import JSONResponse
 from backend import live_feeds, schemas
 from backend.data_pipeline import use_system_trust_store
 from backend.config import get_settings
-from backend.routers import disasters, flood_risk, hazard_risk, history, live, pre_prediction, recommendations
+from backend.routers import (
+    action_hub,
+    disasters,
+    flood_risk,
+    hazard_risk,
+    history,
+    live,
+    pre_prediction,
+    recommendations,
+)
 from backend.state import state
 
 VERSION = "5.0.0"
@@ -145,3 +154,4 @@ app.include_router(flood_risk.router)
 app.include_router(hazard_risk.router)
 app.include_router(recommendations.router)
 app.include_router(pre_prediction.router)
+app.include_router(action_hub.router)

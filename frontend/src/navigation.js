@@ -1,4 +1,4 @@
-import { Globe2, LayoutDashboard, LifeBuoy, ShieldCheck, Telescope } from 'lucide-react'
+import { Globe2, LayoutDashboard, LifeBuoy, ShieldCheck, Siren, Telescope } from 'lucide-react'
 import { DISASTER_TYPES } from './config/disasterTypes'
 
 /**
@@ -47,5 +47,12 @@ export const NAV_ITEMS = [
     icon: LifeBuoy,
     description: 'Level 3: preparedness actions and response resources',
     section: 'recommend',
+  },
+  {
+    to: '/action-hub',
+    label: 'Action Hub',
+    icon: Siren,
+    description: 'Assign tasks to responders and track readiness',
+    section: 'act',
   },
 ]

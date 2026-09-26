@@ -1,0 +1,96 @@
+rules_version = '2';
+
+// DisasterIQ Action Hub (frontend/src/lib/actionHubStore.js).
+// Paste into Firebase console → Firestore Database → Rules, then Publish
+// (or deploy with the Firebase CLI).
+//
+// Every visitor is signed in anonymously by the page, so these rules keep out
+// scripts that call the database directly and check the shape and size of
+// every write. They cannot tell a coordinator from anyone else who opens the
+// site: there is no login yet, so any visitor can read and edit.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function text(value, max) { return value is string && value.size() <= max; }
+    function optionalNumber(value) { return value == null || value is number; }
+    function oneOf(value, options) { return value in options; }
+
+    function validResponder(d) {
+      return d.keys().hasOnly(['name', 'role', 'city', 'state', 'availability', 'capacity', 'skills',
+                               'phone', 'photo', 'createdAt', 'updatedAt'])
+        && text(d.name, 80) && d.name.size() > 0
+        && oneOf(d.role, ['Volunteer', 'Transporter', 'Medical', 'Rescue', 'NGO', 'Coordinator'])
+        && text(d.city, 80) && text(d.state, 80)
+        && oneOf(d.availability, ['now', '2hrs', 'unavailable'])
+        && d.capacity is int && d.capacity >= 0 && d.capacity <= 100000
+        && text(d.skills, 200) && text(d.phone, 20)
+        && text(d.photo, 200000)
+        && text(d.createdAt, 40) && text(d.updatedAt, 40);
+    }
+
+    function validPlan(d) {
+      return d.keys().hasOnly(['riskId', 'area', 'state', 'hazard', 'level', 'population', 'needs',
+                               'source', 'model', 'fallbackReason', 'createdAt'])
+        && text(d.area, 120) && text(d.state, 120)
+        && oneOf(d.hazard, ['flood', 'cyclone', 'earthquake'])
+        && text(d.level, 20) && optionalNumber(d.population)
+        && d.needs is list && d.needs.size() <= 10
+        && oneOf(d.source, ['gemini', 'fallback']);
+    }
+
+    function validTask(d) {
+      return d.keys().hasOnly(['number', 'planId', 'needId', 'need', 'category', 'priority', 'area', 'state',
+                               'hazard', 'from', 'to', 'details', 'deadline', 'assigneeId', 'assigneeName',
+                               'assigneeRole', 'status', 'createdAt', 'updatedAt', 'lastNote', 'proofCount',
+                               'lastLocation'])
+        && d.number is int
+        && text(d.need, 120) && text(d.from, 120) && text(d.to, 120) && text(d.details, 300)
+        && text(d.deadline, 40) && text(d.assigneeId, 64) && text(d.assigneeName, 80)
+        && oneOf(d.priority, ['Critical', 'High', 'Medium'])
+        && oneOf(d.status, ['assigned', 'accepted', 'collected', 'in_transit', 'delivered'])
+        && text(d.lastNote, 500) && d.proofCount is int;
+    }
+
+    match /responders/{id} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && validResponder(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /plans/{id} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && validPlan(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /tasks/{number} {
+      allow read: if signedIn();
+      // Created only with the next number from counters/tasks (a transaction in the page).
+      allow create: if signedIn() && validTask(request.resource.data)
+        && request.resource.data.number == int(number);
+      allow update: if signedIn() && validTask(request.resource.data)
+        && request.resource.data.number == resource.data.number;
+      allow delete: if false;
+
+      match /updates/{updateId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(['status', 'note', 'photo', 'lat', 'lon', 'by', 'at'])
+          && oneOf(request.resource.data.status, ['accepted', 'collected', 'in_transit', 'delivered'])
+          && text(request.resource.data.note, 500)
+          && text(request.resource.data.photo, 400000)
+          && optionalNumber(request.resource.data.lat) && optionalNumber(request.resource.data.lon)
+          && text(request.resource.data.by, 80) && text(request.resource.data.at, 40);
+        allow update, delete: if false;
+      }
+    }
+
+    match /counters/tasks {
+      allow read: if signedIn();
+      allow write: if signedIn() && request.resource.data.keys().hasOnly(['next'])
+        && request.resource.data.next is int
+        && (resource == null || request.resource.data.next == resource.data.next + 1);
+    }
+  }
+}
