@@ -14,7 +14,9 @@ import {
   Cell,
   ComposedChart,
   Line,
+  LineChart,
   ReferenceArea,
+  ReferenceLine,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -237,7 +239,50 @@ function ScatterLogBase({ points = [], xLabel, yLabel, color, height = 280, form
   )
 }
 
+/**
+ * Several series over one x axis on one 0–100 scale (the Pre-Prediction risk
+ * trend). `bands` draws dashed guides at level cut-offs; `marker` a labelled
+ * vertical line (for example where the weather forecast ends).
+ */
+function MultiLinesBase({ data = [], xKey, series, height = 280, format = (v) => v, labelFormat, bands = [], marker, domain = [0, 100] }) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <LineChart data={data} margin={{ top: 16, right: 12, bottom: 0, left: 0 }}>
+        <CartesianGrid vertical={false} stroke="var(--grid-line)" />
+        <XAxis dataKey={xKey} {...AXIS} interval="preserveStartEnd" minTickGap={16} />
+        <YAxis {...AXIS} width={40} domain={domain} ticks={[0, 30, 60, 80, 100]} tickFormatter={format} />
+        {bands.map((value) => (
+          <ReferenceLine key={value} y={value} stroke="var(--border-strong)" strokeDasharray="3 4" ifOverflow="extendDomain" />
+        ))}
+        {marker && (
+          <ReferenceLine
+            x={marker.x}
+            stroke="var(--text-muted)"
+            strokeDasharray="2 3"
+            label={{ value: marker.label, position: 'insideTopRight', fill: 'var(--text-muted)', fontSize: 11 }}
+          />
+        )}
+        <Tooltip content={<TooltipCard format={format} labelFormat={labelFormat} />} cursor={{ stroke: 'var(--border-strong)' }} />
+        {series.map((item) => (
+          <Line
+            key={item.key}
+            type="monotone"
+            dataKey={item.key}
+            name={item.label}
+            stroke={item.color}
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4 }}
+            isAnimationActive={false}
+          />
+        ))}
+      </LineChart>
+    </ResponsiveContainer>
+  )
+}
+
 export const YearBars = memo(YearBarsBase)
+export const MultiLines = memo(MultiLinesBase)
 export const CategoryBars = memo(CategoryBarsBase)
 export const StackedBars = memo(StackedBarsBase)
 export const ScatterLog = memo(ScatterLogBase)

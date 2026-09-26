@@ -86,4 +86,9 @@ export const api = {
   // Level 3: preparedness and response recommendations from the Level 2 risk
   recommendations: (hazard, { scenario = 'current', days = 7 } = {}) =>
     request(`/recommendations/${encodeURIComponent(hazard)}${query({ scenario: hazard === 'flood' ? scenario : undefined, days })}`),
+
+  // Pre-Prediction: historical factors per state, and the Gemini narrative (key stays server-side)
+  prePredictionRegions: () => request('/pre-prediction/regions'),
+  prePredictionBaseline: ({ region, days, start }) => request(`/pre-prediction/baseline${query({ region, days, start })}`),
+  prePredictionNarrative: (params) => request(`/pre-prediction/narrative${query(params)}`, { timeoutMs: 75_000 }),
 }

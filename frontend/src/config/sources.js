@@ -58,6 +58,21 @@ export const SOURCES = {
     long: 'IMD monthly rainfall for the Kerala subdivision 1901-2018 with a yes/no flood flag, one row per year for the whole state. Used as a check, not as the training label.',
     url: 'https://github.com/amandp13/Flood-Prediction-Model',
   },
+  open_meteo: {
+    short: 'Open-Meteo',
+    long: 'Open-Meteo forecast (16 days: rain, wind, temperature, soil moisture), historical archive (the 2014-2023 temperature normal) and marine API (sea surface temperature), fetched live by the page for the state centre.',
+    url: 'https://open-meteo.com/',
+  },
+  usgs_realtime: {
+    short: 'USGS realtime',
+    long: 'USGS earthquake catalogue query: every M2.5+ earthquake within 500 km of the state centre in the last 30 days, fetched live by the page.',
+    url: 'https://earthquake.usgs.gov/fdsnws/event/1/',
+  },
+  gemini: {
+    short: 'Google Gemini',
+    long: 'Written by Google Gemini from the readings on this page. AI text can be wrong; the affected-population figure is the model’s own estimate, not computed from data.',
+    url: 'https://ai.google.dev/',
+  },
   geoboundaries: {
     short: 'geoBoundaries',
     long: 'geoBoundaries India district (ADM2) and state (ADM1) boundaries, ODbL. Used for the district map, the state of each district and elevation sampling.',

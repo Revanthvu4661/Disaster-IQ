@@ -12,6 +12,8 @@ import tempfile
 
 # Live feeds are tested offline with a mock transport; never prefetch at startup.
 os.environ.setdefault("LIVE_PREFETCH", "false")
+# Tests must never call Gemini: blank the key before backend/config.py reads backend/.env.
+os.environ["GEMINI_API_KEY"] = ""
 # Never write the live feeds' last-good cache into backend/data during tests.
 os.environ.setdefault("LIVE_CACHE_DIR", tempfile.mkdtemp(prefix="disasteriq-live-"))
 

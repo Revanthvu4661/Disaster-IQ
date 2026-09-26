@@ -21,13 +21,14 @@ describe('disaster taxonomy', () => {
     })
   })
 
-  it('drives the primary navigation: Overview, three types, World Map, then Levels 2 and 3', () => {
+  it('drives the primary navigation: Overview, three types, World Map, Pre-Prediction, then Levels 2 and 3', () => {
     expect(NAV_ITEMS.map((item) => item.label)).toEqual([
       'Overview',
       'Earthquake',
       'Flood',
       'Cyclone/Hurricane',
       'World Map',
+      'Pre-Prediction',
       'Disaster Risk Prediction',
       'Preparedness & Response Recommendations',
     ])

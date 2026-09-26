@@ -1,9 +1,10 @@
-import { Globe2, LayoutDashboard, LifeBuoy, ShieldCheck } from 'lucide-react'
+import { Globe2, LayoutDashboard, LifeBuoy, ShieldCheck, Telescope } from 'lucide-react'
 import { DISASTER_TYPES } from './config/disasterTypes'
 
 /**
  * Primary navigation, in the fixed order of the information architecture:
- * Overview, the three disaster types, World Map, then the problem statement's
+ * Overview, the three disaster types, World Map, the Pre-Prediction outlook,
+ * then the problem statement's
  * Level 2 (Disaster Risk Prediction) and Level 3 (Preparedness & Response
  * Recommendations), named in its own words. The disaster entries are generated from the shared
  * taxonomy, never listed here.
@@ -26,6 +27,13 @@ export const NAV_ITEMS = [
     section: 'disasters',
   })),
   { to: '/map', label: 'World Map', icon: Globe2, description: 'Live and historical events', section: 'map' },
+  {
+    to: '/pre-prediction',
+    label: 'Pre-Prediction',
+    icon: Telescope,
+    description: 'Short-range outlook: history, season and live weather',
+    section: 'pre-predict',
+  },
   {
     to: '/risk',
     label: 'Disaster Risk Prediction',

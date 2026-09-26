@@ -12,6 +12,7 @@ import { SkeletonCard } from './components/ui'
 const Overview = lazy(() => import('./pages/Overview'))
 const DisasterPage = lazy(() => import('./pages/DisasterPage'))
 const WorldMap = lazy(() => import('./pages/WorldMap'))
+const PrePrediction = lazy(() => import('./pages/PrePrediction'))
 const DisasterRisk = lazy(() => import('./pages/DisasterRisk'))
 const Recommendations = lazy(() => import('./pages/Recommendations'))
 const About = lazy(() => import('./pages/About'))
@@ -191,6 +192,7 @@ export default function App() {
                 <Route key={type.id} path={type.path} element={<DisasterPage id={type.id} />} />
               ))}
               <Route path="/map" element={<WorldMap />} />
+              <Route path="/pre-prediction" element={<PrePrediction />} />
               <Route path="/risk" element={<DisasterRisk />} />
               <Route path="/preparedness" element={<Recommendations />} />
               <Route path="/about" element={<About />} />

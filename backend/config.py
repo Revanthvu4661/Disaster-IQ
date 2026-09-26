@@ -14,6 +14,29 @@ def _split(value: str) -> list[str]:
     return [v.strip() for v in value.split(",") if v.strip()]
 
 
+def load_dotenv(path: Path = BASE_DIR / ".env") -> None:
+    """Read ``KEY=value`` lines from backend/.env into the environment.
+
+    Plain standard library, no extra package. A variable that is already set
+    (for example in Render's dashboard) always wins over the file, and a
+    missing file is fine. backend/.env is gitignored: secrets live only there.
+    """
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        value = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key.strip(), value)
+
+
+load_dotenv()
+
+
 class Settings:
     """Runtime configuration, all overridable through environment variables."""
 
@@ -50,6 +73,11 @@ class Settings:
         self.live_cache_dir: Path = Path(
             os.getenv("LIVE_CACHE_DIR", str(DATA_DIR / "live_cache"))
         )
+
+        # Gemini, for the Pre-Prediction page's AI narrative. Server-side only:
+        # the key is sent in a request header and never reaches the browser.
+        self.gemini_api_key: str = os.getenv("GEMINI_API_KEY", "").strip()
+        self.gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
 
 
 @lru_cache(maxsize=1)
